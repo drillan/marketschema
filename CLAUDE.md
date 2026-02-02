@@ -52,6 +52,17 @@
 - JSON Schema のフィールドには必ず `description` を記述
 - 自動生成コードは手動編集しない
 
+### Quality Checks
+
+コミット前に以下のチェックがすべて通ることを確認すること：
+
+```bash
+uv run ruff check .      # リンター
+uv run ruff format --check .  # フォーマッター
+uv run mypy src          # 型チェック
+uv run pytest            # テスト
+```
+
 ### 判断の優先順位
 
 1. 正確性 → 2. シンプルさ → 3. 互換性 → 4. パフォーマンス → 5. 機能性

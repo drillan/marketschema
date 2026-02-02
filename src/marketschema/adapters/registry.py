@@ -47,14 +47,10 @@ class AdapterRegistry:
 
         source_name = adapter_class.source_name
         if not source_name:
-            raise AdapterError(
-                f"{adapter_class.__name__} must define source_name"
-            )
+            raise AdapterError(f"{adapter_class.__name__} must define source_name")
 
         if source_name in instance._adapters:
-            raise AdapterError(
-                f"Adapter for '{source_name}' is already registered"
-            )
+            raise AdapterError(f"Adapter for '{source_name}' is already registered")
 
         instance._adapters[source_name] = adapter_class
         return adapter_class

@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from jsonschema import Draft202012Validator
+from jsonschema import Draft202012Validator  # type: ignore[import-untyped]
 from referencing import Registry, Resource
 from referencing.jsonschema import DRAFT202012
 
@@ -18,10 +18,13 @@ FIXTURES_DIR = Path(__file__).parent.parent / "fixtures"
 def load_definitions() -> dict[str, Any]:
     """Load the definitions.json schema."""
     with open(SCHEMAS_DIR / "definitions.json", encoding="utf-8") as f:
-        return json.load(f)
+        result: dict[str, Any] = json.load(f)
+        return result
 
 
-def bundle_schema(schema: dict[str, Any], definitions: dict[str, Any]) -> dict[str, Any]:
+def bundle_schema(
+    schema: dict[str, Any], definitions: dict[str, Any]
+) -> dict[str, Any]:
     """Bundle a schema by inlining definitions.
 
     Replaces $ref: "definitions.json#/$defs/X" with the actual definition.
@@ -47,7 +50,8 @@ def bundle_schema(schema: dict[str, Any], definitions: dict[str, Any]) -> dict[s
             return [replace_refs(item) for item in obj]
         return obj
 
-    return replace_refs(bundled)
+    result: dict[str, Any] = replace_refs(bundled)
+    return result
 
 
 def create_registry() -> Registry[Any]:
@@ -79,13 +83,15 @@ def load_schema(schema_name: str) -> dict[str, Any]:
     """Load a JSON Schema file by name."""
     schema_path = SCHEMAS_DIR / schema_name
     with open(schema_path, encoding="utf-8") as f:
-        return json.load(f)
+        result: dict[str, Any] = json.load(f)
+        return result
 
 
 def load_fixture(fixture_path: Path) -> dict[str, Any]:
     """Load a test fixture file."""
     with open(fixture_path, encoding="utf-8") as f:
-        return json.load(f)
+        result: dict[str, Any] = json.load(f)
+        return result
 
 
 def validate_data(schema_name: str, data: dict[str, Any]) -> list[str]:
@@ -194,7 +200,9 @@ class TestInvalidData:
 
     def test_instrument_invalid_currency_format(self) -> None:
         """Instrument with invalid currency format should fail validation."""
-        data = load_fixture(FIXTURES_DIR / "invalid" / "instrument_invalid_currency.json")
+        data = load_fixture(
+            FIXTURES_DIR / "invalid" / "instrument_invalid_currency.json"
+        )
         assert_invalid("instrument.json", data)
 
     def test_ohlcv_missing_volume(self) -> None:

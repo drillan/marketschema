@@ -1,6 +1,5 @@
 """Test AdapterRegistry functionality."""
 
-
 import pytest
 
 from marketschema.adapters import AdapterRegistry, BaseAdapter, ModelMapping, register
