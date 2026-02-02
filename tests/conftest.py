@@ -1,6 +1,7 @@
 """Shared pytest fixtures for marketschema tests."""
 
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -32,7 +33,7 @@ def fixtures_dir() -> Path:
 
 
 @pytest.fixture
-def valid_quote() -> dict:
+def valid_quote() -> dict[str, Any]:
     """Return a valid Quote data sample."""
     return {
         "symbol": "7203.T",
@@ -45,7 +46,7 @@ def valid_quote() -> dict:
 
 
 @pytest.fixture
-def valid_ohlcv() -> dict:
+def valid_ohlcv() -> dict[str, Any]:
     """Return a valid OHLCV data sample."""
     return {
         "symbol": "BTCUSDT",
@@ -60,7 +61,7 @@ def valid_ohlcv() -> dict:
 
 
 @pytest.fixture
-def valid_trade() -> dict:
+def valid_trade() -> dict[str, Any]:
     """Return a valid Trade data sample."""
     return {
         "symbol": "AAPL",
@@ -72,7 +73,7 @@ def valid_trade() -> dict:
 
 
 @pytest.fixture
-def valid_orderbook() -> dict:
+def valid_orderbook() -> dict[str, Any]:
     """Return a valid OrderBook data sample."""
     return {
         "symbol": "USDJPY",
@@ -89,7 +90,7 @@ def valid_orderbook() -> dict:
 
 
 @pytest.fixture
-def valid_instrument() -> dict:
+def valid_instrument() -> dict[str, Any]:
     """Return a valid Instrument data sample."""
     return {
         "symbol": "7203.T",
@@ -100,7 +101,7 @@ def valid_instrument() -> dict:
 
 
 @pytest.fixture
-def valid_derivative_info() -> dict:
+def valid_derivative_info() -> dict[str, Any]:
     """Return a valid DerivativeInfo data sample."""
     return {
         "multiplier": 1000,
@@ -112,7 +113,7 @@ def valid_derivative_info() -> dict:
 
 
 @pytest.fixture
-def valid_expiry_info() -> dict:
+def valid_expiry_info() -> dict[str, Any]:
     """Return a valid ExpiryInfo data sample."""
     return {
         "expiry": "2026-03",
@@ -122,7 +123,7 @@ def valid_expiry_info() -> dict:
 
 
 @pytest.fixture
-def valid_option_info() -> dict:
+def valid_option_info() -> dict[str, Any]:
     """Return a valid OptionInfo data sample."""
     return {
         "strike_price": 40000.0,
@@ -132,7 +133,7 @@ def valid_option_info() -> dict:
 
 
 @pytest.fixture
-def valid_volume_info() -> dict:
+def valid_volume_info() -> dict[str, Any]:
     """Return a valid VolumeInfo data sample."""
     return {
         "symbol": "BTCUSDT",
