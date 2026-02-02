@@ -75,7 +75,7 @@ def demo_transactions(adapter: BitbankAdapter, pair: str) -> None:
     print(f"GET {url}")
 
     data = fetch_json(url)
-    transactions = data.get("transactions", [])
+    transactions: list[dict[str, Any]] = data["transactions"]
 
     if not transactions:
         print("No recent transactions")
@@ -104,27 +104,24 @@ def demo_candlestick(adapter: BitbankAdapter, pair: str) -> None:
     url = f"{BITBANK_API_BASE}/{pair}/candlestick/1hour/{today}"
     print(f"GET {url}")
 
-    try:
-        data = fetch_json(url)
-        candlesticks = data.get("candlestick", [])
+    data = fetch_json(url)
+    candlesticks: list[dict[str, Any]] = data["candlestick"]
 
-        if not candlesticks or not candlesticks[0].get("ohlcv"):
-            print("No candlestick data available")
-            return
+    if not candlesticks or "ohlcv" not in candlesticks[0]:
+        print("No candlestick data available")
+        return
 
-        ohlcv_arrays = candlesticks[0]["ohlcv"][:3]
-        ohlcvs = adapter.parse_ohlcv_batch(ohlcv_arrays, symbol=pair)
+    ohlcv_arrays: list[list[Any]] = candlesticks[0]["ohlcv"][:3]
+    ohlcvs = adapter.parse_ohlcv_batch(ohlcv_arrays, symbol=pair)
 
-        for i, ohlcv in enumerate(ohlcvs, 1):
-            print(f"\nOHLCV {i}:")
-            print(f"  Open: {ohlcv.open.root}")
-            print(f"  High: {ohlcv.high.root}")
-            print(f"  Low: {ohlcv.low.root}")
-            print(f"  Close: {ohlcv.close.root}")
-            print(f"  Volume: {ohlcv.volume.root}")
-            print(f"  Timestamp: {ohlcv.timestamp.root}")
-    except RuntimeError as e:
-        print(f"Error fetching candlestick: {e}")
+    for i, ohlcv in enumerate(ohlcvs, 1):
+        print(f"\nOHLCV {i}:")
+        print(f"  Open: {ohlcv.open.root}")
+        print(f"  High: {ohlcv.high.root}")
+        print(f"  Low: {ohlcv.low.root}")
+        print(f"  Close: {ohlcv.close.root}")
+        print(f"  Volume: {ohlcv.volume.root}")
+        print(f"  Timestamp: {ohlcv.timestamp.root}")
 
 
 def demo_depth(adapter: BitbankAdapter, pair: str) -> None:

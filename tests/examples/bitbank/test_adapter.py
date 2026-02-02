@@ -2,8 +2,11 @@
 
 from typing import Any
 
+import pytest
+
 from examples.bitbank.adapter import BitbankAdapter
 from marketschema.adapters.registry import AdapterRegistry
+from marketschema.exceptions import AdapterError
 from marketschema.models import OHLCV, PriceLevel, Side, Trade
 
 
@@ -45,6 +48,30 @@ class TestParseQuote:
 
         assert quote.bid.root == 99.50
         assert quote.ask.root == 100.50
+
+    def test_parse_quote_with_invalid_price_raises_adapter_error(self) -> None:
+        """Quote parsing with invalid price raises AdapterError."""
+        adapter = BitbankAdapter()
+        invalid_ticker = {
+            "sell": "not_a_number",
+            "buy": "9651884",
+            "timestamp": 1738454400000,
+        }
+
+        with pytest.raises(AdapterError):
+            adapter.parse_quote(invalid_ticker, symbol="btc_jpy")
+
+    def test_parse_quote_with_missing_field_raises_adapter_error(self) -> None:
+        """Quote parsing with missing field raises AdapterError."""
+        adapter = BitbankAdapter()
+        incomplete_ticker = {
+            "sell": "9653004",
+            # "buy" is missing
+            "timestamp": 1738454400000,
+        }
+
+        with pytest.raises(AdapterError):
+            adapter.parse_quote(incomplete_ticker, symbol="btc_jpy")
 
 
 class TestParseTrade:
@@ -122,6 +149,30 @@ class TestParseOHLCV:
         assert len(ohlcvs) == 2
         assert all(isinstance(o, OHLCV) for o in ohlcvs)
 
+    def test_parse_ohlcv_with_insufficient_array_length_raises_error(self) -> None:
+        """OHLCV parsing with insufficient array length raises IndexError."""
+        adapter = BitbankAdapter()
+        # Only 3 elements, but 6 are required [open, high, low, close, volume, timestamp]
+        short_array = ["9620000", "9680000", "9600000"]
+
+        with pytest.raises(IndexError):
+            adapter.parse_ohlcv(short_array, symbol="btc_jpy")
+
+    def test_parse_ohlcv_with_invalid_value_raises_adapter_error(self) -> None:
+        """OHLCV parsing with invalid value raises AdapterError."""
+        adapter = BitbankAdapter()
+        invalid_array = [
+            "not_a_number",
+            "9680000",
+            "9600000",
+            "9650000",
+            "123.456",
+            1738454400000,
+        ]
+
+        with pytest.raises(AdapterError):
+            adapter.parse_ohlcv(invalid_array, symbol="btc_jpy")
+
 
 class TestParseOrderBook:
     """Test OrderBook parsing from depth data."""
@@ -157,6 +208,28 @@ class TestParseOrderBook:
 
         assert all(isinstance(level, PriceLevel) for level in orderbook.asks)
         assert all(isinstance(level, PriceLevel) for level in orderbook.bids)
+
+    def test_parse_orderbook_with_empty_asks_and_bids(self) -> None:
+        """OrderBook parsing handles empty asks and bids arrays."""
+        adapter = BitbankAdapter()
+        empty_depth = {"asks": [], "bids": [], "timestamp": 1738454400000}
+
+        orderbook = adapter.parse_orderbook(empty_depth, symbol="btc_jpy")
+
+        assert orderbook.asks == []
+        assert orderbook.bids == []
+
+    def test_parse_orderbook_with_missing_field_raises_key_error(self) -> None:
+        """OrderBook parsing with missing field raises KeyError."""
+        adapter = BitbankAdapter()
+        incomplete_depth = {
+            "asks": [["9653004", "0.5"]],
+            # "bids" is missing
+            "timestamp": 1738454400000,
+        }
+
+        with pytest.raises(KeyError):
+            adapter.parse_orderbook(incomplete_depth, symbol="btc_jpy")
 
 
 class TestAdapterRegistry:
