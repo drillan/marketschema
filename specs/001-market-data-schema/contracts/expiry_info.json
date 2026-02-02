@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://marketschema.example.com/schemas/expiry_info",
+  "title": "ExpiryInfo",
+  "description": "先物・オプションの満期関連情報を表現する",
+  "type": "object",
+  "properties": {
+    "expiry": {
+      "oneOf": [
+        { "$ref": "https://marketschema.example.com/schemas/definitions#/$defs/ExpirySeries" },
+        { "type": "null" }
+      ],
+      "description": "満期系列識別子（YYYY-MM, YYYY-Www, YYYY-MM-DD形式）"
+    },
+    "last_trading_day": {
+      "oneOf": [
+        { "$ref": "https://marketschema.example.com/schemas/definitions#/$defs/Date" },
+        { "type": "null" }
+      ],
+      "description": "取引可能な最終日"
+    },
+    "expiration_date": {
+      "$ref": "https://marketschema.example.com/schemas/definitions#/$defs/Date",
+      "description": "満期日/SQ日"
+    },
+    "settlement_date": {
+      "oneOf": [
+        { "$ref": "https://marketschema.example.com/schemas/definitions#/$defs/Date" },
+        { "type": "null" }
+      ],
+      "description": "決済日"
+    }
+  },
+  "required": ["expiration_date"],
+  "unevaluatedProperties": false
+}

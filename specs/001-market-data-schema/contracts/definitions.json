@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://marketschema.example.com/schemas/definitions",
+  "title": "Common Type Definitions",
+  "description": "マーケットデータスキーマの共通型定義",
+  "$defs": {
+    "Timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601形式のタイムスタンプ (UTC)"
+    },
+    "Symbol": {
+      "type": "string",
+      "minLength": 1,
+      "description": "銘柄識別子"
+    },
+    "Price": {
+      "type": "number",
+      "description": "価格"
+    },
+    "Size": {
+      "type": "number",
+      "description": "数量"
+    },
+    "Side": {
+      "type": "string",
+      "enum": ["buy", "sell"],
+      "description": "売買方向"
+    },
+    "AssetClass": {
+      "type": "string",
+      "enum": ["equity", "fund", "bond", "future", "option", "fx", "crypto", "cfd"],
+      "description": "資産クラス"
+    },
+    "Currency": {
+      "type": "string",
+      "pattern": "^[A-Z]{3}$",
+      "description": "ISO 4217通貨コード（例: USD, JPY, EUR）"
+    },
+    "Exchange": {
+      "type": "string",
+      "pattern": "^[A-Z]{4}$",
+      "description": "ISO 10383市場識別コード（例: XJPX, XNYS）"
+    },
+    "Date": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "description": "日付（YYYY-MM-DD形式）"
+    },
+    "ExpirySeries": {
+      "type": "string",
+      "pattern": "^\\d{4}(-\\d{2}|-W\\d{2}|-\\d{2}-\\d{2})$",
+      "description": "満期系列識別子（YYYY-MM, YYYY-Www, YYYY-MM-DD形式）"
+    },
+    "OptionType": {
+      "type": "string",
+      "enum": ["call", "put"],
+      "description": "オプションタイプ（コール/プット）"
+    },
+    "UnderlyingType": {
+      "type": "string",
+      "enum": ["stock", "index", "etf", "commodity", "currency", "crypto"],
+      "description": "原資産タイプ"
+    },
+    "ExerciseStyle": {
+      "type": "string",
+      "enum": ["american", "european", "bermudan"],
+      "description": "オプション行使スタイル"
+    },
+    "SettlementMethod": {
+      "type": "string",
+      "enum": ["cash", "physical"],
+      "description": "決済方法"
+    },
+    "PriceLevel": {
+      "type": "object",
+      "description": "板情報の気配レベル",
+      "properties": {
+        "price": {
+          "$ref": "#/$defs/Price",
+          "description": "気配値"
+        },
+        "size": {
+          "$ref": "#/$defs/Size",
+          "description": "数量"
+        }
+      },
+      "required": ["price", "size"],
+      "unevaluatedProperties": false
+    }
+  }
+}

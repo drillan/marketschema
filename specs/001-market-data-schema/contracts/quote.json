@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://marketschema.example.com/schemas/quote",
+  "title": "Quote",
+  "description": "最良気配値（BBO: Best Bid/Offer）を表現する",
+  "type": "object",
+  "properties": {
+    "symbol": {
+      "$ref": "https://marketschema.example.com/schemas/definitions#/$defs/Symbol",
+      "description": "銘柄識別子"
+    },
+    "timestamp": {
+      "$ref": "https://marketschema.example.com/schemas/definitions#/$defs/Timestamp",
+      "description": "気配値取得時刻"
+    },
+    "bid": {
+      "$ref": "https://marketschema.example.com/schemas/definitions#/$defs/Price",
+      "description": "買い気配値"
+    },
+    "ask": {
+      "$ref": "https://marketschema.example.com/schemas/definitions#/$defs/Price",
+      "description": "売り気配値"
+    },
+    "bid_size": {
+      "oneOf": [
+        { "$ref": "https://marketschema.example.com/schemas/definitions#/$defs/Size" },
+        { "type": "null" }
+      ],
+      "description": "買い気配の数量"
+    },
+    "ask_size": {
+      "oneOf": [
+        { "$ref": "https://marketschema.example.com/schemas/definitions#/$defs/Size" },
+        { "type": "null" }
+      ],
+      "description": "売り気配の数量"
+    }
+  },
+  "required": ["symbol", "timestamp", "bid", "ask"],
+  "unevaluatedProperties": false
+}

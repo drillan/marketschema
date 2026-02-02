@@ -212,3 +212,20 @@ __marimo__/
 # working directorys
 /work/
 /ak_working/
+
+# Rust
+target/
+debug/
+release/
+*.rs.bk
+*.rlib
+*.rmeta
+*.prof*
+Cargo.lock
+
+# Node.js
+node_modules/
+package-lock.json
+
+# Bundled schemas (generated)
+rust/bundled/

@@ -1,0 +1,5 @@
+{
+  "strike_price": 40000.0,
+  "option_type": "call",
+  "exercise_style": "european"
+}

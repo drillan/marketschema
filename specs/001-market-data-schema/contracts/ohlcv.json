@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://marketschema.example.com/schemas/ohlcv",
+  "title": "OHLCV",
+  "description": "ローソク足データを表現する（始値、高値、安値、終値、出来高）",
+  "type": "object",
+  "properties": {
+    "symbol": {
+      "$ref": "https://marketschema.example.com/schemas/definitions#/$defs/Symbol",
+      "description": "銘柄識別子"
+    },
+    "timestamp": {
+      "$ref": "https://marketschema.example.com/schemas/definitions#/$defs/Timestamp",
+      "description": "足の開始時刻"
+    },
+    "open": {
+      "$ref": "https://marketschema.example.com/schemas/definitions#/$defs/Price",
+      "description": "始値"
+    },
+    "high": {
+      "$ref": "https://marketschema.example.com/schemas/definitions#/$defs/Price",
+      "description": "高値"
+    },
+    "low": {
+      "$ref": "https://marketschema.example.com/schemas/definitions#/$defs/Price",
+      "description": "安値"
+    },
+    "close": {
+      "$ref": "https://marketschema.example.com/schemas/definitions#/$defs/Price",
+      "description": "終値"
+    },
+    "volume": {
+      "$ref": "https://marketschema.example.com/schemas/definitions#/$defs/Size",
+      "description": "出来高"
+    },
+    "quote_volume": {
+      "oneOf": [
+        { "$ref": "https://marketschema.example.com/schemas/definitions#/$defs/Size" },
+        { "type": "null" }
+      ],
+      "description": "売買代金（決済通貨建ての出来高）"
+    }
+  },
+  "required": ["symbol", "timestamp", "open", "high", "low", "close", "volume"],
+  "unevaluatedProperties": false
+}

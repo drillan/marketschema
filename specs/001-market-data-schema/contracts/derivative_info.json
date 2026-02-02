@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://marketschema.example.com/schemas/derivative_info",
+  "title": "DerivativeInfo",
+  "description": "先物・オプション共通の情報を表現する",
+  "type": "object",
+  "properties": {
+    "multiplier": {
+      "type": "number",
+      "description": "契約乗数（1契約あたりの乗数）"
+    },
+    "tick_size": {
+      "type": "number",
+      "description": "呼値単位（最小価格変動）"
+    },
+    "tick_value": {
+      "oneOf": [
+        { "type": "number" },
+        { "type": "null" }
+      ],
+      "description": "ティック価値（1ティックあたりの金額変動）"
+    },
+    "contract_value": {
+      "oneOf": [
+        { "type": "number" },
+        { "type": "null" }
+      ],
+      "description": "契約基本価値"
+    },
+    "contract_value_currency": {
+      "oneOf": [
+        { "$ref": "https://marketschema.example.com/schemas/definitions#/$defs/Currency" },
+        { "type": "null" }
+      ],
+      "description": "契約価値の通貨"
+    },
+    "lot_size": {
+      "oneOf": [
+        { "type": "number" },
+        { "type": "null" }
+      ],
+      "description": "取引単位（注文可能な最小数量単位）"
+    },
+    "min_order_size": {
+      "oneOf": [
+        { "type": "number" },
+        { "type": "null" }
+      ],
+      "description": "最小注文数量"
+    },
+    "max_order_size": {
+      "oneOf": [
+        { "type": "number" },
+        { "type": "null" }
+      ],
+      "description": "最大注文数量"
+    },
+    "underlying_symbol": {
+      "$ref": "https://marketschema.example.com/schemas/definitions#/$defs/Symbol",
+      "description": "原資産のシンボル"
+    },
+    "underlying_type": {
+      "$ref": "https://marketschema.example.com/schemas/definitions#/$defs/UnderlyingType",
+      "description": "原資産タイプ"
+    },
+    "is_perpetual": {
+      "oneOf": [
+        { "type": "boolean" },
+        { "type": "null" }
+      ],
+      "description": "無期限契約か否か（暗号資産デリバティブ向け）"
+    },
+    "is_inverse": {
+      "oneOf": [
+        { "type": "boolean" },
+        { "type": "null" }
+      ],
+      "description": "インバース契約か否か（false=linear、暗号資産デリバティブ向け）"
+    },
+    "settlement_method": {
+      "oneOf": [
+        { "$ref": "https://marketschema.example.com/schemas/definitions#/$defs/SettlementMethod" },
+        { "type": "null" }
+      ],
+      "description": "決済方法"
+    },
+    "settlement_currency": {
+      "oneOf": [
+        { "$ref": "https://marketschema.example.com/schemas/definitions#/$defs/Currency" },
+        { "type": "null" }
+      ],
+      "description": "決済通貨"
+    }
+  },
+  "required": ["multiplier", "tick_size", "underlying_symbol", "underlying_type"],
+  "unevaluatedProperties": false
+}
