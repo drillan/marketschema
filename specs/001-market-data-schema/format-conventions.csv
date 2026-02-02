@@ -1,0 +1,6 @@
+format_name,standard,pattern,example,description,usage_example,adr_reference
+timestamp,ISO 8601,YYYY-MM-DDTHH:MM:SS.sssZ,2026-02-02T12:00:00.000Z,タイムスタンプ（UTC）,Coinbase|Alpaca|Kraken,types/format-conventions.md
+currency,ISO 4217,^[A-Z]{3}$,USD|JPY|EUR,通貨コード（3文字アルファコード）,全金融機関,types/format-conventions.md
+exchange,ISO 10383 MIC,^[A-Z]{4}$,XJPX|XNYS|XNAS,取引所識別子（市場識別コード）,全取引所,types/format-conventions.md
+date,YYYY-MM-DD,^\d{4}-\d{2}-\d{2}$,2026-02-02,日付,last_trading_day|expiration_date|settlement_date,types/format-conventions.md
+expiry_series,YYYY-MM|YYYY-Www|YYYY-MM-DD,^\d{4}(-\d{2}|-W\d{2}|-\d{2}-\d{2})$,2026-03|2026-W10|2026-03-14,満期系列識別子,expiry,types/format-conventions.md
