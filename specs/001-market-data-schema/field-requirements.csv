@@ -1,0 +1,51 @@
+entity,field_name,data_type,required,nullable,enum_values,format,description,adr_reference
+Quote,symbol,string,true,false,,,銘柄識別子,field-names/instrument.md
+Quote,timestamp,string,true,false,,ISO 8601,タイムスタンプ,field-names/common.md
+Quote,bid,number,true,false,,,買い気配値,field-names/common.md
+Quote,ask,number,true,false,,,売り気配値,field-names/common.md
+Quote,bid_size,number,false,true,,,買い気配の数量,field-names/common.md
+Quote,ask_size,number,false,true,,,売り気配の数量,field-names/common.md
+OHLCV,symbol,string,true,false,,,銘柄識別子,field-names/instrument.md
+OHLCV,timestamp,string,true,false,,ISO 8601,タイムスタンプ,field-names/common.md
+OHLCV,open,number,true,false,,,始値,field-names/common.md
+OHLCV,high,number,true,false,,,高値,field-names/common.md
+OHLCV,low,number,true,false,,,安値,field-names/common.md
+OHLCV,close,number,true,false,,,終値,field-names/common.md
+OHLCV,volume,number,true,false,,,出来高,field-names/common.md
+OHLCV,quote_volume,number,false,true,,,決済通貨建ての出来高（売買代金）,field-names/pairs.md
+Trade,symbol,string,true,false,,,銘柄識別子,field-names/instrument.md
+Trade,timestamp,string,true,false,,ISO 8601,タイムスタンプ,field-names/common.md
+Trade,price,number,true,false,,,約定価格,field-names/common.md
+Trade,size,number,true,false,,,約定数量,field-names/common.md
+Trade,side,enum,true,false,buy|sell,,売買方向,field-names/common.md
+OrderBook,symbol,string,true,false,,,銘柄識別子,field-names/instrument.md
+OrderBook,timestamp,string,true,false,,ISO 8601,タイムスタンプ,field-names/common.md
+OrderBook,bids,array,true,false,,,買い板情報の配列,field-names/common.md
+OrderBook,asks,array,true,false,,,売り板情報の配列,field-names/common.md
+Instrument,symbol,string,true,false,,,銘柄識別子,field-names/instrument.md
+Instrument,asset_class,enum,true,false,equity|fund|bond|future|option|fx|crypto|cfd,,商品の資産分類,field-names/instrument.md
+Instrument,currency,string,false,true,,ISO 4217,単一通貨（株式・債券等）,field-names/instrument.md
+Instrument,exchange,string,false,true,,ISO 10383 MIC,上場取引所,field-names/instrument.md
+Instrument,base_currency,string,false,true,,ISO 4217,ペア商品の基軸通貨（FX・暗号資産）,field-names/pairs.md
+Instrument,quote_currency,string,false,true,,ISO 4217,ペア商品の決済通貨（FX・暗号資産）,field-names/pairs.md
+DerivativeInfo,multiplier,number,true,false,,,契約乗数（1契約あたりの乗数）,field-names/derivatives.md
+DerivativeInfo,tick_size,number,true,false,,,呼値単位（最小価格変動）,field-names/derivatives.md
+DerivativeInfo,tick_value,number,false,true,,,ティック価値（1ティックあたりの金額変動）,field-names/derivatives.md
+DerivativeInfo,contract_value,number,false,true,,,契約基本価値,field-names/derivatives.md
+DerivativeInfo,contract_value_currency,string,false,true,,ISO 4217,契約価値の通貨,field-names/derivatives.md
+DerivativeInfo,lot_size,number,false,true,,,取引単位（注文可能な最小数量単位）,field-names/derivatives.md
+DerivativeInfo,min_order_size,number,false,true,,,最小注文数量,field-names/derivatives.md
+DerivativeInfo,max_order_size,number,false,true,,,最大注文数量,field-names/derivatives.md
+DerivativeInfo,underlying_symbol,string,true,false,,,原資産のシンボル,field-names/derivatives.md
+DerivativeInfo,underlying_type,enum,true,false,stock|index|etf|commodity|currency|crypto,,原資産タイプ,field-names/derivatives.md
+DerivativeInfo,is_perpetual,boolean,false,true,,,無期限契約か否か（暗号資産デリバティブ向け）,field-names/derivatives.md
+DerivativeInfo,is_inverse,boolean,false,true,,,インバース契約か否か（false=linear、暗号資産デリバティブ向け）,field-names/derivatives.md
+DerivativeInfo,settlement_method,enum,false,true,cash|physical,,決済方法,field-names/derivatives.md
+DerivativeInfo,settlement_currency,string,false,true,,ISO 4217,決済通貨,field-names/derivatives.md
+ExpiryInfo,expiry,string,false,true,,YYYY-MM|YYYY-Www|YYYY-MM-DD,満期系列識別子,field-names/derivatives.md
+ExpiryInfo,last_trading_day,string,false,true,,date (YYYY-MM-DD),取引可能な最終日,field-names/derivatives.md
+ExpiryInfo,expiration_date,string,true,false,,date (YYYY-MM-DD),満期日/SQ日,field-names/derivatives.md
+ExpiryInfo,settlement_date,string,false,true,,date (YYYY-MM-DD),決済日,field-names/derivatives.md
+OptionInfo,strike_price,number,true,false,,,権利行使価格,field-names/derivatives.md
+OptionInfo,option_type,enum,true,false,call|put,,オプションタイプ,field-names/derivatives.md
+OptionInfo,exercise_style,enum,false,true,american|european|bermudan,,行使スタイル,field-names/derivatives.md

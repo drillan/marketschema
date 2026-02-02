@@ -44,3 +44,22 @@ field-names/derivatives
 types/enum-values
 types/format-conventions
 ```
+
+## フィールド要件表
+
+ADRで定義されたフィールド情報をまとめた要件表:
+
+- [field-requirements.csv](../../specs/001-market-data-schema/field-requirements.csv) - エンティティ別フィールド定義
+
+CSV列構造:
+| 列名 | 説明 |
+|------|------|
+| entity | 所属エンティティ（Quote, OHLCV, Trade, OrderBook, Instrument, DerivativeInfo, ExpiryInfo, OptionInfo） |
+| field_name | フィールド名（標準名） |
+| data_type | データ型（number, string, boolean, enum, array） |
+| required | 必須フラグ（true/false） |
+| nullable | NULL許容（true/false） |
+| enum_values | Enum型の場合の許可値（パイプ区切り） |
+| format | フォーマット制約（ISO 8601, ISO 4217等） |
+| description | 日本語説明 |
+| adr_reference | 参照ADRファイル |
