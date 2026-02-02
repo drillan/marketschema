@@ -11,6 +11,7 @@ HTML Table Format:
     Feb 2, 2026| 260.03 | 270.49 | 259.21 | 269.96 | 269.96    | 4.04%  | 73,368,699
 """
 
+import logging
 from typing import Any
 
 from bs4 import BeautifulSoup
@@ -20,6 +21,8 @@ from marketschema.adapters.mapping import ModelMapping
 from marketschema.adapters.registry import register
 from marketschema.exceptions import AdapterError
 from marketschema.models import OHLCV
+
+logger = logging.getLogger(__name__)
 
 # Expected minimum HTML column count (Date, Open, High, Low, Close, Adj Close, Change, Volume)
 EXPECTED_COLUMN_COUNT = 8
@@ -212,6 +215,10 @@ class StockAnalysisAdapter(BaseAdapter):
 
         rows = tbody.find_all("tr")
         if not rows:
+            logger.warning(
+                "No <tr> elements found in <tbody>. "
+                "If this is unexpected, the page structure may have changed."
+            )
             return []
 
         # Parse data rows
