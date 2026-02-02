@@ -51,13 +51,13 @@ class StooqAdapter(BaseAdapter):
     def get_ohlcv_mapping(self) -> list[ModelMapping]:
         """Return field mappings for OHLCV model.
 
-        stooq CSV format (after conversion to dict):
-            - Date: Date string (YYYY-MM-DD)
-            - Open: Open price (string)
-            - High: High price (string)
-            - Low: Low price (string)
-            - Close: Close price (string)
-            - Volume: Trading volume (string)
+        Internal dict keys (after CSV row conversion):
+            - timestamp: ISO 8601 timestamp string (converted from Date)
+            - open: Open price (string, converted to float)
+            - high: High price (string, converted to float)
+            - low: Low price (string, converted to float)
+            - close: Close price (string, converted to float)
+            - volume: Trading volume (string, converted to float)
         """
         return [
             ModelMapping("open", "open", transform=self.transforms.to_float),

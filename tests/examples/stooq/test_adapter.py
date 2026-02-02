@@ -131,6 +131,21 @@ class TestParseCsv:
         assert len(ohlcvs) == 1
         assert ohlcvs[0].symbol.root == "aapl.us"
 
+    def test_parse_csv_skips_empty_rows(self) -> None:
+        """Parse CSV skips empty rows between data rows."""
+        adapter = StooqAdapter()
+        csv_with_empty_rows = """Date,Open,High,Low,Close,Volume
+2025-01-15,100.50,105.25,99.75,104.00,1234567
+
+2025-01-16,104.00,106.00,103.50,105.50,987654
+"""
+
+        ohlcvs = adapter.parse_csv(csv_with_empty_rows, symbol="spy.us")
+
+        assert len(ohlcvs) == 2
+        assert ohlcvs[0].timestamp.root.isoformat() == "2025-01-15T00:00:00+00:00"
+        assert ohlcvs[1].timestamp.root.isoformat() == "2025-01-16T00:00:00+00:00"
+
     def test_parse_empty_csv_returns_empty_list(self, stooq_csv_empty: str) -> None:
         """Parse CSV with header only returns empty list."""
         adapter = StooqAdapter()

@@ -49,6 +49,8 @@ def fetch_csv(symbol: str) -> str:
             return content
     except urllib.error.URLError as e:
         raise RuntimeError(f"Failed to fetch data: {e}") from e
+    except UnicodeDecodeError as e:
+        raise RuntimeError(f"Failed to decode response as UTF-8: {e}") from e
 
 
 def demo_ohlcv(adapter: StooqAdapter, symbol: str) -> None:
