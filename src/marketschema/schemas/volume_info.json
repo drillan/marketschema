@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://marketschema.example.com/schemas/volume_info",
+  "title": "VolumeInfo",
+  "description": "出来高と売買代金を表現する",
+  "type": "object",
+  "properties": {
+    "symbol": {
+      "$ref": "definitions.json#/$defs/Symbol",
+      "description": "銘柄識別子"
+    },
+    "timestamp": {
+      "$ref": "definitions.json#/$defs/Timestamp",
+      "description": "データ取得時刻"
+    },
+    "volume": {
+      "$ref": "definitions.json#/$defs/Size",
+      "description": "出来高（数量ベース）"
+    },
+    "quote_volume": {
+      "oneOf": [
+        { "$ref": "definitions.json#/$defs/Size" },
+        { "type": "null" }
+      ],
+      "description": "売買代金（決済通貨建て）"
+    }
+  },
+  "required": ["symbol", "timestamp", "volume"],
+  "unevaluatedProperties": false
+}

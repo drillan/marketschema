@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://marketschema.example.com/schemas/orderbook",
+  "title": "OrderBook",
+  "description": "複数レベルの板情報を表現する",
+  "type": "object",
+  "properties": {
+    "symbol": {
+      "$ref": "https://marketschema.example.com/schemas/definitions#/$defs/Symbol",
+      "description": "銘柄識別子"
+    },
+    "timestamp": {
+      "$ref": "https://marketschema.example.com/schemas/definitions#/$defs/Timestamp",
+      "description": "板情報取得時刻"
+    },
+    "bids": {
+      "type": "array",
+      "items": {
+        "$ref": "https://marketschema.example.com/schemas/definitions#/$defs/PriceLevel"
+      },
+      "description": "買い板（価格降順）"
+    },
+    "asks": {
+      "type": "array",
+      "items": {
+        "$ref": "https://marketschema.example.com/schemas/definitions#/$defs/PriceLevel"
+      },
+      "description": "売り板（価格昇順）"
+    }
+  },
+  "required": ["symbol", "timestamp", "bids", "asks"],
+  "unevaluatedProperties": false
+}

@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://marketschema.example.com/schemas/trade",
+  "title": "Trade",
+  "description": "個別約定（歩み値 / Time & Sales）を表現する",
+  "type": "object",
+  "properties": {
+    "symbol": {
+      "$ref": "https://marketschema.example.com/schemas/definitions#/$defs/Symbol",
+      "description": "銘柄識別子"
+    },
+    "timestamp": {
+      "$ref": "https://marketschema.example.com/schemas/definitions#/$defs/Timestamp",
+      "description": "約定時刻"
+    },
+    "price": {
+      "$ref": "https://marketschema.example.com/schemas/definitions#/$defs/Price",
+      "description": "約定価格"
+    },
+    "size": {
+      "$ref": "https://marketschema.example.com/schemas/definitions#/$defs/Size",
+      "description": "約定数量"
+    },
+    "side": {
+      "$ref": "https://marketschema.example.com/schemas/definitions#/$defs/Side",
+      "description": "売買方向（buy/sell）"
+    }
+  },
+  "required": ["symbol", "timestamp", "price", "size", "side"],
+  "unevaluatedProperties": false
+}

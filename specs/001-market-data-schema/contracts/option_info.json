@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://marketschema.example.com/schemas/option_info",
+  "title": "OptionInfo",
+  "description": "オプション固有の情報を表現する",
+  "type": "object",
+  "properties": {
+    "strike_price": {
+      "$ref": "https://marketschema.example.com/schemas/definitions#/$defs/Price",
+      "description": "権利行使価格"
+    },
+    "option_type": {
+      "$ref": "https://marketschema.example.com/schemas/definitions#/$defs/OptionType",
+      "description": "オプションタイプ（call/put）"
+    },
+    "exercise_style": {
+      "oneOf": [
+        { "$ref": "https://marketschema.example.com/schemas/definitions#/$defs/ExerciseStyle" },
+        { "type": "null" }
+      ],
+      "description": "行使スタイル（american/european/bermudan）"
+    }
+  },
+  "required": ["strike_price", "option_type"],
+  "unevaluatedProperties": false
+}
