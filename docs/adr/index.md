@@ -50,8 +50,11 @@ types/format-conventions
 ADRで定義されたフィールド情報をまとめた要件表:
 
 - [field-requirements.csv](../../specs/001-market-data-schema/field-requirements.csv) - エンティティ別フィールド定義
+- [enum-values.csv](../../specs/001-market-data-schema/enum-values.csv) - Enum値の定義と代替案
+- [format-conventions.csv](../../specs/001-market-data-schema/format-conventions.csv) - フォーマット規約と標準
 
-CSV列構造:
+### field-requirements.csv 列構造
+
 | 列名 | 説明 |
 |------|------|
 | entity | 所属エンティティ（Quote, OHLCV, Trade, OrderBook, Instrument, DerivativeInfo, ExpiryInfo, OptionInfo） |
@@ -62,4 +65,27 @@ CSV列構造:
 | enum_values | Enum型の場合の許可値（パイプ区切り） |
 | format | フォーマット制約（ISO 8601, ISO 4217等） |
 | description | 日本語説明 |
+| adr_reference | 参照ADRファイル |
+
+### enum-values.csv 列構造
+
+| 列名 | 説明 |
+|------|------|
+| enum_name | Enum名（Side, AssetClass, OptionType等） |
+| value | 許可される値 |
+| description | 日本語説明 |
+| alternatives_considered | 検討した代替値（パイプ区切り） |
+| usage_example | 使用例（取引所等） |
+| adr_reference | 参照ADRファイル |
+
+### format-conventions.csv 列構造
+
+| 列名 | 説明 |
+|------|------|
+| format_name | フォーマット名 |
+| standard | 採用標準 |
+| pattern | 正規表現パターン |
+| example | 例 |
+| description | 日本語説明 |
+| usage_example | 使用例（取引所等） |
 | adr_reference | 参照ADRファイル |
