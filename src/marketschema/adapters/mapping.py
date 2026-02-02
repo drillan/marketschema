@@ -4,6 +4,8 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
+from marketschema.exceptions import MappingError
+
 
 @dataclass(frozen=True, slots=True)
 class ModelMapping:
@@ -14,12 +16,14 @@ class ModelMapping:
         source_field: Path to the field in the source data (supports dot notation for nested fields)
         transform: Optional callable to transform the source value
         default: Optional default value if source field is missing or None
+        required: If True, raise MappingError when field is missing (default: True)
     """
 
     target_field: str
     source_field: str
     transform: Callable[[Any], Any] | None = None
     default: Any | None = None
+    required: bool = True
 
     def apply(self, source_data: dict[str, Any]) -> Any:
         """Apply the mapping to source data and return the transformed value.
@@ -31,14 +35,18 @@ class ModelMapping:
             The transformed value for the target field
 
         Raises:
-            KeyError: If source field is required but missing
-            ValueError: If transformation fails
+            MappingError: If source field is required but missing
+            TransformError: If transformation fails
         """
         value = self._get_nested_value(source_data, self.source_field)
 
         if value is None:
             if self.default is not None:
                 return self.default
+            if self.required:
+                raise MappingError(
+                    f"Required field '{self.source_field}' is missing from source data"
+                )
             return None
 
         if self.transform is not None:

@@ -11,6 +11,7 @@ from marketschema.adapters import (
 )
 from marketschema.exceptions import (
     AdapterError,
+    MappingError,
     MarketSchemaError,
     TransformError,
     ValidationError,
@@ -52,6 +53,7 @@ __all__ = [
     "ValidationError",
     "TransformError",
     "AdapterError",
+    "MappingError",
     # Adapter infrastructure
     "AdapterRegistry",
     "BaseAdapter",

@@ -17,9 +17,14 @@ class AdapterError(MarketSchemaError):
     """Raised when adapter operations fail."""
 
 
+class MappingError(MarketSchemaError):
+    """Raised when field mapping fails (e.g., required field missing)."""
+
+
 __all__ = [
     "MarketSchemaError",
     "ValidationError",
     "TransformError",
     "AdapterError",
+    "MappingError",
 ]

@@ -5,7 +5,7 @@ from typing import Any
 import pytest
 
 from marketschema.adapters import BaseAdapter, ModelMapping, Transforms
-from marketschema.exceptions import AdapterError
+from marketschema.exceptions import AdapterError, MappingError
 from marketschema.models import (
     Quote,
     Side,
@@ -150,11 +150,17 @@ class TestModelMapping:
         result = mapping.apply({"other": "value"})
         assert result == "default_value"
 
-    def test_apply_returns_none_when_missing_no_default(self) -> None:
-        """Mapping returns None when source is missing and no default."""
-        mapping = ModelMapping("target", "missing")
+    def test_apply_returns_none_when_optional_field_missing(self) -> None:
+        """Mapping returns None when optional source is missing and no default."""
+        mapping = ModelMapping("target", "missing", required=False)
         result = mapping.apply({"other": "value"})
         assert result is None
+
+    def test_apply_raises_mapping_error_when_required_field_missing(self) -> None:
+        """Mapping raises MappingError when required source is missing."""
+        mapping = ModelMapping("target", "missing")  # required=True by default
+        with pytest.raises(MappingError, match="Required field 'missing' is missing"):
+            mapping.apply({"other": "value"})
 
 
 class TestTransformsIntegration:

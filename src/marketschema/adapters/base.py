@@ -4,7 +4,7 @@ from typing import Any, TypeVar
 
 from marketschema.adapters.mapping import ModelMapping
 from marketschema.adapters.transforms import Transforms
-from marketschema.exceptions import AdapterError
+from marketschema.exceptions import AdapterError, MappingError, TransformError
 
 T = TypeVar("T")
 
@@ -118,9 +118,17 @@ class BaseAdapter:
                     mapped_data[mapping.target_field] = value
 
             return model_class(**mapped_data)
-        except Exception as e:
+        except (MappingError, TransformError) as e:
             raise AdapterError(
                 f"Failed to apply mapping for {model_class.__name__}: {e}"
+            ) from e
+        except TypeError as e:
+            raise AdapterError(
+                f"Invalid data type during mapping for {model_class.__name__}: {e}"
+            ) from e
+        except ValueError as e:
+            raise AdapterError(
+                f"Invalid value during mapping for {model_class.__name__}: {e}"
             ) from e
 
     def _get_nested_value(self, data: dict[str, Any], path: str) -> Any | None:

@@ -1,6 +1,6 @@
 """Common transform functions for adapter mappings."""
 
-from datetime import UTC, datetime, timezone
+from datetime import UTC, datetime, timedelta, timezone
 from typing import Any
 
 from marketschema.exceptions import TransformError
@@ -163,8 +163,6 @@ class Transforms:
 
             # If naive (no timezone), assume JST
             if dt.tzinfo is None:
-                from datetime import timedelta
-
                 jst_offset = timedelta(hours=JST_UTC_OFFSET_HOURS)
                 dt = dt.replace(tzinfo=timezone(jst_offset))
 

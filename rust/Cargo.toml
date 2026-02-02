@@ -1,7 +1,7 @@
 [package]
 name = "marketschema"
 version = "0.0.1"
-edition = "2024"
+edition = "2021"
 authors = ["driller <eleshis@gmail.com>"]
 description = "Unified market data schema for financial applications"
 license = "MIT"
