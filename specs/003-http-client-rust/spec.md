@@ -20,6 +20,8 @@ marketschema ライブラリの Rust 実装における HTTP クライアント�
 親仕様で定義された機能要件を Rust 言語の慣用的な方法で実装し、
 アダプター開発者が簡単にデータソースと通信できるようにする。
 
+> **Scope**: 本仕様は HTTP GET リクエストのみを対象とする。POST/PUT/DELETE は将来の拡張として検討可能だが、現時点ではスコープ外とする。
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - 非同期 HTTP リクエストの実行 (Priority: P1)
@@ -209,7 +211,7 @@ HTTP クライアントを簡単に利用したい。
 **US6: BaseAdapter トレイトとの統合**
 
 - **FR-R038**: `BaseAdapter` トレイトに `fn http_client(&self) -> Arc<AsyncHttpClient>` メソッドを追加しなければならない
-- **FR-R039**: `http_client()` メソッドはデフォルト実装で `OnceCell` による遅延初期化を提供しなければならない
+- **FR-R039**: `http_client()` メソッドはデフォルト実装で `std::sync::OnceLock` による遅延初期化を提供しなければならない
 - **FR-R040**: `BaseAdapter` 実装者はコンストラクタで `Arc<AsyncHttpClient>` を注入可能でなければならない
 - **FR-R041**: `Drop` トレイトにより、アダプターが破棄されたときにリソースが適切に解放されなければならない
 
@@ -242,7 +244,7 @@ HTTP クライアントを簡単に利用したい。
 
 ## Assumptions
 
-- Rust latest stable（MSRV は別途決定）を使用する
+- Rust 1.70.0 以上を使用する（MSRV: 1.70.0 - `std::sync::OnceLock` 安定化）
 - HTTP ライブラリとして reqwest を使用する
 - 非同期ランタイムとして tokio を使用する
 - エラー型の derive には thiserror を使用する
