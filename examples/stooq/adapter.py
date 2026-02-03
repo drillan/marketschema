@@ -25,18 +25,18 @@ STOOQ_BASE_URL = "https://stooq.com/q/d/l/"
 STOOQ_INTERVAL_DAILY = "d"
 
 # Expected CSV column count
-EXPECTED_COLUMN_COUNT = 6
+STOOQ_EXPECTED_COLUMN_COUNT = 6
 
 # CSV column indices
-CSV_INDEX_DATE = 0
-CSV_INDEX_OPEN = 1
-CSV_INDEX_HIGH = 2
-CSV_INDEX_LOW = 3
-CSV_INDEX_CLOSE = 4
-CSV_INDEX_VOLUME = 5
+STOOQ_CSV_INDEX_DATE = 0
+STOOQ_CSV_INDEX_OPEN = 1
+STOOQ_CSV_INDEX_HIGH = 2
+STOOQ_CSV_INDEX_LOW = 3
+STOOQ_CSV_INDEX_CLOSE = 4
+STOOQ_CSV_INDEX_VOLUME = 5
 
 # Expected CSV header
-EXPECTED_HEADER = ["Date", "Open", "High", "Low", "Close", "Volume"]
+STOOQ_EXPECTED_HEADER = ["Date", "Open", "High", "Low", "Close", "Volume"]
 
 
 @register
@@ -125,20 +125,20 @@ class StooqAdapter(BaseAdapter):
         Raises:
             AdapterError: If row has insufficient columns or invalid data
         """
-        if len(row) < EXPECTED_COLUMN_COUNT:
+        if len(row) < STOOQ_EXPECTED_COLUMN_COUNT:
             raise AdapterError(
-                f"Insufficient columns: expected {EXPECTED_COLUMN_COUNT}, got {len(row)}"
+                f"Insufficient columns: expected {STOOQ_EXPECTED_COLUMN_COUNT}, got {len(row)}"
             )
 
         # Convert row to dict for mapping
         ohlcv_dict: dict[str, Any] = {
             "symbol": symbol,
-            "timestamp": self._date_to_iso_timestamp(row[CSV_INDEX_DATE]),
-            "open": row[CSV_INDEX_OPEN],
-            "high": row[CSV_INDEX_HIGH],
-            "low": row[CSV_INDEX_LOW],
-            "close": row[CSV_INDEX_CLOSE],
-            "volume": row[CSV_INDEX_VOLUME],
+            "timestamp": self._date_to_iso_timestamp(row[STOOQ_CSV_INDEX_DATE]),
+            "open": row[STOOQ_CSV_INDEX_OPEN],
+            "high": row[STOOQ_CSV_INDEX_HIGH],
+            "low": row[STOOQ_CSV_INDEX_LOW],
+            "close": row[STOOQ_CSV_INDEX_CLOSE],
+            "volume": row[STOOQ_CSV_INDEX_VOLUME],
         }
 
         mappings = self.get_ohlcv_mapping() + [ModelMapping("symbol", "symbol")]
@@ -165,9 +165,9 @@ class StooqAdapter(BaseAdapter):
         except StopIteration as e:
             raise AdapterError("Empty CSV: no header row") from e
 
-        if header != EXPECTED_HEADER:
+        if header != STOOQ_EXPECTED_HEADER:
             raise AdapterError(
-                f"Invalid CSV header: expected {EXPECTED_HEADER}, got {header}"
+                f"Invalid CSV header: expected {STOOQ_EXPECTED_HEADER}, got {header}"
             )
 
         # Parse data rows

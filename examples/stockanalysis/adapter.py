@@ -36,16 +36,16 @@ STOCKANALYSIS_USER_AGENT = (
 )
 
 # Expected minimum HTML column count (Date, Open, High, Low, Close, Adj Close, Change, Volume)
-EXPECTED_COLUMN_COUNT = 8
+STOCKANALYSIS_EXPECTED_COLUMN_COUNT = 8
 
 # HTML column indices
-HTML_INDEX_DATE = 0
-HTML_INDEX_OPEN = 1
-HTML_INDEX_HIGH = 2
-HTML_INDEX_LOW = 3
-HTML_INDEX_CLOSE = 4
-HTML_INDEX_ADJ_CLOSE = 5
-HTML_INDEX_VOLUME = 7
+STOCKANALYSIS_HTML_INDEX_DATE = 0
+STOCKANALYSIS_HTML_INDEX_OPEN = 1
+STOCKANALYSIS_HTML_INDEX_HIGH = 2
+STOCKANALYSIS_HTML_INDEX_LOW = 3
+STOCKANALYSIS_HTML_INDEX_CLOSE = 4
+STOCKANALYSIS_HTML_INDEX_ADJ_CLOSE = 5
+STOCKANALYSIS_HTML_INDEX_VOLUME = 7
 
 # Month abbreviation mapping
 STOCKANALYSIS_MONTH_MAP = {
@@ -193,21 +193,21 @@ class StockAnalysisAdapter(BaseAdapter):
         Raises:
             AdapterError: If row has insufficient columns or invalid data
         """
-        if len(row_data) < EXPECTED_COLUMN_COUNT:
+        if len(row_data) < STOCKANALYSIS_EXPECTED_COLUMN_COUNT:
             raise AdapterError(
-                f"Insufficient columns: expected {EXPECTED_COLUMN_COUNT}, "
+                f"Insufficient columns: expected {STOCKANALYSIS_EXPECTED_COLUMN_COUNT}, "
                 f"got {len(row_data)}"
             )
 
         # Convert row to dict for mapping
         ohlcv_dict: dict[str, Any] = {
             "symbol": symbol,
-            "timestamp": self._parse_date(row_data[HTML_INDEX_DATE]),
-            "open": row_data[HTML_INDEX_OPEN],
-            "high": row_data[HTML_INDEX_HIGH],
-            "low": row_data[HTML_INDEX_LOW],
-            "close": row_data[HTML_INDEX_CLOSE],
-            "volume": self._parse_volume(row_data[HTML_INDEX_VOLUME]),
+            "timestamp": self._parse_date(row_data[STOCKANALYSIS_HTML_INDEX_DATE]),
+            "open": row_data[STOCKANALYSIS_HTML_INDEX_OPEN],
+            "high": row_data[STOCKANALYSIS_HTML_INDEX_HIGH],
+            "low": row_data[STOCKANALYSIS_HTML_INDEX_LOW],
+            "close": row_data[STOCKANALYSIS_HTML_INDEX_CLOSE],
+            "volume": self._parse_volume(row_data[STOCKANALYSIS_HTML_INDEX_VOLUME]),
         }
 
         mappings = self.get_ohlcv_mapping() + [ModelMapping("symbol", "symbol")]
@@ -290,22 +290,22 @@ class StockAnalysisAdapter(BaseAdapter):
         Raises:
             AdapterError: If row has insufficient columns or invalid data
         """
-        if len(row_data) < EXPECTED_COLUMN_COUNT:
+        if len(row_data) < STOCKANALYSIS_EXPECTED_COLUMN_COUNT:
             raise AdapterError(
-                f"Insufficient columns: expected {EXPECTED_COLUMN_COUNT}, "
+                f"Insufficient columns: expected {STOCKANALYSIS_EXPECTED_COLUMN_COUNT}, "
                 f"got {len(row_data)}"
             )
 
         # Convert row to dict for mapping (includes adj_close)
         ohlcv_dict: dict[str, Any] = {
             "symbol": symbol,
-            "timestamp": self._parse_date(row_data[HTML_INDEX_DATE]),
-            "open": row_data[HTML_INDEX_OPEN],
-            "high": row_data[HTML_INDEX_HIGH],
-            "low": row_data[HTML_INDEX_LOW],
-            "close": row_data[HTML_INDEX_CLOSE],
-            "adj_close": row_data[HTML_INDEX_ADJ_CLOSE],
-            "volume": self._parse_volume(row_data[HTML_INDEX_VOLUME]),
+            "timestamp": self._parse_date(row_data[STOCKANALYSIS_HTML_INDEX_DATE]),
+            "open": row_data[STOCKANALYSIS_HTML_INDEX_OPEN],
+            "high": row_data[STOCKANALYSIS_HTML_INDEX_HIGH],
+            "low": row_data[STOCKANALYSIS_HTML_INDEX_LOW],
+            "close": row_data[STOCKANALYSIS_HTML_INDEX_CLOSE],
+            "adj_close": row_data[STOCKANALYSIS_HTML_INDEX_ADJ_CLOSE],
+            "volume": self._parse_volume(row_data[STOCKANALYSIS_HTML_INDEX_VOLUME]),
         }
 
         mappings = self.get_extended_ohlcv_mapping() + [
