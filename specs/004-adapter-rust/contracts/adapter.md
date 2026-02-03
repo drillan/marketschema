@@ -1,30 +1,11 @@
-# Rust Implementation Guide
+# Adapter Contract (Rust)
 
-**Feature**: 004-adapter
+**Feature**: 004-adapter-rust
+**Parent Spec**: [004-adapter-rust](../spec.md)
 **Date**: 2026-02-03
 **Status**: Planned
 
-## Overview
-
-本ドキュメントは 004-adapter の Rust 実装ガイドを提供する。
-現時点では設計方針のみを記載し、実装は将来対応とする。
-
-## Design Direction
-
-### Module Structure (Proposed)
-
-```
-crates/marketschema-adapters/
-├── Cargo.toml
-├── src/
-│   ├── lib.rs           # Public exports
-│   ├── adapter.rs       # BaseAdapter trait
-│   ├── mapping.rs       # ModelMapping struct
-│   ├── registry.rs      # AdapterRegistry
-│   └── transforms.rs    # Transform functions
-```
-
-### BaseAdapter Trait
+## BaseAdapter Trait
 
 ```rust
 use async_trait::async_trait;
@@ -65,7 +46,7 @@ pub trait BaseAdapter: Send + Sync {
 }
 ```
 
-### ModelMapping Struct
+## ModelMapping Struct
 
 ```rust
 use std::sync::Arc;
@@ -117,58 +98,16 @@ impl ModelMapping {
         self.required = false;
         self
     }
-}
-```
 
-### Transforms Module
-
-```rust
-use chrono::{DateTime, Utc, TimeZone, FixedOffset};
-use crate::error::TransformError;
-
-/// Collection of common transform functions.
-pub struct Transforms;
-
-impl Transforms {
-    /// Convert value to f64.
-    pub fn to_float(value: &serde_json::Value) -> Result<f64, TransformError> {
-        match value {
-            serde_json::Value::Number(n) => n.as_f64()
-                .ok_or_else(|| TransformError::new(format!("Cannot convert {:?} to float", value))),
-            serde_json::Value::String(s) => s.parse::<f64>()
-                .map_err(|_| TransformError::new(format!("Cannot convert {:?} to float", value))),
-            _ => Err(TransformError::new(format!("Cannot convert {:?} to float", value))),
-        }
-    }
-
-    /// Convert Unix milliseconds to ISO 8601.
-    pub fn unix_timestamp_ms(value: &serde_json::Value) -> Result<String, TransformError> {
-        let ms = Self::to_float(value)? as i64;
-        let secs = ms / 1000;
-        let nsecs = ((ms % 1000) * 1_000_000) as u32;
-
-        Utc.timestamp_opt(secs, nsecs)
-            .single()
-            .map(|dt| dt.format("%Y-%m-%dT%H:%M:%SZ").to_string())
-            .ok_or_else(|| TransformError::new(format!("Invalid timestamp: {}", ms)))
-    }
-
-    /// Normalize side string to "buy" or "sell".
-    pub fn side_from_string(value: &serde_json::Value) -> Result<String, TransformError> {
-        let s = value.as_str()
-            .ok_or_else(|| TransformError::new(format!("Expected string, got {:?}", value)))?;
-
-        let normalized = s.to_lowercase();
-        match normalized.as_str() {
-            "buy" | "bid" | "b" => Ok("buy".to_string()),
-            "sell" | "ask" | "offer" | "s" | "a" => Ok("sell".to_string()),
-            _ => Err(TransformError::new(format!("Cannot normalize side value: {:?}", s))),
-        }
+    /// Apply the mapping to source data.
+    pub fn apply(&self, source_data: &serde_json::Value) -> Result<serde_json::Value, MappingError> {
+        // Implementation: get nested value, apply transform, handle defaults
+        ...
     }
 }
 ```
 
-### AdapterRegistry
+## AdapterRegistry
 
 ```rust
 use std::collections::HashMap;
@@ -188,12 +127,16 @@ pub struct AdapterRegistry;
 
 impl AdapterRegistry {
     /// Register an adapter factory.
-    pub fn register<F>(source_name: &str, factory: F)
+    pub fn register<F>(source_name: &str, factory: F) -> Result<(), AdapterError>
     where
         F: Fn() -> Box<dyn BaseAdapter> + Send + Sync + 'static,
     {
         let mut registry = REGISTRY.write().unwrap();
+        if registry.contains_key(source_name) {
+            return Err(AdapterError::DuplicateRegistration(source_name.to_string()));
+        }
         registry.insert(source_name.to_string(), Arc::new(factory));
+        Ok(())
     }
 
     /// Get an adapter instance by source name.
@@ -207,10 +150,22 @@ impl AdapterRegistry {
         let registry = REGISTRY.read().unwrap();
         registry.keys().cloned().collect()
     }
+
+    /// Check if an adapter is registered.
+    pub fn is_registered(source_name: &str) -> bool {
+        let registry = REGISTRY.read().unwrap();
+        registry.contains_key(source_name)
+    }
+
+    /// Clear all registered adapters (for testing).
+    pub fn clear() {
+        let mut registry = REGISTRY.write().unwrap();
+        registry.clear();
+    }
 }
 ```
 
-### Error Types
+## Error Types
 
 ```rust
 use thiserror::Error;
@@ -219,6 +174,9 @@ use thiserror::Error;
 pub enum AdapterError {
     #[error("Adapter error: {0}")]
     General(String),
+
+    #[error("Duplicate registration for source: {0}")]
+    DuplicateRegistration(String),
 
     #[error("Mapping error: {0}")]
     Mapping(#[from] MappingError),
@@ -231,6 +189,12 @@ pub enum AdapterError {
 #[error("Mapping error: {message}")]
 pub struct MappingError {
     pub message: String,
+}
+
+impl MappingError {
+    pub fn new(message: impl Into<String>) -> Self {
+        Self { message: message.into() }
+    }
 }
 
 #[derive(Error, Debug)]
@@ -246,23 +210,6 @@ impl TransformError {
 }
 ```
 
-## Dependencies (Proposed)
-
-```toml
-# Cargo.toml
-[dependencies]
-async-trait = "0.1"
-chrono = { version = "0.4", features = ["serde"] }
-once_cell = "1.19"
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-thiserror = "1.0"
-
-# For HTTP client
-reqwest = { version = "0.12", features = ["json"] }
-tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
-```
-
 ## Macro for Boilerplate Reduction (Future)
 
 ```rust
@@ -275,22 +222,43 @@ struct BinanceAdapter {
 }
 ```
 
-## Implementation Priorities
+## Usage Example
 
-1. **Phase 1**: Core traits and structs (ModelMapping, Transforms)
-2. **Phase 2**: BaseAdapter trait with serde integration
-3. **Phase 3**: AdapterRegistry with thread-safe global state
-4. **Phase 4**: Derive macro for boilerplate reduction
-5. **Phase 5**: Integration with marketschema-models crate
+```rust
+use marketschema_adapters::{BaseAdapter, ModelMapping, AdapterRegistry, Transforms};
+use async_trait::async_trait;
 
-## Notes
+struct MyApiAdapter;
 
-- Rust 実装は Python 実装の成熟後に着手予定
-- serde との統合を重視し、JSON/MessagePack/CBOR 等をサポート予定
-- async-trait を使用して非同期サポートを提供
-- エラーハンドリングは thiserror を使用
+#[async_trait]
+impl BaseAdapter for MyApiAdapter {
+    fn source_name(&self) -> &'static str {
+        "myapi"
+    }
 
-## Reference
+    fn get_quote_mapping(&self) -> Vec<ModelMapping> {
+        vec![
+            ModelMapping::new("bid", "bid_price")
+                .with_transform(Transforms::to_float()),
+            ModelMapping::new("ask", "ask_price")
+                .with_transform(Transforms::to_float()),
+            ModelMapping::new("timestamp", "time")
+                .with_transform(Transforms::unix_timestamp_ms()),
+        ]
+    }
+}
 
-- [002-data-model spec](../../002-data-model/spec.md) - User Story 3 (Rust struct generation)
-- [Rust typify](https://github.com/oxidecomputer/typify) - JSON Schema to Rust code generation
+// Register the adapter
+fn register_adapters() {
+    AdapterRegistry::register("myapi", || Box::new(MyApiAdapter)).unwrap();
+}
+
+// Get and use the adapter
+fn main() {
+    register_adapters();
+
+    if let Some(adapter) = AdapterRegistry::get("myapi") {
+        println!("Using adapter: {}", adapter.source_name());
+    }
+}
+```

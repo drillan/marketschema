@@ -3,330 +3,161 @@
 **Feature**: 004-adapter
 **Date**: 2026-02-03
 
-> Note: 変換関数は Python 静的メソッドとして提供され、ModelMapping の transform 属性に渡して使用する。
+## Overview
 
-## Module: `marketschema.adapters.transforms`
+本ドキュメントは変換関数の言語非依存な仕様を定義する。
+各言語での型シグネチャは言語別 spec を参照:
+- [004-adapter-python](../../004-adapter-python/contracts/transforms.md)
+- [004-adapter-rust](../../004-adapter-rust/contracts/transforms.md)
 
-### Transforms
+## Transforms
 
-```python
-class Transforms:
-    """Collection of common transform functions for adapter mappings.
+### Concept
 
-    All methods are static and can be used directly as transform functions
-    in ModelMapping definitions.
+ModelMapping の `transform` 属性に渡して使用する共通変換関数群。
+すべての関数は入力値を受け取り、変換後の値を返す。変換失敗時は TransformError を発生させる。
 
-    Example:
-        from marketschema.adapters.mapping import ModelMapping
-        from marketschema.adapters.transforms import Transforms
-
-        mappings = [
-            ModelMapping("bid", "buy_price", transform=Transforms.to_float),
-            ModelMapping("timestamp", "time", transform=Transforms.unix_timestamp_ms),
-        ]
-    """
-    ...
-```
+---
 
 ## Function Specifications
 
-### 数値変換
+### Numeric Conversions
 
-| 関数名 | 入力型 | 出力型 | エラー条件 | 説明 |
-|--------|--------|--------|------------|------|
-| `to_float` | `Any` | `float` | 変換不可時 `TransformError` | 文字列・数値を float に変換 |
-| `to_int` | `Any` | `int` | 変換不可時 `TransformError` | 文字列・数値を int に変換 |
+| Function | Input | Output | Error Condition | Description |
+|----------|-------|--------|-----------------|-------------|
+| `to_float` | any | float | Conversion fails | Convert string/number to float |
+| `to_int` | any | integer | Conversion fails | Convert string/number to integer |
 
-### タイムスタンプ変換
+### Timestamp Conversions
 
-すべてのタイムスタンプ変換関数は **UTC の ISO 8601 形式**（末尾 `Z`）を返す。
+All timestamp conversion functions return **UTC ISO 8601 format** (with trailing `Z`).
 
-| 関数名 | 入力型 | 出力型 | エラー条件 | 説明 |
-|--------|--------|--------|------------|------|
-| `iso_timestamp` | `str` | `str` (ISO 8601) | 不正フォーマット時 `TransformError` | ISO 8601 文字列を検証・正規化 |
-| `unix_timestamp_ms` | `int \| float` | `str` (ISO 8601) | 変換失敗時 `TransformError` | Unix ミリ秒を ISO 8601 に変換 |
-| `unix_timestamp_sec` | `int \| float` | `str` (ISO 8601) | 変換失敗時 `TransformError` | Unix 秒を ISO 8601 に変換 |
-| `jst_to_utc` | `str` | `str` (ISO 8601) | 不正フォーマット時 `TransformError` | JST タイムスタンプを UTC に変換 |
+| Function | Input | Output | Error Condition | Description |
+|----------|-------|--------|-----------------|-------------|
+| `iso_timestamp` | string | ISO 8601 (UTC) | Invalid format | Validate and normalize ISO 8601 string |
+| `unix_timestamp_ms` | integer/float | ISO 8601 (UTC) | Conversion fails | Convert Unix milliseconds to ISO 8601 |
+| `unix_timestamp_sec` | integer/float | ISO 8601 (UTC) | Conversion fails | Convert Unix seconds to ISO 8601 |
+| `jst_to_utc` | string | ISO 8601 (UTC) | Invalid format | Convert JST timestamp to UTC |
 
-### 文字列変換
+### String Conversions
 
-| 関数名 | 入力型 | 出力型 | エラー条件 | 説明 |
-|--------|--------|--------|------------|------|
-| `side_from_string` | `str` | `"buy" \| "sell"` | 不正値時 `TransformError` | 売買方向を正規化 |
-| `uppercase` | `str` | `str` | - | 大文字に変換 |
-| `lowercase` | `str` | `str` | - | 小文字に変換 |
+| Function | Input | Output | Error Condition | Description |
+|----------|-------|--------|-----------------|-------------|
+| `side_from_string` | string | "buy" or "sell" | Invalid value | Normalize side/direction string |
+| `uppercase` | string | string | - | Convert to uppercase |
+| `lowercase` | string | string | - | Convert to lowercase |
+
+---
 
 ## Detailed Specifications
 
 ### to_float
 
-```python
-@staticmethod
-def to_float(value: Any) -> float:
-    """Convert value to float.
+Convert value to floating-point number.
 
-    Args:
-        value: Value to convert (string, int, or float).
-
-    Returns:
-        Float representation of the value.
-
-    Raises:
-        TransformError: If conversion fails (TypeError, ValueError).
-
-    Examples:
-        >>> Transforms.to_float("123.45")
-        123.45
-        >>> Transforms.to_float(100)
-        100.0
-        >>> Transforms.to_float("invalid")
-        TransformError: Cannot convert 'invalid' to float
-    """
-    ...
-```
+**Input Examples**:
+- `"123.45"` → `123.45`
+- `100` → `100.0`
+- `"invalid"` → TransformError
 
 ### to_int
 
-```python
-@staticmethod
-def to_int(value: Any) -> int:
-    """Convert value to int.
+Convert value to integer.
 
-    Args:
-        value: Value to convert (string, float, or int).
-
-    Returns:
-        Integer representation of the value.
-
-    Raises:
-        TransformError: If conversion fails (TypeError, ValueError).
-
-    Examples:
-        >>> Transforms.to_int("123")
-        123
-        >>> Transforms.to_int(100.9)
-        100
-        >>> Transforms.to_int("invalid")
-        TransformError: Cannot convert 'invalid' to int
-    """
-    ...
-```
+**Input Examples**:
+- `"123"` → `123`
+- `100.9` → `100` (truncated)
+- `"invalid"` → TransformError
 
 ### iso_timestamp
 
-```python
-@staticmethod
-def iso_timestamp(value: str) -> str:
-    """Validate and return ISO 8601 timestamp string.
+Validate and return ISO 8601 timestamp string in UTC.
 
-    Parses the input, validates it as a valid datetime, and re-formats
-    to ensure consistent UTC ISO 8601 format with 'Z' suffix.
+Parses the input, validates it as a valid datetime, and re-formats to ensure consistent UTC ISO 8601 format with 'Z' suffix.
 
-    Args:
-        value: ISO 8601 formatted timestamp string.
-            Accepts various formats: "2024-01-01T00:00:00Z",
-            "2024-01-01T00:00:00+00:00", "2024-01-01T09:00:00+09:00".
-
-    Returns:
-        The validated timestamp string in UTC ISO 8601 format (with 'Z').
-
-    Raises:
-        TransformError: If the timestamp is not valid ISO 8601.
-
-    Examples:
-        >>> Transforms.iso_timestamp("2024-01-01T00:00:00Z")
-        "2024-01-01T00:00:00Z"
-        >>> Transforms.iso_timestamp("2024-01-01T09:00:00+09:00")
-        "2024-01-01T00:00:00Z"
-        >>> Transforms.iso_timestamp("invalid")
-        TransformError: Invalid ISO timestamp: 'invalid'
-    """
-    ...
-```
+**Accepted Input Formats**:
+- `"2024-01-01T00:00:00Z"` → `"2024-01-01T00:00:00Z"`
+- `"2024-01-01T00:00:00+00:00"` → `"2024-01-01T00:00:00Z"`
+- `"2024-01-01T09:00:00+09:00"` → `"2024-01-01T00:00:00Z"` (converted to UTC)
 
 ### unix_timestamp_ms
 
-```python
-@staticmethod
-def unix_timestamp_ms(value: int | float) -> str:
-    """Convert Unix timestamp in milliseconds to ISO 8601 string.
+Convert Unix timestamp in milliseconds to ISO 8601 string.
 
-    Args:
-        value: Unix timestamp in milliseconds since epoch.
-
-    Returns:
-        ISO 8601 formatted timestamp string (UTC with 'Z' suffix).
-
-    Raises:
-        TransformError: If conversion fails (TypeError, ValueError, OSError).
-            OSError occurs for timestamps outside the valid range.
-
-    Examples:
-        >>> Transforms.unix_timestamp_ms(1704067200000)
-        "2024-01-01T00:00:00Z"
-        >>> Transforms.unix_timestamp_ms("invalid")
-        TransformError: Cannot convert 'invalid' from unix ms
-    """
-    ...
-```
+**Input Examples**:
+- `1704067200000` → `"2024-01-01T00:00:00Z"`
+- Negative values → TransformError (OSError in some implementations)
 
 ### unix_timestamp_sec
 
-```python
-@staticmethod
-def unix_timestamp_sec(value: int | float) -> str:
-    """Convert Unix timestamp in seconds to ISO 8601 string.
+Convert Unix timestamp in seconds to ISO 8601 string.
 
-    Args:
-        value: Unix timestamp in seconds since epoch.
-
-    Returns:
-        ISO 8601 formatted timestamp string (UTC with 'Z' suffix).
-
-    Raises:
-        TransformError: If conversion fails (TypeError, ValueError, OSError).
-            OSError occurs for timestamps outside the valid range.
-
-    Examples:
-        >>> Transforms.unix_timestamp_sec(1704067200)
-        "2024-01-01T00:00:00Z"
-        >>> Transforms.unix_timestamp_sec("invalid")
-        TransformError: Cannot convert 'invalid' from unix seconds
-    """
-    ...
-```
+**Input Examples**:
+- `1704067200` → `"2024-01-01T00:00:00Z"`
+- Negative values → TransformError
 
 ### jst_to_utc
 
-```python
-@staticmethod
-def jst_to_utc(value: str) -> str:
-    """Convert JST (Japan Standard Time) timestamp to UTC ISO 8601.
+Convert JST (Japan Standard Time) timestamp to UTC ISO 8601.
 
-    If the input has no timezone info (naive datetime), it is assumed to be JST.
-    If the input already has timezone info, it is converted to UTC.
+If the input has no timezone info (naive datetime), it is assumed to be JST (+09:00).
+If the input already has timezone info, it is converted to UTC.
 
-    Args:
-        value: ISO 8601 formatted timestamp in JST (or naive datetime assumed JST).
-
-    Returns:
-        ISO 8601 formatted timestamp string (UTC with 'Z' suffix).
-
-    Raises:
-        TransformError: If conversion fails (invalid format).
-
-    Examples:
-        >>> Transforms.jst_to_utc("2024-01-01T09:00:00")  # Naive, assumed JST
-        "2024-01-01T00:00:00Z"
-        >>> Transforms.jst_to_utc("2024-01-01T09:00:00+09:00")  # Explicit JST
-        "2024-01-01T00:00:00Z"
-        >>> Transforms.jst_to_utc("invalid")
-        TransformError: Cannot convert JST timestamp: 'invalid'
-    """
-    ...
-```
+**Input Examples**:
+- `"2024-01-01T09:00:00"` (naive, assumed JST) → `"2024-01-01T00:00:00Z"`
+- `"2024-01-01T09:00:00+09:00"` (explicit JST) → `"2024-01-01T00:00:00Z"`
 
 ### side_from_string
 
-```python
-@staticmethod
-def side_from_string(value: str) -> str:
-    """Normalize side string to lowercase buy/sell.
+Normalize side string to lowercase "buy" or "sell".
 
-    Handles common variations from different data sources.
+**Mapping Rules**:
 
-    Args:
-        value: Side string from source data.
+| Input | Output |
+|-------|--------|
+| `"buy"`, `"BUY"`, `"Buy"`, `"bid"`, `"BID"`, `"b"` | `"buy"` |
+| `"sell"`, `"SELL"`, `"Sell"`, `"ask"`, `"ASK"`, `"offer"`, `"OFFER"`, `"s"`, `"a"` | `"sell"` |
+| Other values | TransformError |
 
-    Returns:
-        Normalized side string ("buy" or "sell").
+### uppercase / lowercase
 
-    Raises:
-        TransformError: If the value cannot be mapped to buy/sell.
+Convert string to uppercase or lowercase respectively.
 
-    Mapping rules:
-        - "buy", "BUY", "Buy", "bid", "BID", "b" -> "buy"
-        - "sell", "SELL", "Sell", "ask", "ASK", "offer", "OFFER", "s", "a" -> "sell"
+**Input Examples**:
+- `uppercase("btc_jpy")` → `"BTC_JPY"`
+- `lowercase("BTC_JPY")` → `"btc_jpy"`
 
-    Examples:
-        >>> Transforms.side_from_string("BUY")
-        "buy"
-        >>> Transforms.side_from_string("ask")
-        "sell"
-        >>> Transforms.side_from_string("unknown")
-        TransformError: Cannot normalize side value: 'unknown'
-    """
-    ...
-```
-
-### uppercase
-
-```python
-@staticmethod
-def uppercase(value: str) -> str:
-    """Convert string to uppercase.
-
-    Args:
-        value: String to convert.
-
-    Returns:
-        Uppercase string.
-
-    Examples:
-        >>> Transforms.uppercase("btc_jpy")
-        "BTC_JPY"
-    """
-    ...
-```
-
-### lowercase
-
-```python
-@staticmethod
-def lowercase(value: str) -> str:
-    """Convert string to lowercase.
-
-    Args:
-        value: String to convert.
-
-    Returns:
-        Lowercase string.
-
-    Examples:
-        >>> Transforms.lowercase("BTC_JPY")
-        "btc_jpy"
-    """
-    ...
-```
+---
 
 ## Constants
 
-```python
-# Time conversion constants
-MS_PER_SECOND = 1000
-SECONDS_PER_HOUR = 3600
-JST_UTC_OFFSET_HOURS = 9
-```
+The following constants are recommended for implementations:
+
+| Constant | Value | Description |
+|----------|-------|-------------|
+| `MS_PER_SECOND` | 1000 | Milliseconds per second |
+| `SECONDS_PER_HOUR` | 3600 | Seconds per hour |
+| `JST_UTC_OFFSET_HOURS` | 9 | JST offset from UTC in hours |
+
+---
 
 ## Error Handling Contract
 
-すべての変換関数は以下のエラーハンドリング規約に従う:
+All transform functions must follow these error handling conventions:
 
-1. **サイレント障害禁止**: 変換失敗時は必ず `TransformError` を発生させる
-2. **例外チェーン**: 元の例外を `from e` で保持する
-3. **エラーメッセージ**: 入力値を含めて問題を特定可能にする
+1. **No Silent Failures**: Always raise TransformError on conversion failure
+2. **Exception Chaining**: Preserve original exception with language-appropriate mechanism
+   - Python: `raise TransformError(...) from e`
+   - Rust: `#[source]` attribute
+3. **Error Messages**: Include input value to help identify the problem
 
-```python
-# 実装パターン
-try:
-    return float(value)
-except (TypeError, ValueError) as e:
-    raise TransformError(f"Cannot convert {value!r} to float") from e
-```
+---
 
-## Type Exports
+## Testing Requirements
 
-```python
-# marketschema.adapters.transforms.__init__.py
-__all__ = ["Transforms"]
-```
+Each language implementation must include tests for:
+
+1. **Normal Cases**: Valid inputs for each function
+2. **Error Cases**: Invalid inputs that should raise TransformError
+3. **Edge Cases**: Boundary values, empty strings, null/None values
+4. **Timestamp Edge Cases**: Negative timestamps, very large timestamps

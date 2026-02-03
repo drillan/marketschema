@@ -38,7 +38,7 @@
 2. **Given** 生成されたモデル, **When** 型チェッカーで検証する, **Then** エラーなく通過する
 3. **Given** 生成された Quote クラス/構造体, **When** 正しいデータでインスタンス化する, **Then** 期待通りのオブジェクトが作成され、バリデーションが実行される
 
-> **Note**: 言語固有の実装詳細は [lang/](lang/) ディレクトリを参照。
+> **Note**: 言語固有の実装詳細は言語別 spec（[002-data-model-python](../002-data-model-python/spec.md)、[002-data-model-rust](../002-data-model-rust/spec.md)）を参照。
 
 ---
 
@@ -113,7 +113,7 @@
 
 #### コード生成
 
-- **FR-016**: 各言語でのモデル生成方法（コマンド、オプション、注意点）を `lang/{言語}.md` に文書化しなければならない
+- **FR-016**: 各言語でのモデル生成方法（コマンド、オプション、注意点）を言語別 spec に文書化しなければならない
 - **FR-017**: (欠番) ※旧 Rust struct 生成文書化要件。FR-016 に統合
 
 #### アダプター基盤
@@ -159,7 +159,7 @@
 ### Measurable Outcomes
 
 - **SC-001**: すべての JSON Schema ファイルが Draft 2020-12 に準拠し、ajv-cli でバリデーションが成功する
-- **SC-002**: 各対象言語でモデルの自動生成が成功し、型チェッカーでエラーがゼロである（詳細は `lang/{言語}.md` を参照）
+- **SC-002**: 各対象言語でモデルの自動生成が成功し、型チェッカーでエラーがゼロである（詳細は言語別 spec を参照）
 - **SC-003**: (欠番) ※SC-002 に統合
 - **SC-004**: 各スキーマに対して最低5つのサンプルデータで正常系バリデーションが成功する
 - **SC-005**: 各スキーマに対して最低3つの異常系データでバリデーションエラーが正しく検出される
@@ -171,7 +171,7 @@
 - 数値精度: マーケットデータの表示・分析用途では float 型で十分。発注・会計処理で厳密な精度が必要な場合は、アプリケーション側で Decimal 等に変換する想定
 - タイムゾーン: すべてのタイムスタンプは UTC で正規化して保存。ローカルタイムゾーンへの変換はアプリケーション側の責務
 - スキーマバージョニング: セマンティックバージョニングを採用し、破壊的変更はメジャーバージョンで管理
-- 言語サポート: Python と Rust を第一優先とし、TypeScript/Go は将来対応（各言語の実装詳細は `lang/{言語}.md` を参照）
+- 言語サポート: Python と Rust を第一優先とし、TypeScript/Go は将来対応（各言語の実装詳細は言語別 spec を参照）
 - 各業者アダプターは本プロジェクトのスコープ外（外部パッケージとして提供）
 
 ## Out of Scope
@@ -211,7 +211,7 @@
 - [ADR: フォーマット規約](../../docs/adr/types/format-conventions.md) - タイムスタンプ・通貨コードのフォーマット
 - [用語集](../../docs/glossary.md) - フィールドの日本語説明
 
-### 言語別実装仕様
+### Language-Specific Implementation Specs
 
-- [lang/python.md](lang/python.md) - Python (pydantic v2) 実装仕様
-- [lang/rust.md](lang/rust.md) - Rust (serde) 実装仕様
+- [002-data-model-python](../002-data-model-python/spec.md) - Python (pydantic v2) Implementation Spec
+- [002-data-model-rust](../002-data-model-rust/spec.md) - Rust (serde) Implementation Spec
