@@ -41,16 +41,16 @@ BITBANK_BASE_URL = "https://public.bitbank.cc"
 BITBANK_SUCCESS_CODE = 1
 
 # Index constants for bitbank candlestick array [open, high, low, close, volume, timestamp]
-OHLCV_INDEX_OPEN = 0
-OHLCV_INDEX_HIGH = 1
-OHLCV_INDEX_LOW = 2
-OHLCV_INDEX_CLOSE = 3
-OHLCV_INDEX_VOLUME = 4
-OHLCV_INDEX_TIMESTAMP = 5
+BITBANK_OHLCV_INDEX_OPEN = 0
+BITBANK_OHLCV_INDEX_HIGH = 1
+BITBANK_OHLCV_INDEX_LOW = 2
+BITBANK_OHLCV_INDEX_CLOSE = 3
+BITBANK_OHLCV_INDEX_VOLUME = 4
+BITBANK_OHLCV_INDEX_TIMESTAMP = 5
 
 # Index constants for bitbank price level array [price, size]
-PRICE_LEVEL_INDEX_PRICE = 0
-PRICE_LEVEL_INDEX_SIZE = 1
+BITBANK_PRICE_LEVEL_INDEX_PRICE = 0
+BITBANK_PRICE_LEVEL_INDEX_SIZE = 1
 
 
 @register
@@ -313,12 +313,12 @@ class BitbankAdapter(BaseAdapter):
         # Convert array to dict for mapping
         ohlcv_dict = {
             "symbol": symbol,
-            "open": raw_data[OHLCV_INDEX_OPEN],
-            "high": raw_data[OHLCV_INDEX_HIGH],
-            "low": raw_data[OHLCV_INDEX_LOW],
-            "close": raw_data[OHLCV_INDEX_CLOSE],
-            "volume": raw_data[OHLCV_INDEX_VOLUME],
-            "timestamp": raw_data[OHLCV_INDEX_TIMESTAMP],
+            "open": raw_data[BITBANK_OHLCV_INDEX_OPEN],
+            "high": raw_data[BITBANK_OHLCV_INDEX_HIGH],
+            "low": raw_data[BITBANK_OHLCV_INDEX_LOW],
+            "close": raw_data[BITBANK_OHLCV_INDEX_CLOSE],
+            "volume": raw_data[BITBANK_OHLCV_INDEX_VOLUME],
+            "timestamp": raw_data[BITBANK_OHLCV_INDEX_TIMESTAMP],
         }
         mappings = self.get_ohlcv_mapping() + [ModelMapping("symbol", "symbol")]
         return self._apply_mapping(ohlcv_dict, mappings, OHLCV)
@@ -350,15 +350,23 @@ class BitbankAdapter(BaseAdapter):
         # Convert price level arrays to PriceLevel objects
         asks = [
             PriceLevel(
-                price=Price(self.transforms.to_float(level[PRICE_LEVEL_INDEX_PRICE])),
-                size=Size(self.transforms.to_float(level[PRICE_LEVEL_INDEX_SIZE])),
+                price=Price(
+                    self.transforms.to_float(level[BITBANK_PRICE_LEVEL_INDEX_PRICE])
+                ),
+                size=Size(
+                    self.transforms.to_float(level[BITBANK_PRICE_LEVEL_INDEX_SIZE])
+                ),
             )
             for level in raw_data["asks"]
         ]
         bids = [
             PriceLevel(
-                price=Price(self.transforms.to_float(level[PRICE_LEVEL_INDEX_PRICE])),
-                size=Size(self.transforms.to_float(level[PRICE_LEVEL_INDEX_SIZE])),
+                price=Price(
+                    self.transforms.to_float(level[BITBANK_PRICE_LEVEL_INDEX_PRICE])
+                ),
+                size=Size(
+                    self.transforms.to_float(level[BITBANK_PRICE_LEVEL_INDEX_SIZE])
+                ),
             )
             for level in raw_data["bids"]
         ]

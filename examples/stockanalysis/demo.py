@@ -23,6 +23,7 @@ if __name__ == "__main__":
         sys.path.insert(0, str(project_root))
 
 from examples.stockanalysis.adapter import STOCKANALYSIS_BASE_URL, StockAnalysisAdapter
+from marketschema.exceptions import AdapterError
 from marketschema.http.exceptions import (
     HttpConnectionError,
     HttpStatusError,
@@ -91,6 +92,9 @@ async def main() -> None:
         print(
             "\nError: Could not connect to stockanalysis.com. Please check your network."
         )
+        sys.exit(1)
+    except AdapterError as e:
+        print(f"\nError: Failed to parse HTML response: {e}")
         sys.exit(1)
 
     print(f"\n{'=' * 60}")
