@@ -22,7 +22,7 @@ if __name__ == "__main__":
     if str(project_root) not in sys.path:
         sys.path.insert(0, str(project_root))
 
-from examples.stockanalysis.adapter import STOCKANALYSIS_URL, StockAnalysisAdapter
+from examples.stockanalysis.adapter import STOCKANALYSIS_BASE_URL, StockAnalysisAdapter
 from marketschema.http.exceptions import (
     HttpConnectionError,
     HttpStatusError,
@@ -38,7 +38,7 @@ async def demo_ohlcv(adapter: StockAnalysisAdapter, symbol: str) -> None:
     print(f"HTML → ExtendedOHLCV ({symbol.upper()})")
     print("=" * 60)
 
-    url = f"{STOCKANALYSIS_URL}/{symbol.lower()}/history/"
+    url = f"{STOCKANALYSIS_BASE_URL}/{symbol.lower()}/history/"
     print(f"\nGET {url}")
 
     html_content = await adapter.fetch_history(symbol)

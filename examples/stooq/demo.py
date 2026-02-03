@@ -23,6 +23,12 @@ if __name__ == "__main__":
         sys.path.insert(0, str(project_root))
 
 from examples.stooq.adapter import STOOQ_BASE_URL, StooqAdapter
+from marketschema.exceptions import AdapterError
+from marketschema.http.exceptions import (
+    HttpConnectionError,
+    HttpStatusError,
+    HttpTimeoutError,
+)
 
 DEFAULT_SYMBOL = "spy.us"
 
@@ -68,8 +74,24 @@ async def main() -> None:
     # Get symbol from command line or use default
     symbol = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_SYMBOL
 
-    async with StooqAdapter() as adapter:
-        await demo_ohlcv(adapter, symbol)
+    try:
+        async with StooqAdapter() as adapter:
+            await demo_ohlcv(adapter, symbol)
+    except HttpStatusError as e:
+        if e.status_code == 404:
+            print(f"\nError: Symbol '{symbol}' not found on stooq.com")
+        else:
+            print(f"\nError: HTTP {e.status_code} - {e.message}")
+        sys.exit(1)
+    except HttpTimeoutError as e:
+        print(f"\nError: Request timed out: {e}")
+        sys.exit(1)
+    except HttpConnectionError as e:
+        print(f"\nError: Could not connect to stooq.com: {e}")
+        sys.exit(1)
+    except AdapterError as e:
+        print(f"\nError: Failed to parse CSV response: {e}")
+        sys.exit(1)
 
     print(f"\n{'=' * 60}")
     print("Demo completed!")
