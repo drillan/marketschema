@@ -2,7 +2,7 @@
 """Demo script for stooq.com stock data adapter.
 
 This script demonstrates how to use the StooqAdapter to fetch and parse
-CSV data from stooq.com.
+CSV data from stooq.com using AsyncHttpClient.
 
 Usage:
     uv run python -m examples.stooq.demo
@@ -12,8 +12,8 @@ Usage:
 
 from __future__ import annotations
 
+import asyncio
 import sys
-import urllib.request
 from pathlib import Path
 
 # Add project root to path for direct execution
@@ -22,44 +22,19 @@ if __name__ == "__main__":
     if str(project_root) not in sys.path:
         sys.path.insert(0, str(project_root))
 
-from examples.stooq.adapter import StooqAdapter
+from examples.stooq.adapter import STOOQ_BASE_URL, StooqAdapter
 
-STOOQ_CSV_URL = "https://stooq.com/q/d/l/"
 DEFAULT_SYMBOL = "spy.us"
 
 
-def fetch_csv(symbol: str) -> str:
-    """Fetch CSV data from stooq.com.
-
-    Args:
-        symbol: Stock symbol (e.g., "spy.us", "aapl.us", "^spx")
-
-    Returns:
-        CSV content as string
-
-    Raises:
-        RuntimeError: If fetch fails
-    """
-    url = f"{STOOQ_CSV_URL}?s={symbol}&i=d"
-    print(f"GET {url}")
-
-    try:
-        with urllib.request.urlopen(url) as response:
-            content: str = response.read().decode("utf-8")
-            return content
-    except urllib.error.URLError as e:
-        raise RuntimeError(f"Failed to fetch data: {e}") from e
-    except UnicodeDecodeError as e:
-        raise RuntimeError(f"Failed to decode response as UTF-8: {e}") from e
-
-
-def demo_ohlcv(adapter: StooqAdapter, symbol: str) -> None:
+async def demo_ohlcv(adapter: StooqAdapter, symbol: str) -> None:
     """Demonstrate CSV → OHLCV parsing."""
     print(f"\n{'=' * 60}")
     print(f"CSV → OHLCV ({symbol})")
     print("=" * 60)
 
-    csv_content = fetch_csv(symbol)
+    print(f"GET {STOOQ_BASE_URL}?s={symbol}&i=d")
+    csv_content = await adapter.fetch_csv(symbol)
 
     # Show first few lines of raw CSV
     lines = csv_content.strip().split("\n")
@@ -84,18 +59,17 @@ def demo_ohlcv(adapter: StooqAdapter, symbol: str) -> None:
         print(f"  Volume: {ohlcv.volume.root:,.0f}")
 
 
-def main() -> None:
+async def main() -> None:
     """Run demo."""
     print("=" * 60)
     print("stooq.com Stock Data Adapter Demo")
     print("=" * 60)
 
-    adapter = StooqAdapter()
-
     # Get symbol from command line or use default
     symbol = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_SYMBOL
 
-    demo_ohlcv(adapter, symbol)
+    async with StooqAdapter() as adapter:
+        await demo_ohlcv(adapter, symbol)
 
     print(f"\n{'=' * 60}")
     print("Demo completed!")
@@ -103,4 +77,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
