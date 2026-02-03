@@ -45,6 +45,14 @@ types/enum-values
 types/format-conventions
 ```
 
+## コード生成
+
+```{toctree}
+:maxdepth: 1
+
+codegen/001-unevaluated-properties-workaround
+```
+
 ## フィールド要件表
 
 ADRで定義されたフィールド情報をまとめた要件表:
