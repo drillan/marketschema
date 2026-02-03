@@ -38,9 +38,17 @@ class ResponseCache:
         """Initialize response cache.
 
         Args:
-            max_size: Maximum number of cached entries.
-            default_ttl: Default time-to-live for cache entries.
+            max_size: Maximum number of cached entries. Must be positive.
+            default_ttl: Default time-to-live for cache entries. Must be positive.
+
+        Raises:
+            ValueError: If parameters are out of valid range.
         """
+        if max_size <= 0:
+            raise ValueError(f"max_size must be positive, got {max_size}")
+        if default_ttl.total_seconds() <= 0:
+            raise ValueError(f"default_ttl must be positive, got {default_ttl}")
+
         self.max_size = max_size
         self.default_ttl = default_ttl
         self._cache: OrderedDict[str, CacheEntry] = OrderedDict()

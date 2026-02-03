@@ -16,6 +16,9 @@ DEFAULT_JITTER: float = 0.1
 RETRYABLE_STATUS_CODES: frozenset[int] = frozenset({429, 500, 502, 503, 504})
 NON_RETRYABLE_STATUS_CODES: frozenset[int] = frozenset({400, 401, 403, 404})
 
+# Rate limit constants
+TOKENS_PER_REQUEST: float = 1.0
+
 
 class RetryMiddleware:
     """Retry failed requests with exponential backoff.
@@ -35,11 +38,21 @@ class RetryMiddleware:
         """Initialize retry middleware.
 
         Args:
-            max_retries: Maximum number of retry attempts.
-            backoff_factor: Multiplier for exponential backoff.
+            max_retries: Maximum number of retry attempts. Must be non-negative.
+            backoff_factor: Multiplier for exponential backoff. Must be positive.
             retry_statuses: Status codes to retry. Defaults to {429, 500, 502, 503, 504}.
             jitter: Random jitter factor (0.0 to 1.0) to add to delays.
+
+        Raises:
+            ValueError: If parameters are out of valid range.
         """
+        if max_retries < 0:
+            raise ValueError(f"max_retries must be non-negative, got {max_retries}")
+        if backoff_factor <= 0:
+            raise ValueError(f"backoff_factor must be positive, got {backoff_factor}")
+        if not (0 <= jitter <= 1):
+            raise ValueError(f"jitter must be between 0 and 1, got {jitter}")
+
         self.max_retries = max_retries
         self.backoff_factor = backoff_factor
         self.retry_statuses = (
@@ -101,9 +114,19 @@ class RateLimitMiddleware:
         """Initialize rate limit middleware.
 
         Args:
-            requests_per_second: Maximum requests per second.
-            burst_size: Maximum burst size. Defaults to requests_per_second.
+            requests_per_second: Maximum requests per second. Must be positive.
+            burst_size: Maximum burst size. Defaults to requests_per_second. Must be positive.
+
+        Raises:
+            ValueError: If parameters are out of valid range.
         """
+        if requests_per_second <= 0:
+            raise ValueError(
+                f"requests_per_second must be positive, got {requests_per_second}"
+            )
+        if burst_size is not None and burst_size <= 0:
+            raise ValueError(f"burst_size must be positive, got {burst_size}")
+
         self.requests_per_second = requests_per_second
         self.burst_size = (
             burst_size if burst_size is not None else int(requests_per_second)
@@ -127,29 +150,36 @@ class RateLimitMiddleware:
     async def acquire(self) -> None:
         """Acquire a token, waiting if necessary.
 
-        Blocks until a token is available.
+        Blocks until a token is available. This method is thread-safe.
         """
         async with self._lock:
             self._refill_tokens()
 
-            while self._tokens < 1.0:
+            while self._tokens < TOKENS_PER_REQUEST:
                 # Calculate wait time until next token
-                wait_time = (1.0 - self._tokens) / self.requests_per_second
+                wait_time = (
+                    TOKENS_PER_REQUEST - self._tokens
+                ) / self.requests_per_second
                 await asyncio.sleep(wait_time)
                 self._refill_tokens()
 
-            self._tokens -= 1.0
+            self._tokens -= TOKENS_PER_REQUEST
 
     def try_acquire(self) -> bool:
         """Try to acquire a token without blocking.
+
+        Warning:
+            This method is NOT thread-safe. When called concurrently from
+            multiple tasks, race conditions may occur. For concurrent access,
+            use acquire() instead.
 
         Returns:
             True if a token was acquired, False otherwise.
         """
         self._refill_tokens()
 
-        if self._tokens >= 1.0:
-            self._tokens -= 1.0
+        if self._tokens >= TOKENS_PER_REQUEST:
+            self._tokens -= TOKENS_PER_REQUEST
             return True
         return False
 
@@ -162,4 +192,5 @@ __all__ = [
     "DEFAULT_JITTER",
     "RETRYABLE_STATUS_CODES",
     "NON_RETRYABLE_STATUS_CODES",
+    "TOKENS_PER_REQUEST",
 ]

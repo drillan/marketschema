@@ -28,6 +28,27 @@ class TestRetryMiddlewareConstructor:
         assert middleware.retry_statuses == RETRYABLE_STATUS_CODES
         assert middleware.jitter == DEFAULT_JITTER
 
+    def test_invalid_max_retries_raises_error(self):
+        """Constructor should raise ValueError for negative max_retries."""
+        with pytest.raises(ValueError, match="max_retries must be non-negative"):
+            RetryMiddleware(max_retries=-1)
+
+    def test_invalid_backoff_factor_raises_error(self):
+        """Constructor should raise ValueError for non-positive backoff_factor."""
+        with pytest.raises(ValueError, match="backoff_factor must be positive"):
+            RetryMiddleware(backoff_factor=0)
+
+        with pytest.raises(ValueError, match="backoff_factor must be positive"):
+            RetryMiddleware(backoff_factor=-1)
+
+    def test_invalid_jitter_raises_error(self):
+        """Constructor should raise ValueError for jitter out of range."""
+        with pytest.raises(ValueError, match="jitter must be between 0 and 1"):
+            RetryMiddleware(jitter=-0.1)
+
+        with pytest.raises(ValueError, match="jitter must be between 0 and 1"):
+            RetryMiddleware(jitter=1.1)
+
     def test_custom_max_retries(self):
         """Constructor should accept custom max_retries."""
         middleware = RetryMiddleware(max_retries=5)
@@ -242,6 +263,22 @@ class TestRateLimitMiddlewareConstructor:
         middleware = RateLimitMiddleware(requests_per_second=10.0, burst_size=20)
         assert middleware.requests_per_second == 10.0
         assert middleware.burst_size == 20
+
+    def test_invalid_requests_per_second_raises_error(self):
+        """Constructor should raise ValueError for non-positive requests_per_second."""
+        with pytest.raises(ValueError, match="requests_per_second must be positive"):
+            RateLimitMiddleware(requests_per_second=0)
+
+        with pytest.raises(ValueError, match="requests_per_second must be positive"):
+            RateLimitMiddleware(requests_per_second=-1)
+
+    def test_invalid_burst_size_raises_error(self):
+        """Constructor should raise ValueError for non-positive burst_size."""
+        with pytest.raises(ValueError, match="burst_size must be positive"):
+            RateLimitMiddleware(requests_per_second=10.0, burst_size=0)
+
+        with pytest.raises(ValueError, match="burst_size must be positive"):
+            RateLimitMiddleware(requests_per_second=10.0, burst_size=-1)
 
 
 class TestRateLimitMiddlewareAcquire:

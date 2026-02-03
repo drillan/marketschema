@@ -34,6 +34,26 @@ class TestResponseCacheConstructor:
         cache = ResponseCache(default_ttl=timedelta(minutes=10))
         assert cache.default_ttl == timedelta(minutes=10)
 
+    def test_invalid_max_size_raises_error(self):
+        """Constructor should raise ValueError for non-positive max_size."""
+        import pytest
+
+        with pytest.raises(ValueError, match="max_size must be positive"):
+            ResponseCache(max_size=0)
+
+        with pytest.raises(ValueError, match="max_size must be positive"):
+            ResponseCache(max_size=-1)
+
+    def test_invalid_default_ttl_raises_error(self):
+        """Constructor should raise ValueError for non-positive default_ttl."""
+        import pytest
+
+        with pytest.raises(ValueError, match="default_ttl must be positive"):
+            ResponseCache(default_ttl=timedelta(seconds=0))
+
+        with pytest.raises(ValueError, match="default_ttl must be positive"):
+            ResponseCache(default_ttl=timedelta(seconds=-1))
+
 
 class TestResponseCacheGetSet:
     """Tests for get() and set() methods (T058)."""

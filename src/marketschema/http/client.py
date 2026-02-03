@@ -7,6 +7,7 @@ implementations.
 from __future__ import annotations
 
 import asyncio
+import logging
 from types import TracebackType
 from typing import TYPE_CHECKING, Any
 
@@ -57,13 +58,21 @@ class AsyncHttpClient:
         """Initialize the HTTP client.
 
         Args:
-            timeout: Request timeout in seconds.
-            max_connections: Maximum number of concurrent connections.
+            timeout: Request timeout in seconds. Must be positive.
+            max_connections: Maximum number of concurrent connections. Must be positive.
             headers: Default headers for all requests.
             retry: Retry configuration (optional).
             rate_limit: Rate limiting configuration (optional).
             cache: Response cache configuration (optional).
+
+        Raises:
+            ValueError: If timeout or max_connections is not positive.
         """
+        if timeout <= 0:
+            raise ValueError(f"timeout must be positive, got {timeout}")
+        if max_connections <= 0:
+            raise ValueError(f"max_connections must be positive, got {max_connections}")
+
         self.timeout = timeout
         self.max_connections = max_connections
         self.headers = headers
@@ -269,11 +278,14 @@ class AsyncHttpClient:
             HttpConnectionError: If connection fails.
             HttpStatusError: If the response has an error status code.
             HttpRateLimitError: If rate limited (429).
-            ValueError: If the response is not valid JSON.
+            HttpError: If the response is not valid JSON.
         """
         response = await self.get(url, headers=headers, params=params, timeout=timeout)
-        result: dict[str, Any] = response.json()
-        return result
+        try:
+            result: dict[str, Any] = response.json()
+            return result
+        except ValueError as e:
+            raise HttpError(f"Invalid JSON response: {e}", url=url) from e
 
     async def get_text(
         self,
@@ -340,11 +352,15 @@ class AsyncHttpClient:
     def _parse_retry_after(self, response: httpx.Response) -> float | None:
         """Parse the Retry-After header value.
 
+        Only numeric (seconds) format is supported. HTTP-date format is logged
+        as a warning and returns None.
+
         Args:
             response: The httpx response.
 
         Returns:
-            The retry-after value in seconds, or None if not present.
+            The retry-after value in seconds, or None if not present or
+            in unsupported HTTP-date format.
         """
         retry_after = response.headers.get("Retry-After")
         if retry_after is None:
@@ -353,7 +369,13 @@ class AsyncHttpClient:
         try:
             return float(retry_after)
         except ValueError:
-            # Could be a date string, but we'll just return None for simplicity
+            # HTTP-date format (e.g., "Wed, 21 Oct 2015 07:28:00 GMT") is not supported
+            logger = logging.getLogger(__name__)
+            logger.warning(
+                "Could not parse Retry-After header as numeric value: %r "
+                "(HTTP-date format is not supported)",
+                retry_after,
+            )
             return None
 
     async def close(self) -> None:

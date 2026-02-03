@@ -17,6 +17,26 @@ class TestAsyncHttpClientConstructor:
         assert client.max_connections == 100
         assert client.headers is None
 
+    def test_invalid_timeout_raises_error(self):
+        """Constructor should raise ValueError for non-positive timeout."""
+        import pytest
+
+        with pytest.raises(ValueError, match="timeout must be positive"):
+            AsyncHttpClient(timeout=0)
+
+        with pytest.raises(ValueError, match="timeout must be positive"):
+            AsyncHttpClient(timeout=-1)
+
+    def test_invalid_max_connections_raises_error(self):
+        """Constructor should raise ValueError for non-positive max_connections."""
+        import pytest
+
+        with pytest.raises(ValueError, match="max_connections must be positive"):
+            AsyncHttpClient(max_connections=0)
+
+        with pytest.raises(ValueError, match="max_connections must be positive"):
+            AsyncHttpClient(max_connections=-1)
+
     def test_custom_timeout(self):
         """Constructor should accept custom timeout."""
         client = AsyncHttpClient(timeout=60.0)
@@ -61,6 +81,24 @@ class TestAsyncHttpClientGetJson:
             result = await client.get_json("https://api.example.com/data")
 
         assert result == {"key": "value"}
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_get_json_invalid_json_raises_http_error(self):
+        """get_json() should raise HttpError for invalid JSON with URL context."""
+        from marketschema.http import HttpError
+
+        respx.get("https://api.example.com/data").mock(
+            return_value=httpx.Response(200, text="not valid json")
+        )
+
+        async with AsyncHttpClient() as client:
+            with pytest.raises(HttpError) as exc_info:
+                await client.get_json("https://api.example.com/data")
+
+        assert exc_info.value.url == "https://api.example.com/data"
+        assert "Invalid JSON response" in str(exc_info.value)
+        assert exc_info.value.__cause__ is not None
 
     @pytest.mark.asyncio
     @respx.mock
