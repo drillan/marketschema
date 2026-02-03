@@ -26,10 +26,10 @@ from marketschema.models import OHLCV
 logger = logging.getLogger(__name__)
 
 # Data source URL
-STOCKANALYSIS_URL = "https://stockanalysis.com/stocks"
+STOCKANALYSIS_BASE_URL = "https://stockanalysis.com/stocks"
 
 # User-Agent header for HTTP requests
-USER_AGENT = (
+STOCKANALYSIS_USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
     "AppleWebKit/537.36 (KHTML, like Gecko) "
     "Chrome/120.0.0.0 Safari/537.36"
@@ -48,7 +48,7 @@ HTML_INDEX_ADJ_CLOSE = 5
 HTML_INDEX_VOLUME = 7
 
 # Month abbreviation mapping
-MONTH_MAP = {
+STOCKANALYSIS_MONTH_MAP = {
     "Jan": "01",
     "Feb": "02",
     "Mar": "03",
@@ -93,8 +93,8 @@ class StockAnalysisAdapter(BaseAdapter):
             HttpStatusError: If the response has an error status code.
             HttpRateLimitError: If rate limited (429 status code).
         """
-        url = f"{STOCKANALYSIS_URL}/{symbol.lower()}/history/"
-        headers = {"User-Agent": USER_AGENT}
+        url = f"{STOCKANALYSIS_BASE_URL}/{symbol.lower()}/history/"
+        headers = {"User-Agent": STOCKANALYSIS_USER_AGENT}
         return await self.http_client.get_text(url, headers=headers)
 
     def get_ohlcv_mapping(self) -> list[ModelMapping]:
@@ -142,9 +142,9 @@ class StockAnalysisAdapter(BaseAdapter):
         month_abbr, day_str, year_str = parts
 
         # Validate and convert month
-        if month_abbr not in MONTH_MAP:
+        if month_abbr not in STOCKANALYSIS_MONTH_MAP:
             raise AdapterError(f"Invalid month: {month_abbr!r}")
-        month = MONTH_MAP[month_abbr]
+        month = STOCKANALYSIS_MONTH_MAP[month_abbr]
 
         # Remove comma from day and validate
         day_str = day_str.rstrip(",")

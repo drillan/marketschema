@@ -37,8 +37,8 @@ from marketschema.models import (
 )
 
 # API constants
-BITBANK_API_BASE = "https://public.bitbank.cc"
-API_SUCCESS_CODE = 1
+BITBANK_BASE_URL = "https://public.bitbank.cc"
+BITBANK_SUCCESS_CODE = 1
 
 # Index constants for bitbank candlestick array [open, high, low, close, volume, timestamp]
 OHLCV_INDEX_OPEN = 0
@@ -91,7 +91,7 @@ class BitbankAdapter(BaseAdapter):
         Raises:
             AdapterError: If response indicates API error (success != 1).
         """
-        if data.get("success") != API_SUCCESS_CODE:
+        if data.get("success") != BITBANK_SUCCESS_CODE:
             raise AdapterError(f"bitbank API error: {data}")
 
     async def fetch_ticker(self, pair: str) -> Quote:
@@ -109,7 +109,7 @@ class BitbankAdapter(BaseAdapter):
             HttpTimeoutError: If request times out.
             HttpConnectionError: If connection fails.
         """
-        url = f"{BITBANK_API_BASE}/{pair}/ticker"
+        url = f"{BITBANK_BASE_URL}/{pair}/ticker"
         data = await self.http_client.get_json(url)
         self._validate_response(data)
         try:
@@ -134,7 +134,7 @@ class BitbankAdapter(BaseAdapter):
             HttpTimeoutError: If request times out.
             HttpConnectionError: If connection fails.
         """
-        url = f"{BITBANK_API_BASE}/{pair}/transactions"
+        url = f"{BITBANK_BASE_URL}/{pair}/transactions"
         data = await self.http_client.get_json(url)
         self._validate_response(data)
         try:
@@ -164,7 +164,7 @@ class BitbankAdapter(BaseAdapter):
             HttpTimeoutError: If request times out.
             HttpConnectionError: If connection fails.
         """
-        url = f"{BITBANK_API_BASE}/{pair}/candlestick/{candle_type}/{date}"
+        url = f"{BITBANK_BASE_URL}/{pair}/candlestick/{candle_type}/{date}"
         data = await self.http_client.get_json(url)
         self._validate_response(data)
 
@@ -195,7 +195,7 @@ class BitbankAdapter(BaseAdapter):
             HttpTimeoutError: If request times out.
             HttpConnectionError: If connection fails.
         """
-        url = f"{BITBANK_API_BASE}/{pair}/depth"
+        url = f"{BITBANK_BASE_URL}/{pair}/depth"
         data = await self.http_client.get_json(url)
         self._validate_response(data)
         try:

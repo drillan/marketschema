@@ -24,6 +24,13 @@ if __name__ == "__main__":
         sys.path.insert(0, str(project_root))
 
 from examples.bitbank.adapter import BitbankAdapter
+from marketschema.http import AsyncHttpClient
+from marketschema.http.exceptions import (
+    HttpConnectionError,
+    HttpStatusError,
+    HttpTimeoutError,
+)
+from marketschema.http.middleware import RetryMiddleware
 
 DEFAULT_PAIR = "btc_jpy"
 
@@ -107,13 +114,27 @@ async def main() -> None:
     print("bitbank Public API Adapter Demo")
     print("=" * 60)
 
-    async with BitbankAdapter() as adapter:
-        pair = DEFAULT_PAIR
+    pair = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_PAIR
 
-        await demo_ticker(adapter, pair)
-        await demo_transactions(adapter, pair)
-        await demo_candlestick(adapter, pair)
-        await demo_depth(adapter, pair)
+    # Use RetryMiddleware for automatic retry on transient failures
+    retry = RetryMiddleware(max_retries=3, backoff_factor=0.5)
+    http_client = AsyncHttpClient(retry=retry)
+
+    try:
+        async with BitbankAdapter(http_client=http_client) as adapter:
+            await demo_ticker(adapter, pair)
+            await demo_transactions(adapter, pair)
+            await demo_candlestick(adapter, pair)
+            await demo_depth(adapter, pair)
+    except HttpStatusError as e:
+        print(f"\nError: HTTP {e.status_code} - {e.message}")
+        sys.exit(1)
+    except HttpTimeoutError:
+        print("\nError: Request timed out. Please check your network connection.")
+        sys.exit(1)
+    except HttpConnectionError:
+        print("\nError: Could not connect to bitbank API. Please check your network.")
+        sys.exit(1)
 
     print(f"\n{'=' * 60}")
     print("Demo completed!")

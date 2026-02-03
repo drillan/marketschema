@@ -5,8 +5,8 @@ import pytest
 import respx
 
 from examples.stockanalysis.adapter import (
-    STOCKANALYSIS_URL,
-    USER_AGENT,
+    STOCKANALYSIS_BASE_URL,
+    STOCKANALYSIS_USER_AGENT,
     StockAnalysisAdapter,
 )
 from marketschema.http.exceptions import (
@@ -24,7 +24,7 @@ class TestFetchHistory:
     @pytest.mark.asyncio
     async def test_fetch_history_success(self, stockanalysis_html_content: str) -> None:
         """Fetch history returns HTML content on success."""
-        route = respx.get(f"{STOCKANALYSIS_URL}/tsla/history/").mock(
+        route = respx.get(f"{STOCKANALYSIS_BASE_URL}/tsla/history/").mock(
             return_value=httpx.Response(200, text=stockanalysis_html_content)
         )
 
@@ -40,7 +40,7 @@ class TestFetchHistory:
         self, stockanalysis_html_content: str
     ) -> None:
         """Fetch history works with different symbols."""
-        route = respx.get(f"{STOCKANALYSIS_URL}/aapl/history/").mock(
+        route = respx.get(f"{STOCKANALYSIS_BASE_URL}/aapl/history/").mock(
             return_value=httpx.Response(200, text=stockanalysis_html_content)
         )
 
@@ -56,7 +56,7 @@ class TestFetchHistory:
         self, stockanalysis_html_content: str
     ) -> None:
         """Fetch history sends correct User-Agent header."""
-        route = respx.get(f"{STOCKANALYSIS_URL}/tsla/history/").mock(
+        route = respx.get(f"{STOCKANALYSIS_BASE_URL}/tsla/history/").mock(
             return_value=httpx.Response(200, text=stockanalysis_html_content)
         )
 
@@ -65,7 +65,7 @@ class TestFetchHistory:
 
         assert route.called
         request = route.calls[0].request
-        assert request.headers.get("User-Agent") == USER_AGENT
+        assert request.headers.get("User-Agent") == STOCKANALYSIS_USER_AGENT
 
     @respx.mock
     @pytest.mark.asyncio
@@ -73,7 +73,7 @@ class TestFetchHistory:
         self, stockanalysis_html_content: str
     ) -> None:
         """Symbol is lowercased in URL."""
-        route = respx.get(f"{STOCKANALYSIS_URL}/msft/history/").mock(
+        route = respx.get(f"{STOCKANALYSIS_BASE_URL}/msft/history/").mock(
             return_value=httpx.Response(200, text=stockanalysis_html_content)
         )
 
@@ -86,7 +86,7 @@ class TestFetchHistory:
     @pytest.mark.asyncio
     async def test_fetch_history_http_error(self) -> None:
         """Fetch history raises HttpStatusError on HTTP error."""
-        respx.get(f"{STOCKANALYSIS_URL}/invalid/history/").mock(
+        respx.get(f"{STOCKANALYSIS_BASE_URL}/invalid/history/").mock(
             return_value=httpx.Response(404, text="Not Found")
         )
 
@@ -100,7 +100,7 @@ class TestFetchHistory:
     @pytest.mark.asyncio
     async def test_fetch_history_timeout_error(self) -> None:
         """Fetch history raises HttpTimeoutError on timeout."""
-        respx.get(f"{STOCKANALYSIS_URL}/tsla/history/").mock(
+        respx.get(f"{STOCKANALYSIS_BASE_URL}/tsla/history/").mock(
             side_effect=httpx.TimeoutException("Connection timeout")
         )
 
@@ -112,7 +112,7 @@ class TestFetchHistory:
     @pytest.mark.asyncio
     async def test_fetch_history_connection_error(self) -> None:
         """Fetch history raises HttpConnectionError on connection failure."""
-        respx.get(f"{STOCKANALYSIS_URL}/tsla/history/").mock(
+        respx.get(f"{STOCKANALYSIS_BASE_URL}/tsla/history/").mock(
             side_effect=httpx.ConnectError("Connection refused")
         )
 
@@ -124,7 +124,7 @@ class TestFetchHistory:
     @pytest.mark.asyncio
     async def test_fetch_history_rate_limit_error(self) -> None:
         """Fetch history raises HttpRateLimitError on 429."""
-        respx.get(f"{STOCKANALYSIS_URL}/tsla/history/").mock(
+        respx.get(f"{STOCKANALYSIS_BASE_URL}/tsla/history/").mock(
             return_value=httpx.Response(
                 429,
                 text="Too Many Requests",
@@ -148,7 +148,7 @@ class TestAdapterContextManager:
         self, stockanalysis_html_content: str
     ) -> None:
         """Context manager properly closes HTTP client."""
-        respx.get(f"{STOCKANALYSIS_URL}/tsla/history/").mock(
+        respx.get(f"{STOCKANALYSIS_BASE_URL}/tsla/history/").mock(
             return_value=httpx.Response(200, text=stockanalysis_html_content)
         )
 
@@ -165,7 +165,7 @@ class TestAdapterContextManager:
     @pytest.mark.asyncio
     async def test_context_manager_closes_on_exception(self) -> None:
         """Context manager closes client even on exception."""
-        respx.get(f"{STOCKANALYSIS_URL}/tsla/history/").mock(
+        respx.get(f"{STOCKANALYSIS_BASE_URL}/tsla/history/").mock(
             return_value=httpx.Response(500, text="Server Error")
         )
 
@@ -186,7 +186,7 @@ class TestFetchAndParse:
     @pytest.mark.asyncio
     async def test_fetch_and_parse_ohlcv(self, stockanalysis_html_content: str) -> None:
         """Fetch and parse works together for OHLCV."""
-        respx.get(f"{STOCKANALYSIS_URL}/tsla/history/").mock(
+        respx.get(f"{STOCKANALYSIS_BASE_URL}/tsla/history/").mock(
             return_value=httpx.Response(200, text=stockanalysis_html_content)
         )
 
@@ -203,7 +203,7 @@ class TestFetchAndParse:
         self, stockanalysis_html_content: str
     ) -> None:
         """Fetch and parse works together for ExtendedOHLCV."""
-        respx.get(f"{STOCKANALYSIS_URL}/tsla/history/").mock(
+        respx.get(f"{STOCKANALYSIS_BASE_URL}/tsla/history/").mock(
             return_value=httpx.Response(200, text=stockanalysis_html_content)
         )
 
