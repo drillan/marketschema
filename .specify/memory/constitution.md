@@ -18,7 +18,7 @@ Templates Requiring Updates:
 - .specify/templates/plan-template.md ✅ (Constitution Check セクションは動的に評価)
 - .specify/templates/spec-template.md ✅ (変更不要)
 - .specify/templates/tasks-template.md ✅ (変更不要)
-- .specify/features/http-client-layer/plan.md ⚠️ (Constitution改訂案を削除すべき - 本改訂で対応済み)
+- specs/003-http-client/features/http-client-layer/plan.md ⚠️ (Constitution改訂案を削除すべき - 本改訂で対応済み)
 
 Follow-up TODOs:
 - HTTP クライアント実装後、TDD Application Scope に http モジュールを追加検討

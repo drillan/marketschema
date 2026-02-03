@@ -223,7 +223,7 @@ HTTP クライアントを簡単に利用したい。
 
 ## References
 
-- [Constitution v0.5.0](/.specify/memory/constitution.md) - HTTP クライアントをコアスコープに追加
+- [Constitution v0.5.0](../../.specify/memory/constitution.md) - HTTP クライアントをコアスコープに追加
 - [001-core](../001-core/spec.md) - コアアーキテクチャ仕様
 - [002-data-model](../002-data-model/spec.md) - データモデル仕様
 - [Implementation Plan](./features/http-client-layer/plan.md) - 実装計画

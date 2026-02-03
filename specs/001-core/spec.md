@@ -184,7 +184,7 @@ marketschema プロジェクト全体のアーキテクチャと設計原則を�
 
 ## Design Principles
 
-本プロジェクトは以下の原則に従う。詳細は [Constitution](/.specify/memory/constitution.md) を参照。
+本プロジェクトは以下の原則に従う。詳細は [Constitution](../../.specify/memory/constitution.md) を参照。
 
 1. **Schema First** - JSON Schema が単一の真実の源
 2. **軽量コア** - コアは最小限 + 共通インフラ
@@ -248,6 +248,6 @@ marketschema プロジェクト全体のアーキテクチャと設計原則を�
 
 ## References
 
-- [Constitution](/.specify/memory/constitution.md) - プロジェクト原則
+- [Constitution](../../.specify/memory/constitution.md) - プロジェクト原則
 - [002-data-model](../002-data-model/spec.md) - データモデル仕様
-- [003-http-client](/.specify/features/http-client-layer/plan.md) - HTTP クライアント計画
+- [003-http-client](../003-http-client/spec.md) - HTTP クライアント仕様
