@@ -80,7 +80,7 @@ Rust 開発者として、生成された struct を使用するコードがコ�
 - **FR-R006**: 生成された struct は `#[derive(Serialize, Deserialize, Debug, Clone)]` を含まなければならない
 - **FR-R007**: 必須でないプロパティは `#[serde(default)]` 属性を持つものとする
 - **FR-R008**: フィールド名は snake_case に変換しなければならない（typify のデフォルト動作）
-- **FR-R009**: 生成されたコードは `src/generated/` ディレクトリに配置しなければならない
+- **FR-R009**: 生成されたコードは `src/types/` ディレクトリに配置しなければならない
 
 #### 型マッピング
 
@@ -114,6 +114,10 @@ Rust 開発者として、生成された struct を使用するコードがコ�
 - **OrderBook**: 板情報 struct。親仕様の OrderBook スキーマから生成
 - **PriceLevel**: 板情報の各気配レベル struct。親仕様から生成
 - **Instrument**: 銘柄情報 struct。親仕様の Instrument スキーマから生成
+- **VolumeInfo**: 出来高情報 struct。親仕様の VolumeInfo スキーマから生成
+- **ExpiryInfo**: 満期情報 struct。親仕様の ExpiryInfo スキーマから生成
+- **OptionInfo**: オプション情報 struct。親仕様の OptionInfo スキーマから生成
+- **DerivativeInfo**: デリバティブ情報 struct。親仕様の DerivativeInfo スキーマから生成
 
 ## Success Criteria *(mandatory)*
 
