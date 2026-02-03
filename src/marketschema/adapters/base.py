@@ -1,10 +1,18 @@
 """Base adapter class for transforming external data to marketschema models."""
 
-from typing import Any, TypeVar
+from __future__ import annotations
+
+from types import TracebackType
+from typing import TYPE_CHECKING, Any, TypeVar
 
 from marketschema.adapters.mapping import ModelMapping
 from marketschema.adapters.transforms import Transforms
 from marketschema.exceptions import AdapterError, MappingError, TransformError
+
+if TYPE_CHECKING:
+    from typing import Self
+
+    from marketschema.http import AsyncHttpClient
 
 T = TypeVar("T")
 
@@ -35,10 +43,54 @@ class BaseAdapter:
     source_name: str = ""
     transforms: type[Transforms] = Transforms
 
-    def __init__(self) -> None:
-        """Initialize the adapter."""
+    def __init__(
+        self,
+        http_client: AsyncHttpClient | None = None,
+    ) -> None:
+        """Initialize the adapter.
+
+        Args:
+            http_client: Optional HTTP client. If not provided, one will be
+                created lazily when http_client property is accessed.
+        """
         if not self.source_name:
             raise AdapterError(f"{self.__class__.__name__} must define source_name")
+
+        self._http_client: AsyncHttpClient | None = http_client
+        self._owns_http_client = http_client is None
+
+    @property
+    def http_client(self) -> AsyncHttpClient:
+        """Get the HTTP client (lazy initialization).
+
+        Returns:
+            The HTTP client instance.
+        """
+        if self._http_client is None:
+            from marketschema.http import AsyncHttpClient
+
+            self._http_client = AsyncHttpClient()
+            self._owns_http_client = True
+        return self._http_client
+
+    async def close(self) -> None:
+        """Close the HTTP client if owned by this adapter."""
+        if self._http_client is not None and self._owns_http_client:
+            await self._http_client.close()
+            self._http_client = None
+
+    async def __aenter__(self) -> Self:
+        """Enter async context manager."""
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
+        """Exit async context manager and close resources."""
+        await self.close()
 
     def get_quote_mapping(self) -> list[ModelMapping]:
         """Return field mappings for Quote model.
