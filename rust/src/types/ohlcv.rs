@@ -92,11 +92,12 @@ pub mod error {
 #[doc = "      \"type\": \"number\""]
 #[doc = "    }"]
 #[doc = "  },"]
-#[doc = "  \"unevaluatedProperties\": false"]
+#[doc = "  \"additionalProperties\": false"]
 #[doc = "}"]
 #[doc = r" ```"]
 #[doc = r" </details>"]
 #[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
 pub struct Ohlcv {
     pub close: f64,
     pub high: f64,

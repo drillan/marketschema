@@ -1,6 +1,6 @@
 //! Tests for generated types
 
-use marketschema::{Quote, Trade, Ohlcv, OrderBook, Instrument};
+use marketschema::{Instrument, Ohlcv, OrderBook, Quote, Trade};
 
 #[test]
 fn test_quote_deserialization() {
@@ -99,13 +99,15 @@ fn test_instrument_deserialization() {
         "exchange": "XJPX"
     }"#;
 
-    let instrument: Instrument = serde_json::from_str(json).expect("Failed to deserialize Instrument");
+    let instrument: Instrument =
+        serde_json::from_str(json).expect("Failed to deserialize Instrument");
     assert_eq!(*instrument.symbol, "7203.T");
 }
 
 #[test]
 fn test_quote_serialization_roundtrip() {
-    let json = r#"{"ask":2851.0,"bid":2850.0,"symbol":"7203.T","timestamp":"2026-02-02T09:00:00Z"}"#;
+    let json =
+        r#"{"ask":2851.0,"bid":2850.0,"symbol":"7203.T","timestamp":"2026-02-02T09:00:00Z"}"#;
 
     let quote: Quote = serde_json::from_str(json).expect("Failed to deserialize");
     let serialized = serde_json::to_string(&quote).expect("Failed to serialize");

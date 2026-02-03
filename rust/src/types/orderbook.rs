@@ -66,7 +66,7 @@ pub mod error {
 #[doc = "            \"type\": \"number\""]
 #[doc = "          }"]
 #[doc = "        },"]
-#[doc = "        \"unevaluatedProperties\": false"]
+#[doc = "        \"additionalProperties\": false"]
 #[doc = "      }"]
 #[doc = "    },"]
 #[doc = "    \"bids\": {"]
@@ -89,7 +89,7 @@ pub mod error {
 #[doc = "            \"type\": \"number\""]
 #[doc = "          }"]
 #[doc = "        },"]
-#[doc = "        \"unevaluatedProperties\": false"]
+#[doc = "        \"additionalProperties\": false"]
 #[doc = "      }"]
 #[doc = "    },"]
 #[doc = "    \"symbol\": {"]
@@ -103,11 +103,12 @@ pub mod error {
 #[doc = "      \"format\": \"date-time\""]
 #[doc = "    }"]
 #[doc = "  },"]
-#[doc = "  \"unevaluatedProperties\": false"]
+#[doc = "  \"additionalProperties\": false"]
 #[doc = "}"]
 #[doc = r" ```"]
 #[doc = r" </details>"]
 #[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
 pub struct OrderBook {
     #[doc = "売り板（価格昇順）"]
     pub asks: ::std::vec::Vec<OrderBookAsksItem>,
@@ -150,11 +151,12 @@ impl OrderBook {
 #[doc = "      \"type\": \"number\""]
 #[doc = "    }"]
 #[doc = "  },"]
-#[doc = "  \"unevaluatedProperties\": false"]
+#[doc = "  \"additionalProperties\": false"]
 #[doc = "}"]
 #[doc = r" ```"]
 #[doc = r" </details>"]
 #[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
 pub struct OrderBookAsksItem {
     pub price: f64,
     pub size: f64,
@@ -191,11 +193,12 @@ impl OrderBookAsksItem {
 #[doc = "      \"type\": \"number\""]
 #[doc = "    }"]
 #[doc = "  },"]
-#[doc = "  \"unevaluatedProperties\": false"]
+#[doc = "  \"additionalProperties\": false"]
 #[doc = "}"]
 #[doc = r" ```"]
 #[doc = r" </details>"]
 #[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
 pub struct OrderBookBidsItem {
     pub price: f64,
     pub size: f64,
