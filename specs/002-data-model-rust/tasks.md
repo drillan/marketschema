@@ -87,8 +87,8 @@
 - [ ] T020 [P] [US2] Add test_quote_deserialize_invalid_missing_required in rust/tests/types_test.rs (SC-R004)
 - [ ] T021 [P] [US2] Add test_ohlcv_deserialize_valid in rust/tests/types_test.rs (3+ cases for SC-R003)
 - [ ] T022 [P] [US2] Add test_ohlcv_deserialize_invalid_missing_required in rust/tests/types_test.rs
-- [ ] T023 [P] [US2] Add test_trade_deserialize_valid_with_side in rust/tests/types_test.rs
-- [ ] T024 [P] [US2] Add test_trade_deserialize_valid_without_side in rust/tests/types_test.rs
+- [ ] T023 [P] [US2] Add test_trade_deserialize_valid in rust/tests/types_test.rs
+- [ ] T024 [P] [US2] Add test_trade_deserialize_invalid_missing_side in rust/tests/types_test.rs (SC-R004)
 - [ ] T025 [P] [US2] Add test_trade_deserialize_invalid_wrong_type in rust/tests/types_test.rs (SC-R004)
 - [ ] T026 [P] [US2] Add test_orderbook_deserialize_valid in rust/tests/types_test.rs
 - [ ] T027 [P] [US2] Add test_orderbook_deserialize_empty_arrays in rust/tests/types_test.rs
@@ -110,6 +110,10 @@
 - [ ] T052 [P] [US2] Add test_expiry_info_roundtrip in rust/tests/types_test.rs
 - [ ] T053 [P] [US2] Add test_option_info_roundtrip in rust/tests/types_test.rs
 - [ ] T054 [P] [US2] Add test_derivative_info_roundtrip in rust/tests/types_test.rs
+- [ ] T059 [P] [US2] Add test_volume_info_deserialize_invalid in rust/tests/types_test.rs (SC-R004)
+- [ ] T060 [P] [US2] Add test_expiry_info_deserialize_invalid in rust/tests/types_test.rs (SC-R004)
+- [ ] T061 [P] [US2] Add test_option_info_deserialize_invalid in rust/tests/types_test.rs (SC-R004)
+- [ ] T062 [P] [US2] Add test_derivative_info_deserialize_invalid in rust/tests/types_test.rs (SC-R004)
 
 ### Unknown Fields Rejection Tests (deny_unknown_fields)
 
@@ -229,7 +233,7 @@ Task: "Add test_trade_roundtrip in rust/tests/types_test.rs"
 | SC-R001 | T010-T014 | 全スキーマから struct 生成 |
 | SC-R002 | T039 | cargo check エラー 0 件 |
 | SC-R003 | T018-T028 | 各 struct × 3+ 正常系テスト |
-| SC-R004 | T020, T022, T025, T029 | 各 struct × 2+ 異常系テスト |
+| SC-R004 | T020, T022, T024, T025, T029, T059-T062 | 各 struct × 2+ 異常系テスト |
 | SC-R005 | T040 | cargo clippy 警告 0 件 |
 | SC-R006 | T030-T034 | ラウンドトリップテスト |
 

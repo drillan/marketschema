@@ -39,6 +39,7 @@ JSON Schema から typify で自動生成される Rust struct の概要。す�
 | low | f64 | ✅ | 安値 |
 | close | f64 | ✅ | 終値 |
 | volume | f64 | ✅ | 出来高 |
+| quote_volume | Option<f64> | ❌ | 売買代金（決済通貨建ての出来高） |
 
 **Source Schema**: `src/marketschema/schemas/ohlcv.json`
 
@@ -54,7 +55,7 @@ JSON Schema から typify で自動生成される Rust struct の概要。す�
 | timestamp | DateTime<Utc> | ✅ | 約定時刻 |
 | price | f64 | ✅ | 約定価格 |
 | size | f64 | ✅ | 約定数量 |
-| side | Option<Side> | ❌ | 売買方向 (buy/sell) |
+| side | Side | ✅ | 売買方向 (buy/sell) |
 
 **Source Schema**: `src/marketschema/schemas/trade.json`
 
@@ -122,9 +123,9 @@ JSON Schema から typify で自動生成される Rust struct の概要。す�
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| expiry_series | ExpirySeries (newtype) | ✅ | 限月識別子 |
-| expiry_date | Option<Date> (newtype) | ❌ | 満期日 |
-| last_trading_date | Option<Date> (newtype) | ❌ | 最終取引日 |
+| expiry | Option<ExpirySeries> (newtype) | ❌ | 満期系列識別子（YYYY-MM, YYYY-Www, YYYY-MM-DD形式） |
+| expiration_date | Date (newtype) | ✅ | 満期日/SQ日 |
+| last_trading_day | Option<Date> (newtype) | ❌ | 取引可能な最終日 |
 | settlement_date | Option<Date> (newtype) | ❌ | 決済日 |
 
 **Source Schema**: `src/marketschema/schemas/expiry_info.json`
@@ -137,9 +138,9 @@ JSON Schema から typify で自動生成される Rust struct の概要。す�
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| strike | f64 | ✅ | 権利行使価格 |
-| option_type | OptionType | ✅ | call / put |
-| exercise_style | Option<ExerciseStyle> | ❌ | 行使スタイル |
+| strike_price | f64 | ✅ | 権利行使価格 |
+| option_type | OptionType | ✅ | オプションタイプ（call/put） |
+| exercise_style | Option<ExerciseStyle> | ❌ | 行使スタイル（american/european/bermudan） |
 
 **Source Schema**: `src/marketschema/schemas/option_info.json`
 
@@ -151,12 +152,20 @@ JSON Schema から typify で自動生成される Rust struct の概要。す�
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| underlying_symbol | UnderlyingSymbol (newtype) | ✅ | 原資産銘柄 |
+| multiplier | f64 | ✅ | 契約乗数（1契約あたりの乗数） |
+| tick_size | f64 | ✅ | 呼値単位（最小価格変動） |
+| tick_value | Option<f64> | ❌ | ティック価値（1ティックあたりの金額変動） |
+| contract_value | Option<f64> | ❌ | 契約基本価値 |
+| contract_value_currency | Option<Currency> (newtype) | ❌ | 契約価値の通貨 |
+| lot_size | Option<f64> | ❌ | 取引単位（注文可能な最小数量単位） |
+| min_order_size | Option<f64> | ❌ | 最小注文数量 |
+| max_order_size | Option<f64> | ❌ | 最大注文数量 |
+| underlying_symbol | UnderlyingSymbol (newtype) | ✅ | 原資産のシンボル |
 | underlying_type | UnderlyingType | ✅ | 原資産タイプ |
-| multiplier | Option<f64> | ❌ | 乗数 |
+| is_perpetual | Option<bool> | ❌ | 無期限契約か否か（暗号資産デリバティブ向け） |
+| is_inverse | Option<bool> | ❌ | インバース契約か否か（false=linear、暗号資産デリバティブ向け） |
 | settlement_method | Option<SettlementMethod> | ❌ | 決済方法 |
-| expiry | Option<ExpiryInfo> | ❌ | 満期情報 |
-| option | Option<OptionInfo> | ❌ | オプション情報 |
+| settlement_currency | Option<Currency> (newtype) | ❌ | 決済通貨 |
 
 **Source Schema**: `src/marketschema/schemas/derivative_info.json`
 
@@ -249,7 +258,7 @@ typify は minLength, pattern などの制約を持つ string を newtype とし
 | Currency | pattern: ^[A-Z]{3}$ | "JPY" |
 | Exchange | pattern: ^[A-Z]{4}$ | "XJPX" |
 | Date | pattern: ^\d{4}-\d{2}-\d{2}$ | "2026-02-03" |
-| ExpirySeries | pattern | "2026-03", "2026-W10" |
+| ExpirySeries | pattern: `^\d{4}(-\d{2}|-W\d{2}|-\d{2}-\d{2})$` | "2026-03", "2026-W10", "2026-03-15" |
 
 ## Type Relationships
 
@@ -263,12 +272,11 @@ Instrument ───────────────────────
                                                  │
 DerivativeInfo ──────────────────────────────────┤
     │                                            │
+    ├── multiplier: f64 (Required)               │
+    ├── tick_size: f64 (Required)                │
     ├── underlying_symbol: UnderlyingSymbol      │
-    ├── underlying_type: UnderlyingType          │
-    ├── expiry: Option<ExpiryInfo> ─────────────►ExpiryInfo
-    │                                            │
-    └── option: Option<OptionInfo> ─────────────►OptionInfo
-
+    └── underlying_type: UnderlyingType          │
+                                                 │
 OrderBook ───────────────────────────────────────┤
     │                                            │
     ├── bids: Vec<PriceLevel> ──────────────────►PriceLevel
