@@ -141,9 +141,10 @@ impl AsyncHttpClient {
     }
 }
 
-// AsyncHttpClient is Send + Sync for sharing across tasks
-unsafe impl Send for AsyncHttpClient {}
-unsafe impl Sync for AsyncHttpClient {}
+// AsyncHttpClient is automatically Send + Sync because all fields are Send + Sync
+// (reqwest::Client, Option<RetryConfig>, Option<Arc<RateLimiter>>, Option<Arc<ResponseCache>>)
+// Compile-time verification:
+// const _: () = { fn assert_send_sync<T: Send + Sync>() {} fn _check() { assert_send_sync::<AsyncHttpClient>(); } };
 ```
 
 ### AsyncHttpClientBuilder
@@ -490,9 +491,9 @@ impl RateLimiter {
     }
 }
 
-// RateLimiter is Send + Sync for sharing across tasks
-unsafe impl Send for RateLimiter {}
-unsafe impl Sync for RateLimiter {}
+// RateLimiter is automatically Send + Sync because Mutex<T> is Send + Sync when T: Send
+// Compile-time verification:
+// const _: () = { fn assert_send_sync<T: Send + Sync>() {} fn _check() { assert_send_sync::<RateLimiter>(); } };
 ```
 
 ### ResponseCache (Phase 3)
@@ -579,9 +580,9 @@ impl ResponseCache {
     }
 }
 
-// ResponseCache is Send + Sync for sharing across tasks
-unsafe impl Send for ResponseCache {}
-unsafe impl Sync for ResponseCache {}
+// ResponseCache uses moka::future::Cache which is Send + Sync by design
+// Compile-time verification:
+// const _: () = { fn assert_send_sync<T: Send + Sync>() {} fn _check() { assert_send_sync::<ResponseCache>(); } };
 ```
 
 ## Crate: `marketschema` (BaseAdapter integration)
@@ -589,8 +590,7 @@ unsafe impl Sync for ResponseCache {}
 ### BaseAdapter Trait
 
 ```rust
-use std::sync::Arc;
-use tokio::sync::OnceCell;
+use std::sync::{Arc, OnceLock};
 
 /// Base adapter trait with HTTP client support.
 ///
@@ -598,19 +598,24 @@ use tokio::sync::OnceCell;
 ///
 /// ```rust
 /// use marketschema::{BaseAdapter, AsyncHttpClient};
-/// use std::sync::Arc;
+/// use std::sync::{Arc, OnceLock};
 ///
 /// struct MyAdapter {
-///     http_client: Arc<OnceCell<Arc<AsyncHttpClient>>>,
+///     http_client: OnceLock<Arc<AsyncHttpClient>>,
+/// }
+///
+/// impl MyAdapter {
+///     fn new() -> Self {
+///         Self { http_client: OnceLock::new() }
+///     }
 /// }
 ///
 /// impl BaseAdapter for MyAdapter {
 ///     fn http_client(&self) -> Arc<AsyncHttpClient> {
 ///         self.http_client
-///             .get_or_init(|| async {
+///             .get_or_init(|| {
 ///                 Arc::new(AsyncHttpClient::builder().build().unwrap())
 ///             })
-///             .await
 ///             .clone()
 ///     }
 /// }
