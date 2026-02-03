@@ -77,6 +77,7 @@ TDD サイクル（Red → Green → Refactor）に従う。コアライブラ�
 - Python 3.13 + httpx>=0.27.0, pydantic>=2.0.0 (003-http-client)
 - N/A（インメモリキャッシュのみ） (003-http-client)
 - Rust (latest stable, MSRV は別途決定) + reqwest (HTTP), tokio (async runtime), thiserror (errors), serde/serde_json (serialization) (003-http-client-rust)
+- Rust (latest stable) + serde, serde_json, chrono, regress (002-data-model-rust)
 
 ## Recent Changes
 - 002-data-model: Added Python 3.13, Rust (latest stable)
