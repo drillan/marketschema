@@ -91,6 +91,7 @@ class StockAnalysisAdapter(BaseAdapter):
             HttpTimeoutError: If the request times out.
             HttpConnectionError: If connection fails.
             HttpStatusError: If the response has an error status code.
+            HttpRateLimitError: If rate limited (429 status code).
         """
         url = f"{STOCKANALYSIS_URL}/{symbol.lower()}/history/"
         headers = {"User-Agent": USER_AGENT}

@@ -22,7 +22,12 @@ if __name__ == "__main__":
     if str(project_root) not in sys.path:
         sys.path.insert(0, str(project_root))
 
-from examples.stockanalysis.adapter import StockAnalysisAdapter
+from examples.stockanalysis.adapter import STOCKANALYSIS_URL, StockAnalysisAdapter
+from marketschema.http.exceptions import (
+    HttpConnectionError,
+    HttpStatusError,
+    HttpTimeoutError,
+)
 
 DEFAULT_SYMBOL = "tsla"
 
@@ -32,6 +37,9 @@ async def demo_ohlcv(adapter: StockAnalysisAdapter, symbol: str) -> None:
     print(f"\n{'=' * 60}")
     print(f"HTML → ExtendedOHLCV ({symbol.upper()})")
     print("=" * 60)
+
+    url = f"{STOCKANALYSIS_URL}/{symbol.lower()}/history/"
+    print(f"\nGET {url}")
 
     html_content = await adapter.fetch_history(symbol)
 
@@ -67,8 +75,23 @@ async def main() -> None:
     # Get symbol from command line or use default
     symbol = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_SYMBOL
 
-    async with StockAnalysisAdapter() as adapter:
-        await demo_ohlcv(adapter, symbol)
+    try:
+        async with StockAnalysisAdapter() as adapter:
+            await demo_ohlcv(adapter, symbol)
+    except HttpStatusError as e:
+        if e.status_code == 404:
+            print(f"\nError: Symbol '{symbol.upper()}' not found on stockanalysis.com")
+        else:
+            print(f"\nError: HTTP {e.status_code} - {e.message}")
+        sys.exit(1)
+    except HttpTimeoutError:
+        print("\nError: Request timed out. Please check your network connection.")
+        sys.exit(1)
+    except HttpConnectionError:
+        print(
+            "\nError: Could not connect to stockanalysis.com. Please check your network."
+        )
+        sys.exit(1)
 
     print(f"\n{'=' * 60}")
     print("Demo completed!")

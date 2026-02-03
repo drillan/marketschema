@@ -9,7 +9,12 @@ from examples.stockanalysis.adapter import (
     USER_AGENT,
     StockAnalysisAdapter,
 )
-from marketschema.http.exceptions import HttpStatusError
+from marketschema.http.exceptions import (
+    HttpConnectionError,
+    HttpRateLimitError,
+    HttpStatusError,
+    HttpTimeoutError,
+)
 
 
 class TestFetchHistory:
@@ -91,6 +96,48 @@ class TestFetchHistory:
 
         assert exc_info.value.status_code == 404
 
+    @respx.mock
+    @pytest.mark.asyncio
+    async def test_fetch_history_timeout_error(self) -> None:
+        """Fetch history raises HttpTimeoutError on timeout."""
+        respx.get(f"{STOCKANALYSIS_URL}/tsla/history/").mock(
+            side_effect=httpx.TimeoutException("Connection timeout")
+        )
+
+        async with StockAnalysisAdapter() as adapter:
+            with pytest.raises(HttpTimeoutError):
+                await adapter.fetch_history("TSLA")
+
+    @respx.mock
+    @pytest.mark.asyncio
+    async def test_fetch_history_connection_error(self) -> None:
+        """Fetch history raises HttpConnectionError on connection failure."""
+        respx.get(f"{STOCKANALYSIS_URL}/tsla/history/").mock(
+            side_effect=httpx.ConnectError("Connection refused")
+        )
+
+        async with StockAnalysisAdapter() as adapter:
+            with pytest.raises(HttpConnectionError):
+                await adapter.fetch_history("TSLA")
+
+    @respx.mock
+    @pytest.mark.asyncio
+    async def test_fetch_history_rate_limit_error(self) -> None:
+        """Fetch history raises HttpRateLimitError on 429."""
+        respx.get(f"{STOCKANALYSIS_URL}/tsla/history/").mock(
+            return_value=httpx.Response(
+                429,
+                text="Too Many Requests",
+                headers={"Retry-After": "60"},
+            )
+        )
+
+        async with StockAnalysisAdapter() as adapter:
+            with pytest.raises(HttpRateLimitError) as exc_info:
+                await adapter.fetch_history("TSLA")
+
+        assert exc_info.value.retry_after == 60.0
+
 
 class TestAdapterContextManager:
     """Test adapter context manager for resource management."""
@@ -123,12 +170,11 @@ class TestAdapterContextManager:
         )
 
         adapter = StockAnalysisAdapter()
-        try:
+        with pytest.raises(HttpStatusError) as exc_info:
             async with adapter:
                 await adapter.fetch_history("TSLA")
-        except HttpStatusError:
-            pass
 
+        assert exc_info.value.status_code == 500
         # After context exit, client should be closed
         assert adapter._http_client is None
 
