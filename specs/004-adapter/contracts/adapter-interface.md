@@ -21,15 +21,14 @@ class BaseAdapter:
     - get_*_mapping() methods for each supported model type
 
     Example:
-        class BinanceAdapter(BaseAdapter):
-            source_name = "binance"
+        class BitbankAdapter(BaseAdapter):
+            source_name = "bitbank"
 
             def get_quote_mapping(self) -> list[ModelMapping]:
                 return [
-                    ModelMapping("symbol", "s"),
-                    ModelMapping("timestamp", "T", transform=self.transforms.unix_timestamp_ms),
-                    ModelMapping("bid", "b", transform=self.transforms.to_float),
-                    ModelMapping("ask", "a", transform=self.transforms.to_float),
+                    ModelMapping("bid", "buy", transform=self.transforms.to_float),
+                    ModelMapping("ask", "sell", transform=self.transforms.to_float),
+                    ModelMapping("timestamp", "timestamp", transform=self.transforms.unix_timestamp_ms),
                 ]
     """
 
@@ -262,18 +261,18 @@ class AdapterRegistry:
     Example:
         # Register using decorator
         @register
-        class BinanceAdapter(BaseAdapter):
-            source_name = "binance"
+        class BitbankAdapter(BaseAdapter):
+            source_name = "bitbank"
             ...
 
         # Get adapter by name
-        adapter = AdapterRegistry.get("binance")
+        adapter = AdapterRegistry.get("bitbank")
 
         # List all registered adapters
         names = AdapterRegistry.list_adapters()
 
         # Check if registered
-        if AdapterRegistry.is_registered("binance"):
+        if AdapterRegistry.is_registered("bitbank"):
             ...
     """
 
