@@ -17,7 +17,12 @@ from examples.stooq.adapter import (
     STOOQ_INTERVAL_DAILY,
     StooqAdapter,
 )
-from marketschema.http import HttpRateLimitError, HttpStatusError
+from marketschema.http import (
+    HttpConnectionError,
+    HttpRateLimitError,
+    HttpStatusError,
+    HttpTimeoutError,
+)
 
 # Sample CSV data for testing
 SAMPLE_CSV = """Date,Open,High,Low,Close,Volume
@@ -104,6 +109,28 @@ class TestStooqAdapterFetchCsv:
 
         assert exc_info.value.status_code == 429
         assert exc_info.value.retry_after == 60.0
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_fetch_csv_handles_timeout(self) -> None:
+        """fetch_csv should raise HttpTimeoutError when request times out."""
+        respx.get(STOOQ_BASE_URL).mock(side_effect=httpx.TimeoutException("Timeout"))
+
+        async with StooqAdapter() as adapter:
+            with pytest.raises(HttpTimeoutError):
+                await adapter.fetch_csv("spy.us")
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_fetch_csv_handles_connection_error(self) -> None:
+        """fetch_csv should raise HttpConnectionError when connection fails."""
+        respx.get(STOOQ_BASE_URL).mock(
+            side_effect=httpx.ConnectError("Connection refused")
+        )
+
+        async with StooqAdapter() as adapter:
+            with pytest.raises(HttpConnectionError):
+                await adapter.fetch_csv("spy.us")
 
 
 class TestStooqAdapterFetchAndParse:
