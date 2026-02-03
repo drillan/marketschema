@@ -4,6 +4,17 @@ This adapter transforms data from bitbank's Public API into marketschema models.
 
 API Documentation:
     https://github.com/bitbankinc/bitbank-api-docs/blob/master/public-api.md
+
+Example:
+    >>> import asyncio
+    >>> from examples.bitbank.adapter import BitbankAdapter
+    >>>
+    >>> async def main():
+    ...     async with BitbankAdapter() as adapter:
+    ...         quote = await adapter.fetch_ticker("btc_jpy")
+    ...         print(f"BTC/JPY bid: {quote.bid.root}")
+    ...
+    >>> asyncio.run(main())
 """
 
 from datetime import datetime
@@ -12,6 +23,7 @@ from typing import Any
 from marketschema.adapters.base import BaseAdapter
 from marketschema.adapters.mapping import ModelMapping
 from marketschema.adapters.registry import register
+from marketschema.exceptions import AdapterError
 from marketschema.models import (
     OHLCV,
     OrderBook,
@@ -23,6 +35,10 @@ from marketschema.models import (
     Timestamp,
     Trade,
 )
+
+# API constants
+BITBANK_API_BASE = "https://public.bitbank.cc"
+API_SUCCESS_CODE = 1
 
 # Index constants for bitbank candlestick array [open, high, low, close, volume, timestamp]
 OHLCV_INDEX_OPEN = 0
@@ -50,12 +66,144 @@ class BitbankAdapter(BaseAdapter):
         - Candlestick: GET /{pair}/candlestick/{type}/{yyyymmdd} → OHLCV
         - Depth: GET /{pair}/depth → OrderBook
 
+    Example:
+        >>> import asyncio
+        >>> async def main():
+        ...     async with BitbankAdapter() as adapter:
+        ...         quote = await adapter.fetch_ticker("btc_jpy")
+        ...         print(f"BTC/JPY: bid={quote.bid.root}, ask={quote.ask.root}")
+        ...
+        >>> asyncio.run(main())
+
     Note:
         bitbank API responses do not include symbol information.
         Symbol must be provided as a parameter to parse methods.
     """
 
     source_name = "bitbank"
+
+    def _validate_response(self, data: dict[str, Any]) -> None:
+        """Validate bitbank API response.
+
+        Args:
+            data: Raw JSON response from bitbank API.
+
+        Raises:
+            AdapterError: If response indicates API error (success != 1).
+        """
+        if data.get("success") != API_SUCCESS_CODE:
+            raise AdapterError(f"bitbank API error: {data}")
+
+    async def fetch_ticker(self, pair: str) -> Quote:
+        """Fetch ticker data and return Quote.
+
+        Args:
+            pair: Trading pair (e.g., "btc_jpy").
+
+        Returns:
+            Quote model with bid, ask, and timestamp.
+
+        Raises:
+            AdapterError: If API returns error or response format is invalid.
+            HttpStatusError: If HTTP request fails.
+            HttpTimeoutError: If request times out.
+            HttpConnectionError: If connection fails.
+        """
+        url = f"{BITBANK_API_BASE}/{pair}/ticker"
+        data = await self.http_client.get_json(url)
+        self._validate_response(data)
+        try:
+            return self.parse_quote(data["data"], symbol=pair)
+        except KeyError as e:
+            raise AdapterError(
+                f"Missing required field in ticker response for {pair}: {e}"
+            ) from e
+
+    async def fetch_transactions(self, pair: str) -> list[Trade]:
+        """Fetch transactions and return list of Trade.
+
+        Args:
+            pair: Trading pair (e.g., "btc_jpy").
+
+        Returns:
+            List of Trade models.
+
+        Raises:
+            AdapterError: If API returns error or response format is invalid.
+            HttpStatusError: If HTTP request fails.
+            HttpTimeoutError: If request times out.
+            HttpConnectionError: If connection fails.
+        """
+        url = f"{BITBANK_API_BASE}/{pair}/transactions"
+        data = await self.http_client.get_json(url)
+        self._validate_response(data)
+        try:
+            transactions: list[dict[str, Any]] = data["data"]["transactions"]
+            return self.parse_trades(transactions, symbol=pair)
+        except KeyError as e:
+            raise AdapterError(
+                f"Missing required field in transactions response for {pair}: {e}"
+            ) from e
+
+    async def fetch_candlestick(
+        self, pair: str, candle_type: str, date: str
+    ) -> list[OHLCV]:
+        """Fetch candlestick data and return list of OHLCV.
+
+        Args:
+            pair: Trading pair (e.g., "btc_jpy").
+            candle_type: Candle type (e.g., "1hour", "1day").
+            date: Date string in YYYYMMDD format.
+
+        Returns:
+            List of OHLCV models.
+
+        Raises:
+            AdapterError: If API returns error or response format is invalid.
+            HttpStatusError: If HTTP request fails.
+            HttpTimeoutError: If request times out.
+            HttpConnectionError: If connection fails.
+        """
+        url = f"{BITBANK_API_BASE}/{pair}/candlestick/{candle_type}/{date}"
+        data = await self.http_client.get_json(url)
+        self._validate_response(data)
+
+        try:
+            candlestick_list: list[dict[str, Any]] = data["data"]["candlestick"]
+            if not candlestick_list:
+                return []
+
+            ohlcv_arrays: list[list[Any]] = candlestick_list[0]["ohlcv"]
+            return self.parse_ohlcv_batch(ohlcv_arrays, symbol=pair)
+        except KeyError as e:
+            raise AdapterError(
+                f"Missing required field in candlestick response for {pair}: {e}"
+            ) from e
+
+    async def fetch_depth(self, pair: str) -> OrderBook:
+        """Fetch depth data and return OrderBook.
+
+        Args:
+            pair: Trading pair (e.g., "btc_jpy").
+
+        Returns:
+            OrderBook model with asks and bids.
+
+        Raises:
+            AdapterError: If API returns error or response format is invalid.
+            HttpStatusError: If HTTP request fails.
+            HttpTimeoutError: If request times out.
+            HttpConnectionError: If connection fails.
+        """
+        url = f"{BITBANK_API_BASE}/{pair}/depth"
+        data = await self.http_client.get_json(url)
+        self._validate_response(data)
+        try:
+            return self.parse_orderbook(data["data"], symbol=pair)
+        except KeyError as e:
+            raise AdapterError(
+                f"Missing required field in depth response for {pair}: {e}"
+            ) from e
 
     def get_quote_mapping(self) -> list[ModelMapping]:
         """Return field mappings for Quote model.
