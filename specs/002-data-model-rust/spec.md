@@ -60,7 +60,7 @@ Rust 開発者として、生成された struct を使用するコードがコ�
 
 - typify が外部 $ref を解決できない場合 → json-refs でバンドル後に生成する
 - フィールド名が Rust 予約語（type, struct など）の場合 → serde rename で対応
-- JSON Schema Draft 2020-12 の unevaluatedProperties を使用する場合 → typify は未サポートのため、deny_unknown_fields を手動追加する必要がある
+- JSON Schema Draft 2020-12 の unevaluatedProperties を使用する場合 → バンドル時に additionalProperties に変換することで typify が `#[serde(deny_unknown_fields)]` を生成する
 - 複数スキーマで同名の型（Symbol など）が定義される場合 → バンドル時に型名の衝突を解決する
 
 ## Requirements *(mandatory)*
@@ -70,40 +70,41 @@ Rust 開発者として、生成された struct を使用するコードがコ�
 #### スキーマバンドリング
 
 - **FR-R001**: 生成前にすべての JSON Schema を json-refs でバンドルし、自己完結した単一スキーマを作成しなければならない
-- **FR-R002**: バンドリングは `npx json-refs resolve <input> > <output>` コマンドで実行しなければならない
-- **FR-R003**: バンドル済みスキーマは `schemas/bundled/` ディレクトリに保存しなければならない
+- **FR-R002**: バンドリング時に `unevaluatedProperties` を `additionalProperties` に変換しなければならない（typify が `unevaluatedProperties` 未対応のため、[issue #39](https://github.com/drillan/marketschema/issues/39) 参照）
+- **FR-R003**: バンドリングは `scripts/bundle_schemas.sh` で実行し、json-refs による $ref 解決と jq によるプロパティ変換を含むものとする
+- **FR-R004**: バンドル済みスキーマは `rust/bundled/` ディレクトリに保存しなければならない
 
 #### コード生成
 
-- **FR-R004**: システムは cargo-typify を使用して JSON Schema から Rust struct を生成しなければならない
-- **FR-R005**: 生成された struct は `#[derive(Serialize, Deserialize, Debug, Clone)]` を含まなければならない
-- **FR-R006**: 必須でないプロパティは `#[serde(default)]` 属性を持つものとする
-- **FR-R007**: フィールド名は snake_case に変換しなければならない（typify のデフォルト動作）
-- **FR-R008**: 生成されたコードは `src/generated/` ディレクトリに配置しなければならない
+- **FR-R005**: システムは cargo-typify を使用して JSON Schema から Rust struct を生成しなければならない
+- **FR-R006**: 生成された struct は `#[derive(Serialize, Deserialize, Debug, Clone)]` を含まなければならない
+- **FR-R007**: 必須でないプロパティは `#[serde(default)]` 属性を持つものとする
+- **FR-R008**: フィールド名は snake_case に変換しなければならない（typify のデフォルト動作）
+- **FR-R009**: 生成されたコードは `src/generated/` ディレクトリに配置しなければならない
 
 #### 型マッピング
 
-- **FR-R009**: JSON Schema の string は Rust の String 型にマッピングしなければならない
-- **FR-R010**: JSON Schema の number は Rust の f64 型にマッピングしなければならない
-- **FR-R011**: JSON Schema の integer は Rust の i64 型にマッピングしなければならない
-- **FR-R012**: JSON Schema の boolean は Rust の bool 型にマッピングしなければならない
-- **FR-R013**: JSON Schema の array は Rust の Vec<T> 型にマッピングしなければならない
-- **FR-R014**: nullable フィールドは Rust の Option<T> 型として生成しなければならない
+- **FR-R010**: JSON Schema の string は Rust の String 型にマッピングしなければならない
+- **FR-R011**: JSON Schema の number は Rust の f64 型にマッピングしなければならない
+- **FR-R012**: JSON Schema の integer は Rust の i64 型にマッピングしなければならない
+- **FR-R013**: JSON Schema の boolean は Rust の bool 型にマッピングしなければならない
+- **FR-R014**: JSON Schema の array は Rust の Vec<T> 型にマッピングしなければならない
+- **FR-R015**: nullable フィールドは Rust の Option<T> 型として生成しなければならない
 
 #### 既知の制限事項への対応
 
-- **FR-R015**: typify は JSON Schema Draft 2020-12 の unevaluatedProperties をサポートしないため、厳密なフィールド検証が必要な場合は `#[serde(deny_unknown_fields)]` を手動で追加しなければならない
-- **FR-R016**: anyOf および if/then/else のサポートが限定的であることを文書化しなければならない
-- **FR-R017**: スキーマの Draft 2020-12 互換性のため、`$defs` と `definitions` の両方を定義することを推奨する
+- **FR-R016**: typify は JSON Schema Draft 2020-12 の unevaluatedProperties をサポートしないため、FR-R002 に従いバンドル時に additionalProperties へ変換することで `#[serde(deny_unknown_fields)]` の自動生成を実現する
+- **FR-R017**: anyOf および if/then/else のサポートが限定的であることを文書化しなければならない
+- **FR-R018**: スキーマの Draft 2020-12 互換性のため、`$defs` と `definitions` の両方を定義することを推奨する
 
 #### パターン検証
 
-- **FR-R018**: スキーマでパターン検証が使用されている場合、regress クレートを依存関係に追加しなければならない
+- **FR-R019**: スキーマでパターン検証が使用されている場合、regress クレートを依存関係に追加しなければならない
 
 #### 品質保証
 
-- **FR-R019**: 生成されたコードは cargo check でコンパイルエラー 0 件を達成しなければならない
-- **FR-R020**: 生成後は cargo fmt でフォーマットすることを推奨する
+- **FR-R020**: 生成されたコードは cargo check でコンパイルエラー 0 件を達成しなければならない
+- **FR-R021**: 生成後は cargo fmt でフォーマットすることを推奨する
 
 ### Key Entities
 
@@ -139,10 +140,10 @@ Rust 開発者として、生成された struct を使用するコードがコ�
 - カスタムバリデーターの自動生成
 - runtime での JSON Schema 検証（serde のデシリアライズで検証）
 - 生成されたコードの手動編集ルール（CLAUDE.md の Quality Standards に従う）
-- deny_unknown_fields の自動追加（issue #39 で追跡中）
 
 ## Related Documents
 
 - [002-data-model](../002-data-model/spec.md) - 親仕様（JSON Schema 定義）
 - [docs/code-generation.md](../../docs/code-generation.md) - コード生成の実行手順
 - [typify GitHub](https://github.com/oxidecomputer/typify) - コード生成ツールのリポジトリ
+- [ADR-001: unevaluatedProperties 対応策](../../docs/adr/codegen/001-unevaluated-properties-workaround.md) - typify の制限への対応方針
