@@ -26,6 +26,7 @@ from examples.stooq.adapter import STOOQ_BASE_URL, StooqAdapter
 from marketschema.exceptions import AdapterError
 from marketschema.http.exceptions import (
     HttpConnectionError,
+    HttpRateLimitError,
     HttpStatusError,
     HttpTimeoutError,
 )
@@ -77,6 +78,10 @@ async def main() -> None:
     try:
         async with StooqAdapter() as adapter:
             await demo_ohlcv(adapter, symbol)
+    except HttpRateLimitError as e:
+        retry_msg = f" Retry after {e.retry_after}s." if e.retry_after else ""
+        print(f"\nError: Rate limited.{retry_msg}")
+        sys.exit(1)
     except HttpStatusError as e:
         if e.status_code == 404:
             print(f"\nError: Symbol '{symbol}' not found on stooq.com")
