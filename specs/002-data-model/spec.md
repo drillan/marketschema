@@ -24,38 +24,25 @@
 
 ---
 
-### User Story 2 - Python pydantic モデルの生成 (Priority: P2)
+### User Story 2 - 型安全なモデルの自動生成 (Priority: P2)
 
-Python 開発者として、JSON Schema から pydantic v2 モデルを自動生成し、型安全かつバリデーション付きのコードを書ける。
+各言語の開発者として、JSON Schema から型安全なモデルを自動生成し、バリデーション付きのコードを書ける。
 
-**Why this priority**: Python は金融データ分析で広く利用されている言語であり、最優先の言語サポート対象
+**Why this priority**: 型安全なモデル生成により、開発効率と品質が向上する
 
-**Independent Test**: datamodel-code-generator で Python コードを生成し、型チェッカー（mypy）でエラーがないことを確認
-
-**Acceptance Scenarios**:
-
-1. **Given** JSON Schema ファイル一式が存在する, **When** datamodel-codegen を実行する, **Then** pydantic v2 モデルが生成される
-2. **Given** 生成された pydantic モデル, **When** mypy で型チェックする, **Then** エラーなく通過する
-3. **Given** 生成された Quote クラス, **When** 正しいデータでインスタンス化する, **Then** 期待通りのオブジェクトが作成され、バリデーションが実行される
-
----
-
-### User Story 3 - Rust 構造体の生成 (Priority: P2)
-
-Rust 開発者として、JSON Schema から struct を自動生成し、高パフォーマンスなアプリケーションで使用できる。
-
-**Why this priority**: Rust は高頻度取引など、パフォーマンス重視の用途で必要
-
-**Independent Test**: typify で Rust コードを生成し、cargo check でコンパイルエラーがないことを確認
+**Independent Test**: 各言語のコード生成ツールでモデルを生成し、型チェッカーでエラーがないことを確認
 
 **Acceptance Scenarios**:
 
-1. **Given** JSON Schema ファイル一式が存在する, **When** typify を実行する, **Then** Rust struct が生成される
-2. **Given** 生成された struct, **When** cargo build する, **Then** コンパイルが成功する
+1. **Given** JSON Schema ファイル一式が存在する, **When** コード生成ツールを実行する, **Then** 型安全なモデルが生成される
+2. **Given** 生成されたモデル, **When** 型チェッカーで検証する, **Then** エラーなく通過する
+3. **Given** 生成された Quote クラス/構造体, **When** 正しいデータでインスタンス化する, **Then** 期待通りのオブジェクトが作成され、バリデーションが実行される
+
+> **Note**: 言語固有の実装詳細は [lang/](lang/) ディレクトリを参照。
 
 ---
 
-### User Story 4 - アダプター基盤の提供 (Priority: P3)
+### User Story 3 - アダプター基盤の提供 (Priority: P3)
 
 アダプター開発者として、BaseAdapter クラスを継承して、新しいデータソース用のアダプターを簡単に実装できる。
 
@@ -73,7 +60,7 @@ Rust 開発者として、JSON Schema から struct を自動生成し、高パ�
 
 ---
 
-### User Story 5 - アダプターレジストリでの管理 (Priority: P3)
+### User Story 4 - アダプターレジストリでの管理 (Priority: P3)
 
 システム設計者として、複数のアダプターをレジストリに登録し、データソース名で取得できる。
 
@@ -126,8 +113,8 @@ Rust 開発者として、JSON Schema から struct を自動生成し、高パ�
 
 #### コード生成
 
-- **FR-016**: JSON Schema から pydantic v2 モデルを生成するためのコマンドとオプションを文書化しなければならない
-- **FR-017**: JSON Schema から Rust struct を生成するためのコマンドとオプションを文書化しなければならない
+- **FR-016**: 各言語でのモデル生成方法（コマンド、オプション、注意点）を `lang/{言語}.md` に文書化しなければならない
+- **FR-017**: (欠番) ※旧 Rust struct 生成文書化要件。FR-016 に統合
 
 #### アダプター基盤
 
@@ -172,8 +159,8 @@ Rust 開発者として、JSON Schema から struct を自動生成し、高パ�
 ### Measurable Outcomes
 
 - **SC-001**: すべての JSON Schema ファイルが Draft 2020-12 に準拠し、ajv-cli でバリデーションが成功する
-- **SC-002**: pydantic v2 モデルの自動生成が成功し、mypy で型エラーがゼロである
-- **SC-003**: Rust struct の自動生成が成功し、cargo check でコンパイルエラーがゼロである
+- **SC-002**: 各対象言語でモデルの自動生成が成功し、型チェッカーでエラーがゼロである（詳細は `lang/{言語}.md` を参照）
+- **SC-003**: (欠番) ※SC-002 に統合
 - **SC-004**: 各スキーマに対して最低5つのサンプルデータで正常系バリデーションが成功する
 - **SC-005**: 各スキーマに対して最低3つの異常系データでバリデーションエラーが正しく検出される
 - **SC-006**: BaseAdapter を使用したサンプルアダプター（SBI、Binance 形式）が実装でき、テストが通過する
@@ -184,7 +171,7 @@ Rust 開発者として、JSON Schema から struct を自動生成し、高パ�
 - 数値精度: マーケットデータの表示・分析用途では float 型で十分。発注・会計処理で厳密な精度が必要な場合は、アプリケーション側で Decimal 等に変換する想定
 - タイムゾーン: すべてのタイムスタンプは UTC で正規化して保存。ローカルタイムゾーンへの変換はアプリケーション側の責務
 - スキーマバージョニング: セマンティックバージョニングを採用し、破壊的変更はメジャーバージョンで管理
-- 言語サポート: Python と Rust を第一優先とし、TypeScript/Go は将来対応
+- 言語サポート: Python と Rust を第一優先とし、TypeScript/Go は将来対応（各言語の実装詳細は `lang/{言語}.md` を参照）
 - 各業者アダプターは本プロジェクトのスコープ外（外部パッケージとして提供）
 
 ## Out of Scope
@@ -223,3 +210,8 @@ Rust 開発者として、JSON Schema から struct を自動生成し、高パ�
 - [ADR: Enum値](../../docs/adr/types/enum-values.md) - Enum型の許可値
 - [ADR: フォーマット規約](../../docs/adr/types/format-conventions.md) - タイムスタンプ・通貨コードのフォーマット
 - [用語集](../../docs/glossary.md) - フィールドの日本語説明
+
+### 言語別実装仕様
+
+- [lang/python.md](lang/python.md) - Python (pydantic v2) 実装仕様
+- [lang/rust.md](lang/rust.md) - Rust (serde) 実装仕様
