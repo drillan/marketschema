@@ -116,11 +116,12 @@ pub mod error {
 #[doc = "      \"minLength\": 1"]
 #[doc = "    }"]
 #[doc = "  },"]
-#[doc = "  \"unevaluatedProperties\": false"]
+#[doc = "  \"additionalProperties\": false"]
 #[doc = "}"]
 #[doc = r" ```"]
 #[doc = r" </details>"]
 #[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
 pub struct Instrument {
     #[doc = "資産クラス"]
     pub asset_class: InstrumentAssetClass,

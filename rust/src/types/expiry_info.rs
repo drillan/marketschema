@@ -88,11 +88,12 @@ pub mod error {
 #[doc = "      ]"]
 #[doc = "    }"]
 #[doc = "  },"]
-#[doc = "  \"unevaluatedProperties\": false"]
+#[doc = "  \"additionalProperties\": false"]
 #[doc = "}"]
 #[doc = r" ```"]
 #[doc = r" </details>"]
 #[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
 pub struct ExpiryInfo {
     #[doc = "日付（YYYY-MM-DD形式）"]
     pub expiration_date: ExpiryInfoExpirationDate,

@@ -728,11 +728,12 @@ impl ::std::fmt::Display for Price {
 #[doc = "      \"$ref\": \"#/$defs/Size\""]
 #[doc = "    }"]
 #[doc = "  },"]
-#[doc = "  \"unevaluatedProperties\": false"]
+#[doc = "  \"additionalProperties\": false"]
 #[doc = "}"]
 #[doc = r" ```"]
 #[doc = r" </details>"]
 #[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
 pub struct PriceLevel {
     #[doc = "気配値"]
     pub price: Price,

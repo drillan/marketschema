@@ -74,11 +74,12 @@ pub mod error {
 #[doc = "      \"type\": \"number\""]
 #[doc = "    }"]
 #[doc = "  },"]
-#[doc = "  \"unevaluatedProperties\": false"]
+#[doc = "  \"additionalProperties\": false"]
 #[doc = "}"]
 #[doc = r" ```"]
 #[doc = r" </details>"]
 #[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
 pub struct OptionInfo {
     #[doc = "行使スタイル（american/european/bermudan）"]
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
