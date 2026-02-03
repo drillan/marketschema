@@ -273,38 +273,82 @@ from marketschema.models import (
     SettlementMethod,
 )
 
+# 必須フィールドのみ
 derivative = DerivativeInfo(
     multiplier=100.0,
     tick_size=0.01,
-    tick_value=1.0,
-    contract_value=100.0,
-    contract_value_currency=Currency("USD"),
-    lot_size=1.0,
-    min_order_size=1.0,
-    max_order_size=1000.0,
+    underlying_symbol=Symbol("SPX"),
+    underlying_type=UnderlyingType.index_,  # Python では index_ を使用
+)
+
+# オプションフィールドを含む
+derivative_full = DerivativeInfo(
+    multiplier=100.0,
+    tick_size=0.01,
+    tick_value=1.0,  # オプション
+    contract_value=100.0,  # オプション
+    contract_value_currency=Currency("USD"),  # オプション
+    lot_size=1.0,  # オプション
+    min_order_size=1.0,  # オプション
+    max_order_size=1000.0,  # オプション
     underlying_symbol=Symbol("SPX"),
     underlying_type=UnderlyingType.index_,
-    is_perpetual=False,
-    is_inverse=False,
-    settlement_method=SettlementMethod.cash,
-    settlement_currency=Currency("USD"),
+    is_perpetual=False,  # オプション
+    is_inverse=False,  # オプション
+    settlement_method=SettlementMethod.cash,  # オプション
+    settlement_currency=Currency("USD"),  # オプション
 )
 ```
+
+フィールド:
+
+| フィールド | 型 | 必須 | 説明 |
+|-----------|------|------|------|
+| `multiplier` | float | Yes | 契約乗数（1契約あたりの乗数） |
+| `tick_size` | float | Yes | 呼値単位（最小価格変動） |
+| `underlying_symbol` | Symbol | Yes | 原資産のシンボル |
+| `underlying_type` | UnderlyingType | Yes | 原資産タイプ |
+| `tick_value` | float | No | ティック価値（1ティックあたりの金額変動） |
+| `contract_value` | float | No | 契約基本価値 |
+| `contract_value_currency` | Currency | No | 契約価値の通貨 |
+| `lot_size` | float | No | 取引単位（注文可能な最小数量単位） |
+| `min_order_size` | float | No | 最小注文数量 |
+| `max_order_size` | float | No | 最大注文数量 |
+| `is_perpetual` | bool | No | 無期限契約か否か（暗号資産デリバティブ向け） |
+| `is_inverse` | bool | No | インバース契約か否か（暗号資産デリバティブ向け） |
+| `settlement_method` | SettlementMethod | No | 決済方法 |
+| `settlement_currency` | Currency | No | 決済通貨 |
 
 ### ExpiryInfo（満期情報）
 
 先物・オプションの満期関連情報を表現する。
 
 ```python
-from marketschema.models import ExpiryInfo, Date, ExpirySeries
+from marketschema.models import ExpiryInfo
+from marketschema.models.definitions import Date, ExpirySeries
 
-expiry = ExpiryInfo(
-    expiry=ExpirySeries("2025-03"),
-    last_trading_day=Date("2025-03-20"),
+# 必須フィールドのみ
+expiry_minimal = ExpiryInfo(
     expiration_date=Date("2025-03-21"),
-    settlement_date=Date("2025-03-21"),
+)
+
+# オプションフィールドを含む
+expiry_full = ExpiryInfo(
+    expiry=ExpirySeries("2025-03"),  # オプション
+    last_trading_day=Date("2025-03-20"),  # オプション
+    expiration_date=Date("2025-03-21"),
+    settlement_date=Date("2025-03-21"),  # オプション
 )
 ```
+
+フィールド:
+
+| フィールド | 型 | 必須 | 説明 |
+|-----------|------|------|------|
+| `expiration_date` | Date | Yes | 満期日/SQ日 |
+| `expiry` | ExpirySeries | No | 満期系列識別子（YYYY-MM, YYYY-Www, YYYY-MM-DD形式） |
+| `last_trading_day` | Date | No | 取引可能な最終日 |
+| `settlement_date` | Date | No | 決済日 |
 
 ### OptionInfo（オプション）
 
@@ -313,12 +357,27 @@ expiry = ExpiryInfo(
 ```python
 from marketschema.models import OptionInfo, Price, OptionType, ExerciseStyle
 
+# 必須フィールドのみ
 option = OptionInfo(
     strike_price=Price(5000.0),
     option_type=OptionType.call,
-    exercise_style=ExerciseStyle.european,
+)
+
+# オプションフィールドを含む
+option_with_style = OptionInfo(
+    strike_price=Price(5000.0),
+    option_type=OptionType.call,
+    exercise_style=ExerciseStyle.european,  # オプション
 )
 ```
+
+フィールド:
+
+| フィールド | 型 | 必須 | 説明 |
+|-----------|------|------|------|
+| `strike_price` | Price | Yes | 権利行使価格 |
+| `option_type` | OptionType | Yes | オプションタイプ（call/put） |
+| `exercise_style` | ExerciseStyle | No | 行使スタイル（american/european/bermudan） |
 
 ## 共通型定義
 
@@ -342,7 +401,9 @@ marketschema では、フィールドの意味を明確にするために専用�
 | `OptionType` | オプションタイプ | `call`, `put` |
 | `ExerciseStyle` | 行使スタイル | `american`, `european`, `bermudan` |
 | `SettlementMethod` | 決済方法 | `cash`, `physical` |
-| `UnderlyingType` | 原資産タイプ | `stock`, `index`, `etf`, `commodity`, `currency`, `crypto` |
+| `UnderlyingType` | 原資産タイプ | `stock`, `index_`*, `etf`, `commodity`, `currency`, `crypto` |
+
+\* Python では予約語 `index` との衝突を避けるため `UnderlyingType.index_` を使用。シリアライズ時は `"index"` となる。
 
 ### 文字列パターン型
 
@@ -455,7 +516,7 @@ marketschema は Schema First アプローチを採用している。
 
 ### スキーマファイルの場所
 
-スキーマファイルは `src/marketschema/schemas/` に配置されている。
+スキーマファイルは `src/marketschema/schemas/` に配置されている。主要なスキーマには以下が含まれる（新規追加により増える可能性あり）:
 
 ```text
 src/marketschema/schemas/
