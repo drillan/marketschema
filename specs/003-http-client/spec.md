@@ -33,9 +33,9 @@ JSON/テキスト形式のレスポンスを簡単に取得したい。
 
 **Acceptance Scenarios**:
 
-1. **Given** AsyncHttpClient インスタンスが生成されている, **When** `get_json(url)` を呼び出す, **Then** JSON レスポンスが dict として返される
-2. **Given** AsyncHttpClient インスタンスが生成されている, **When** `get_text(url)` を呼び出す, **Then** テキストレスポンスが str として返される
-3. **Given** コンテキストマネージャで AsyncHttpClient を使用する, **When** with ブロックを抜ける, **Then** コネクションが自動的にクローズされる
+1. **Given** AsyncHttpClient インスタンスが生成されている, **When** `get_json(url)` を呼び出す, **Then** JSON レスポンスがオブジェクト/マップ型として返される
+2. **Given** AsyncHttpClient インスタンスが生成されている, **When** `get_text(url)` を呼び出す, **Then** テキストレスポンスが文字列型として返される
+3. **Given** コンテキストマネージャで AsyncHttpClient を使用する, **When** スコープを抜ける, **Then** コネクションが自動的にクローズされる
 
 ---
 
@@ -55,7 +55,7 @@ JSON/テキスト形式のレスポンスを簡単に取得したい。
 2. **Given** 接続先に到達できない, **When** `get_json(url)` を呼び出す, **Then** `HttpConnectionError` が発生する
 3. **Given** API が 404 を返す, **When** `get_json(url)` を呼び出す, **Then** `HttpStatusError(status_code=404)` が発生する
 4. **Given** API が 429 (Rate Limit) を返す, **When** `get_json(url)` を呼び出す, **Then** `HttpRateLimitError` が発生する
-5. **Given** 例外が発生する, **When** 例外を catch する, **Then** `__cause__` で元の例外にアクセスできる
+5. **Given** 例外が発生する, **When** 例外を catch する, **Then** 元の例外への参照（例外チェイン）でアクセスできる
 
 ---
 
@@ -127,14 +127,14 @@ HTTP クライアントを簡単に利用したい。
 **Acceptance Scenarios**:
 
 1. **Given** BaseAdapter を継承したクラス, **When** `self.http_client` にアクセスする, **Then** AsyncHttpClient インスタンスが遅延初期化される
-2. **Given** アダプターをコンテキストマネージャで使用する, **When** with ブロックを抜ける, **Then** HTTP クライアントが自動的にクローズされる
+2. **Given** アダプターをコンテキストマネージャで使用する, **When** スコープを抜ける, **Then** HTTP クライアントが自動的にクローズされる
 3. **Given** カスタム HTTP クライアントを渡す, **When** アダプターを生成する, **Then** 渡されたクライアントが使用される
 
 ---
 
 ### Edge Cases
 
-- 非常に大きなレスポンス（メモリ制限）：httpx のデフォルト制限に依存
+- 非常に大きなレスポンス（メモリ制限）：HTTP ライブラリのデフォルト制限に依存
 - 不正な JSON レスポンス：明確なパースエラーを発生させる
 - 空のレスポンス：適切なエラーまたは空のデータとして処理
 - 同時多数リクエスト：コネクションプーリングで処理
@@ -148,10 +148,10 @@ HTTP クライアントを簡単に利用したい。
 **US1: 非同期 HTTP リクエストの実行**
 
 - **FR-001**: AsyncHttpClient は非同期 HTTP GET リクエストを実行できなければならない
-- **FR-002**: AsyncHttpClient は JSON レスポンスを dict として返す `get_json()` を提供しなければならない
-- **FR-003**: AsyncHttpClient はテキストレスポンスを str として返す `get_text()` を提供しなければならない
+- **FR-002**: AsyncHttpClient は JSON レスポンスをオブジェクト/マップ型として返す `get_json()` を提供しなければならない
+- **FR-003**: AsyncHttpClient はテキストレスポンスを文字列型として返す `get_text()` を提供しなければならない
 - **FR-004**: AsyncHttpClient は生の HTTP レスポンスを返す `get()` を提供しなければならない
-- **FR-005**: AsyncHttpClient はコンテキストマネージャ（async with）をサポートしなければならない
+- **FR-005**: AsyncHttpClient はリソース管理パターン（コンテキストマネージャまたは同等機構）をサポートしなければならない
 - **FR-006**: AsyncHttpClient はタイムアウトを設定可能でなければならない（デフォルト: 30秒）
 - **FR-007**: AsyncHttpClient はコネクションプーリングを行わなければならない（デフォルト: 最大100接続）
 
@@ -163,7 +163,7 @@ HTTP クライアントを簡単に利用したい。
 - **FR-011**: HTTP 429 ステータス時は `HttpRateLimitError` を発生させなければならない
 - **FR-012**: すべての HTTP 例外は `HttpError` を継承しなければならない
 - **FR-013**: すべての HTTP 例外は `MarketSchemaError` を継承しなければならない
-- **FR-014**: 例外は元の例外を `__cause__` として保持しなければならない
+- **FR-014**: 例外は元の例外への参照（例外チェイン）を保持しなければならない
 
 **US3: 失敗時の自動リトライ**
 
@@ -188,7 +188,7 @@ HTTP クライアントを簡単に利用したい。
 
 - **FR-025**: BaseAdapter に `http_client` プロパティを追加しなければならない
 - **FR-026**: `http_client` は遅延初期化されなければならない
-- **FR-027**: BaseAdapter はコンテキストマネージャ（async with）をサポートしなければならない
+- **FR-027**: BaseAdapter はリソース管理パターンをサポートしなければならない
 - **FR-028**: コンテキストマネージャ終了時に HTTP クライアントをクローズしなければならない
 
 ### Key Entities
@@ -215,11 +215,10 @@ HTTP クライアントを簡単に利用したい。
 
 ## Assumptions
 
-- httpx ライブラリを使用する（Constitution v0.5.0 で承認済み）
-- Python 3.13 以上を対象とする
-- すべての API は非同期（async/await）で実装する
-- TLS 証明書検証は httpx のデフォルト動作に従う
+- すべての API は非同期で実装する
+- TLS 証明書検証は各言語の HTTP ライブラリのデフォルト動作に従う
 - 認証処理は HTTP クライアントの責務外とし、各アダプターで実装する
+- 各言語固有の実装詳細は [lang/](./lang/) ディレクトリを参照
 
 ## References
 
@@ -228,3 +227,9 @@ HTTP クライアントを簡単に利用したい。
 - [002-data-model](../002-data-model/spec.md) - データモデル仕様
 - [Implementation Plan](./features/http-client-layer/plan.md) - 実装計画
 - [Architecture Design](./features/http-client-layer/architecture.md) - アーキテクチャ設計
+- [Error Taxonomy](./contracts/error-taxonomy.md) - 言語非依存エラー分類
+
+### Language-Specific Implementation Guides
+
+- [Python Implementation](./lang/python.md) - Python 実装ガイド
+- [Rust Implementation](./lang/rust.md) - Rust 実装ガイド
