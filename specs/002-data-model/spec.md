@@ -59,6 +59,8 @@ Rust 開発者として、JSON Schema から struct を自動生成し、高パ�
 
 アダプター開発者として、BaseAdapter クラスを継承して、新しいデータソース用のアダプターを簡単に実装できる。
 
+> **Note**: インターフェース契約の詳細は [004-adapter](../004-adapter/spec.md) を参照。
+
 **Why this priority**: アダプターはコアライブラリの拡張ポイントであり、個別業者対応は外部パッケージで行う想定
 
 **Independent Test**: BaseAdapter を継承したサンプルアダプターを実装し、マッピング定義でデータ変換できることを確認
@@ -74,6 +76,8 @@ Rust 開発者として、JSON Schema から struct を自動生成し、高パ�
 ### User Story 5 - アダプターレジストリでの管理 (Priority: P3)
 
 システム設計者として、複数のアダプターをレジストリに登録し、データソース名で取得できる。
+
+> **Note**: インターフェース契約の詳細は [004-adapter](../004-adapter/spec.md) を参照。
 
 **Why this priority**: 動的なアダプター選択を可能にし、プラグイン的な拡張性を提供
 
@@ -126,6 +130,8 @@ Rust 開発者として、JSON Schema から struct を自動生成し、高パ�
 - **FR-017**: JSON Schema から Rust struct を生成するためのコマンドとオプションを文書化しなければならない
 
 #### アダプター基盤
+
+> **Note**: 以下の FR のインターフェース契約詳細は [004-adapter](../004-adapter/spec.md) を参照。
 
 - **FR-018**: BaseAdapter 抽象クラスを提供し、各データモデルへのマッピング定義メソッドを要求しなければならない
 - **FR-019**: ModelMapping クラスを提供し、target_field, source_field, transform, default の属性を持つものとする
@@ -211,6 +217,7 @@ Rust 開発者として、JSON Schema から struct を自動生成し、高パ�
 
 ## Related Documents
 
+- [004-adapter](../004-adapter/spec.md) - アダプターインターフェース契約（User Story 4-5, FR-018〜021 の詳細）
 - [フィールド要件表](field-requirements.csv) - エンティティ別フィールド定義（データ型、必須/任意、Enum値、フォーマット）
 - [ADR: フィールド名](../../docs/adr/index.md) - フィールド名の標準化決定
 - [ADR: Enum値](../../docs/adr/types/enum-values.md) - Enum型の許可値
