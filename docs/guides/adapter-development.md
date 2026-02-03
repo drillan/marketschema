@@ -167,9 +167,9 @@ class MySourceAdapter(BaseAdapter):
 | `to_float(value)` | 文字列を float に変換 | `"123.45"` | `123.45` |
 | `to_int(value)` | 文字列を int に変換 | `"123"` | `123` |
 | `unix_timestamp_ms(value)` | ミリ秒タイムスタンプを ISO 8601 に変換 | `1704067200000` | `"2024-01-01T00:00:00Z"` |
-| `unix_timestamp_s(value)` | 秒タイムスタンプを ISO 8601 に変換 | `1704067200` | `"2024-01-01T00:00:00Z"` |
+| `unix_timestamp_sec(value)` | 秒タイムスタンプを ISO 8601 に変換 | `1704067200` | `"2024-01-01T00:00:00Z"` |
 | `iso_timestamp(value)` | ISO 8601 文字列をそのまま返す | `"2024-01-01T00:00:00Z"` | `"2024-01-01T00:00:00Z"` |
-| `side_from_string(value)` | 文字列を Side enum に変換 | `"buy"` | `Side.buy` |
+| `side_from_string(value)` | 文字列を `"buy"`/`"sell"` に正規化 | `"BUY"` | `"buy"` |
 
 ## データソース別パターン
 
@@ -418,6 +418,7 @@ if __name__ == "__main__":
         sys.path.insert(0, str(project_root))
 
 from examples.{source}.adapter import {Source}Adapter
+from marketschema.exceptions import AdapterError
 from marketschema.http.exceptions import (
     HttpConnectionError,
     HttpStatusError,
@@ -455,11 +456,14 @@ async def main() -> None:
         else:
             print(f"\nError: HTTP {e.status_code} - {e.message}")
         sys.exit(1)
-    except HttpTimeoutError:
-        print("\nError: Request timed out")
+    except HttpTimeoutError as e:
+        print(f"\nError: Request timed out: {e}")
         sys.exit(1)
-    except HttpConnectionError:
-        print("\nError: Connection failed")
+    except HttpConnectionError as e:
+        print(f"\nError: Connection failed: {e}")
+        sys.exit(1)
+    except AdapterError as e:
+        print(f"\nError: Failed to parse response: {e}")
         sys.exit(1)
 
     print(f"\n{'=' * 60}")
@@ -473,9 +477,10 @@ if __name__ == "__main__":
 
 ### エラーハンドリングのポイント
 
-1. **try/except で主要な例外をキャッチ**: `HttpStatusError`, `HttpTimeoutError`, `HttpConnectionError`
+1. **try/except で主要な例外をキャッチ**: `HttpStatusError`, `HttpTimeoutError`, `HttpConnectionError`, `AdapterError`
 2. **ユーザーフレンドリーなメッセージ**: 技術的詳細ではなく、ユーザーが理解できるメッセージを表示
 3. **適切な終了コード**: エラー時は `sys.exit(1)` で非ゼロ終了
+4. **例外オブジェクトのキャプチャ**: `as e` を使用してエラー詳細を取得
 
 ## ミドルウェアの使用例
 

@@ -24,6 +24,7 @@ if __name__ == "__main__":
         sys.path.insert(0, str(project_root))
 
 from examples.bitbank.adapter import BitbankAdapter
+from marketschema.exceptions import AdapterError
 from marketschema.http import AsyncHttpClient
 from marketschema.http.exceptions import (
     HttpConnectionError,
@@ -129,11 +130,14 @@ async def main() -> None:
     except HttpStatusError as e:
         print(f"\nError: HTTP {e.status_code} - {e.message}")
         sys.exit(1)
-    except HttpTimeoutError:
-        print("\nError: Request timed out. Please check your network connection.")
+    except HttpTimeoutError as e:
+        print(f"\nError: Request timed out: {e}")
         sys.exit(1)
-    except HttpConnectionError:
-        print("\nError: Could not connect to bitbank API. Please check your network.")
+    except HttpConnectionError as e:
+        print(f"\nError: Could not connect to bitbank API: {e}")
+        sys.exit(1)
+    except AdapterError as e:
+        print(f"\nError: Failed to parse API response: {e}")
         sys.exit(1)
 
     print(f"\n{'=' * 60}")

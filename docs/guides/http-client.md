@@ -167,7 +167,7 @@ async with AsyncHttpClient(rate_limit=rate_limit) as client:
 | パラメータ | 型 | デフォルト | 説明 |
 |-----------|-----|---------|------|
 | `requests_per_second` | float | - | 1秒あたりの最大リクエスト数（必須） |
-| `burst_size` | int \| None | requests_per_second と同値 | バーストサイズ |
+| `burst_size` | int \| None | int(requests_per_second) | バーストサイズ |
 
 ## レスポンスキャッシュ
 

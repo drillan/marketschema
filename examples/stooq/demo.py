@@ -23,6 +23,7 @@ if __name__ == "__main__":
         sys.path.insert(0, str(project_root))
 
 from examples.stooq.adapter import STOOQ_BASE_URL, StooqAdapter
+from marketschema.exceptions import AdapterError
 from marketschema.http.exceptions import (
     HttpConnectionError,
     HttpStatusError,
@@ -82,11 +83,14 @@ async def main() -> None:
         else:
             print(f"\nError: HTTP {e.status_code} - {e.message}")
         sys.exit(1)
-    except HttpTimeoutError:
-        print("\nError: Request timed out. Please check your network connection.")
+    except HttpTimeoutError as e:
+        print(f"\nError: Request timed out: {e}")
         sys.exit(1)
-    except HttpConnectionError:
-        print("\nError: Could not connect to stooq.com. Please check your network.")
+    except HttpConnectionError as e:
+        print(f"\nError: Could not connect to stooq.com: {e}")
+        sys.exit(1)
+    except AdapterError as e:
+        print(f"\nError: Failed to parse CSV response: {e}")
         sys.exit(1)
 
     print(f"\n{'=' * 60}")
