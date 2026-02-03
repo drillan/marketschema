@@ -64,9 +64,9 @@ def fetch_html(symbol: str) -> str:
 
 
 def demo_ohlcv(adapter: StockAnalysisAdapter, symbol: str) -> None:
-    """Demonstrate HTML → OHLCV parsing."""
+    """Demonstrate HTML → ExtendedOHLCV parsing."""
     print(f"\n{'=' * 60}")
-    print(f"HTML → OHLCV ({symbol.upper()})")
+    print(f"HTML → ExtendedOHLCV ({symbol.upper()})")
     print("=" * 60)
 
     html_content = fetch_html(symbol)
@@ -76,7 +76,7 @@ def demo_ohlcv(adapter: StockAnalysisAdapter, symbol: str) -> None:
 
     # Parse HTML to ExtendedOHLCV models (includes Adj Close)
     ohlcvs = adapter.parse_html_extended(html_content, symbol=symbol.upper())
-    print(f"Parsed {len(ohlcvs)} OHLCV records")
+    print(f"Parsed {len(ohlcvs)} ExtendedOHLCV records")
 
     if not ohlcvs:
         print("\nNo data found. The page may have a different structure.")

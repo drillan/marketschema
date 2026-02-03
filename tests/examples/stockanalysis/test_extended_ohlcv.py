@@ -22,14 +22,14 @@ class TestExtendedOHLCVModel:
         """ExtendedOHLCV forbids extra fields (FR-010)."""
         with pytest.raises(ValueError, match="Extra inputs are not permitted"):
             ExtendedOHLCV(
-                symbol="TSLA",
-                timestamp="2026-02-02T00:00:00Z",
-                open=260.03,
-                high=270.49,
-                low=259.21,
-                close=269.96,
-                volume=73368699,
-                adj_close=269.96,
+                symbol="TSLA",  # type: ignore[arg-type]
+                timestamp="2026-02-02T00:00:00Z",  # type: ignore[arg-type]
+                open=260.03,  # type: ignore[arg-type]
+                high=270.49,  # type: ignore[arg-type]
+                low=259.21,  # type: ignore[arg-type]
+                close=269.96,  # type: ignore[arg-type]
+                volume=73368699,  # type: ignore[arg-type]
+                adj_close=269.96,  # type: ignore[arg-type]
                 unknown_field=123.45,  # type: ignore[call-arg]
             )
 
