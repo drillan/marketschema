@@ -74,6 +74,8 @@ TDD サイクル（Red → Green → Refactor）に従う。コアライブラ�
 ## Active Technologies
 - Python 3.13, Rust (latest stable) (002-data-model)
 - N/A（スキーマ定義ファイルのみ） (002-data-model)
+- Python 3.13 + httpx>=0.27.0, pydantic>=2.0.0 (003-http-client)
+- N/A（インメモリキャッシュのみ） (003-http-client)
 
 ## Recent Changes
 - 002-data-model: Added Python 3.13, Rust (latest stable)
