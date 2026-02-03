@@ -4,6 +4,7 @@
 # Usage: ./scripts/bundle_schemas.sh
 
 set -e
+set -o pipefail  # パイプライン内の任意のコマンド失敗を検出
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
@@ -31,10 +32,26 @@ SCHEMAS=(
 )
 
 # Also bundle definitions.json (no $refs to resolve, but needs unevaluatedProperties conversion)
+# See: docs/adr/codegen/001-unevaluated-properties-workaround.md
 jq 'walk(if type == "object" and has("unevaluatedProperties")
     then .additionalProperties = .unevaluatedProperties | del(.unevaluatedProperties)
     else . end)' "$SCHEMAS_DIR/definitions.json" > "$OUTPUT_DIR/definitions.json"
 echo "  Converted: definitions.json"
+
+# Validate output is valid JSON and not empty
+validate_output() {
+    local output_file="$1"
+    if [ ! -s "$output_file" ]; then
+        echo "ERROR: Bundled schema is empty: $output_file" >&2
+        exit 1
+    fi
+    if ! jq empty "$output_file" 2>/dev/null; then
+        echo "ERROR: Bundled schema is invalid JSON: $output_file" >&2
+        exit 1
+    fi
+}
+
+validate_output "$OUTPUT_DIR/definitions.json"
 
 # Bundle each schema by resolving $ref
 # Also convert unevaluatedProperties to additionalProperties for typify compatibility
@@ -46,6 +63,7 @@ for schema in "${SCHEMAS[@]}"; do
         jq 'walk(if type == "object" and has("unevaluatedProperties")
             then .additionalProperties = .unevaluatedProperties | del(.unevaluatedProperties)
             else . end)' > "$OUTPUT_DIR/$schema"
+    validate_output "$OUTPUT_DIR/$schema"
 done
 
 echo "Done! Bundled schemas in $OUTPUT_DIR"

@@ -115,3 +115,102 @@ fn test_quote_serialization_roundtrip() {
     // Verify we can deserialize the serialized version
     let _: Quote = serde_json::from_str(&serialized).expect("Failed to deserialize roundtrip");
 }
+
+// =============================================================================
+// Tests for deny_unknown_fields (FR-010 compliance)
+// These tests verify that unknown fields are rejected during deserialization
+// =============================================================================
+
+#[test]
+fn test_quote_rejects_unknown_fields() {
+    let json = r#"{
+        "symbol": "7203.T",
+        "timestamp": "2026-02-02T09:00:00Z",
+        "bid": 2850.0,
+        "ask": 2851.0,
+        "unknown_field": "should_cause_error"
+    }"#;
+
+    let result: Result<Quote, _> = serde_json::from_str(json);
+    assert!(result.is_err());
+    assert!(result.unwrap_err().to_string().contains("unknown field"));
+}
+
+#[test]
+fn test_trade_rejects_unknown_fields() {
+    let json = r#"{
+        "symbol": "AAPL",
+        "timestamp": "2026-02-02T14:30:00Z",
+        "price": 175.50,
+        "size": 100.0,
+        "side": "buy",
+        "extra_field": 123
+    }"#;
+
+    let result: Result<Trade, _> = serde_json::from_str(json);
+    assert!(result.is_err());
+    assert!(result.unwrap_err().to_string().contains("unknown field"));
+}
+
+#[test]
+fn test_ohlcv_rejects_unknown_fields() {
+    let json = r#"{
+        "symbol": "BTCUSDT",
+        "timestamp": "2026-02-02T00:00:00Z",
+        "open": 50000.0,
+        "high": 51500.0,
+        "low": 49800.0,
+        "close": 51200.0,
+        "volume": 12345.67,
+        "invalid_field": true
+    }"#;
+
+    let result: Result<Ohlcv, _> = serde_json::from_str(json);
+    assert!(result.is_err());
+    assert!(result.unwrap_err().to_string().contains("unknown field"));
+}
+
+#[test]
+fn test_orderbook_rejects_unknown_fields() {
+    let json = r#"{
+        "symbol": "USDJPY",
+        "timestamp": "2026-02-02T09:00:00Z",
+        "bids": [{ "price": 149.50, "size": 1000000.0 }],
+        "asks": [{ "price": 149.51, "size": 1500000.0 }],
+        "unknown": "value"
+    }"#;
+
+    let result: Result<OrderBook, _> = serde_json::from_str(json);
+    assert!(result.is_err());
+    assert!(result.unwrap_err().to_string().contains("unknown field"));
+}
+
+#[test]
+fn test_orderbook_nested_rejects_unknown_fields() {
+    // Test that unknown fields in nested structures (bids/asks items) are also rejected
+    let json = r#"{
+        "symbol": "USDJPY",
+        "timestamp": "2026-02-02T09:00:00Z",
+        "bids": [{ "price": 149.50, "size": 1000000.0, "extra": "field" }],
+        "asks": [{ "price": 149.51, "size": 1500000.0 }]
+    }"#;
+
+    let result: Result<OrderBook, _> = serde_json::from_str(json);
+    assert!(result.is_err());
+    assert!(result.unwrap_err().to_string().contains("unknown field"));
+}
+
+#[test]
+fn test_instrument_rejects_unknown_fields() {
+    let json = r#"{
+        "symbol": "7203.T",
+        "asset_class": "equity",
+        "currency": "JPY",
+        "exchange": "XJPX",
+        "not_a_field": "invalid"
+    }"#;
+
+    let result: Result<Instrument, _> = serde_json::from_str(json);
+    assert!(result.is_err());
+    assert!(result.unwrap_err().to_string().contains("unknown field"));
+}
