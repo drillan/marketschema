@@ -1,110 +1,148 @@
-# Rust Implementation Specification: Data Model
+# Feature Specification: Rust Data Model Implementation
 
 **Feature Branch**: `002-data-model-rust`
 **Parent Spec**: [002-data-model](../002-data-model/spec.md)
-**Status**: Active
+**Created**: 2026-02-03
+**Status**: Draft
+**Input**: User description: "JSON Schema から Rust struct を生成するための言語固有仕様"
 
-## Overview
+## User Scenarios & Testing *(mandatory)*
 
-JSON Schema から Rust struct を生成するための仕様。
+### User Story 1 - Rust struct の自動生成 (Priority: P1)
 
-## Code Generation Tool
+Rust 開発者として、JSON Schema から serde 対応の Rust struct を自動生成し、型安全でシリアライズ/デシリアライズ可能なコードを書ける。
 
-### cargo-typify
+**Why this priority**: 型安全な struct 生成は Rust 実装の根幹であり、手動で struct を書く労力を削減し、スキーマとの整合性を保証する
 
-- **Tool**: [typify](https://github.com/oxidecomputer/typify)
-- **Install**: `cargo install cargo-typify`
+**Independent Test**: コード生成コマンドを実行し、生成された Rust ソースファイルが存在することを確認
 
-## Limitations
+**Acceptance Scenarios**:
 
-### External $ref Resolution
+1. **Given** バンドル済み JSON Schema ファイルが存在する, **When** cargo-typify を実行する, **Then** serde derive を持つ struct が生成される
+2. **Given** スキーマに description が定義されている, **When** struct を生成する, **Then** doc comment として反映される
+3. **Given** スキーマに制約（min/max など）が定義されている, **When** struct を生成する, **Then** 適切な型制約として反映される
 
-typify has limitations on resolving external `$ref`. Schemas must be bundled beforehand.
+---
 
-### Draft 2020-12 Support
+### User Story 2 - 生成 struct でのデシリアライズ (Priority: P1)
 
-Due to lack of explicit Draft 2020-12 support, it's recommended to define both `$defs` and `definitions` for compatibility.
+Rust 開発者として、生成された struct で JSON データのデシリアライズを実行し、型安全なデータ操作ができる。
 
-### unevaluatedProperties Support
+**Why this priority**: デシリアライズはデータ取得の核心機能であり、P1 の生成と同等に重要
 
-typify does not support JSON Schema Draft 2020-12 `unevaluatedProperties`.
-Even when `unevaluatedProperties: false` is specified in the schema,
-`#[serde(deny_unknown_fields)]` is not added to generated Rust code.
+**Independent Test**: 生成された struct に正常/異常な JSON データを渡し、期待通りの結果を得られることを確認
 
-This issue is tracked in issue #39.
+**Acceptance Scenarios**:
 
-Current behavior:
-- Unknown fields are silently ignored during deserialization
-- Strict FR-010 compliance is not guaranteed in Rust implementation
+1. **Given** 生成された Quote struct, **When** 正しい形式の JSON でデシリアライズする, **Then** struct インスタンスが正常に作成される
+2. **Given** 生成された OHLCV struct, **When** 必須フィールドが欠けた JSON を渡す, **Then** デシリアライズエラーが発生する
+3. **Given** 生成された struct, **When** シリアライズしてから再度デシリアライズする, **Then** ラウンドトリップが成功する
 
-### Limited Support
+---
 
-The following JSON Schema features have limited support:
-- `anyOf`
-- `if/then/else`
+### User Story 3 - コンパイラによる型検証 (Priority: P2)
 
-## Schema Bundling
+Rust 開発者として、生成された struct を使用するコードがコンパイルを通過し、型安全性が保証される。
 
-### Necessity
+**Why this priority**: 型安全性は Rust の強みであり、コンパイル時のエラー検出により実行時エラーを防ぐ
 
-typify requires self-contained schemas. Use `json-refs` tool to resolve and inline all `$ref`.
+**Independent Test**: 生成された struct に対して cargo check を実行し、コンパイルエラーがないことを確認
 
-### Bundling Tool
+**Acceptance Scenarios**:
 
-```bash
-# Install json-refs
-npm install json-refs
+1. **Given** 生成された全 struct ファイル, **When** cargo check を実行する, **Then** コンパイルエラー 0 件で通過する
+2. **Given** 生成された struct を使用するコード, **When** 不正な型を代入しようとする, **Then** コンパイルエラーが発生する
+3. **Given** Option 型のフィールド, **When** unwrap なしでアクセスする, **Then** コンパイラが警告または match 文を要求する
 
-# Execute bundling
-npx json-refs resolve schema.json > bundled-schema.json
-```
+---
 
-## Auto-generated serde Attributes
+### Edge Cases
 
-| Attribute | Condition |
-|-----------|-----------|
-| `#[derive(Serialize, Deserialize, Debug, Clone)]` | All types |
-| `#[serde(default)]` | Properties not in `required` |
-| `#[serde(deny_unknown_fields)]` | Requires manual addition (see issue #39) |
+- typify が外部 $ref を解決できない場合 → json-refs でバンドル後に生成する
+- フィールド名が Rust 予約語（type, struct など）の場合 → serde rename で対応
+- JSON Schema Draft 2020-12 の unevaluatedProperties を使用する場合 → typify は未サポートのため、deny_unknown_fields を手動追加する必要がある
+- 複数スキーマで同名の型（Symbol など）が定義される場合 → バンドル時に型名の衝突を解決する
 
-## Type Checking
+## Requirements *(mandatory)*
 
-### cargo check
+### Functional Requirements
 
-Verify generated code compiles without errors.
+#### スキーマバンドリング
 
-```bash
-cargo check
-```
+- **FR-R001**: 生成前にすべての JSON Schema を json-refs でバンドルし、自己完結した単一スキーマを作成しなければならない
+- **FR-R002**: バンドリングは `npx json-refs resolve <input> > <output>` コマンドで実行しなければならない
+- **FR-R003**: バンドル済みスキーマは `schemas/bundled/` ディレクトリに保存しなければならない
 
-### Expected Results
+#### コード生成
 
-- Compile errors: 0
-- Warnings: Allowed (but reducing is recommended)
+- **FR-R004**: システムは cargo-typify を使用して JSON Schema から Rust struct を生成しなければならない
+- **FR-R005**: 生成された struct は `#[derive(Serialize, Deserialize, Debug, Clone)]` を含まなければならない
+- **FR-R006**: 必須でないプロパティは `#[serde(default)]` 属性を持つものとする
+- **FR-R007**: フィールド名は snake_case に変換しなければならない（typify のデフォルト動作）
+- **FR-R008**: 生成されたコードは `src/generated/` ディレクトリに配置しなければならない
 
-## Notes
+#### 型マッピング
 
-### regress Crate
+- **FR-R009**: JSON Schema の string は Rust の String 型にマッピングしなければならない
+- **FR-R010**: JSON Schema の number は Rust の f64 型にマッピングしなければならない
+- **FR-R011**: JSON Schema の integer は Rust の i64 型にマッピングしなければならない
+- **FR-R012**: JSON Schema の boolean は Rust の bool 型にマッピングしなければならない
+- **FR-R013**: JSON Schema の array は Rust の Vec<T> 型にマッピングしなければならない
+- **FR-R014**: nullable フィールドは Rust の Option<T> 型として生成しなければならない
 
-The `regress` crate may be required for schema pattern validation.
+#### 既知の制限事項への対応
 
-```toml
-# Cargo.toml
-[dependencies]
-regress = "0.10"
-```
+- **FR-R015**: typify は JSON Schema Draft 2020-12 の unevaluatedProperties をサポートしないため、厳密なフィールド検証が必要な場合は `#[serde(deny_unknown_fields)]` を手動で追加しなければならない
+- **FR-R016**: anyOf および if/then/else のサポートが限定的であることを文書化しなければならない
+- **FR-R017**: スキーマの Draft 2020-12 互換性のため、`$defs` と `definitions` の両方を定義することを推奨する
 
-### Symbol Type Duplication
+#### パターン検証
 
-When multiple schemas define `Symbol` type, type names may conflict after bundling. Use renaming or type aliases as needed.
+- **FR-R018**: スキーマでパターン検証が使用されている場合、regress クレートを依存関係に追加しなければならない
 
-## Recommended Workflow
+#### 品質保証
 
-1. Bundle schemas
-2. Generate Rust code
-3. Verify compilation with cargo check
-4. Manual adjustments as needed
+- **FR-R019**: 生成されたコードは cargo check でコンパイルエラー 0 件を達成しなければならない
+- **FR-R020**: 生成後は cargo fmt でフォーマットすることを推奨する
 
-## Execution
+### Key Entities
 
-See [docs/code-generation.md](../../docs/code-generation.md) for actual command execution.
+- **Quote**: 最良気配値 struct。親仕様の Quote スキーマから生成
+- **OHLCV**: ローソク足 struct。親仕様の OHLCV スキーマから生成
+- **Trade**: 約定 struct。親仕様の Trade スキーマから生成
+- **OrderBook**: 板情報 struct。親仕様の OrderBook スキーマから生成
+- **PriceLevel**: 板情報の各気配レベル struct。親仕様から生成
+- **Instrument**: 銘柄情報 struct。親仕様の Instrument スキーマから生成
+
+## Success Criteria *(mandatory)*
+
+### Measurable Outcomes
+
+- **SC-R001**: すべての JSON Schema ファイル（Quote, OHLCV, Trade, OrderBook, Instrument 等）から Rust struct が正常に生成される
+- **SC-R002**: 生成された struct が cargo check でコンパイルエラー 0 件を達成する
+- **SC-R003**: 各 struct に対して最低 3 つの正常系 JSON データでデシリアライズが成功する
+- **SC-R004**: 各 struct に対して最低 2 つの異常系 JSON データでデシリアライズエラーが発生する
+- **SC-R005**: 生成されたコードが cargo clippy で重大な警告 0 件を達成する
+- **SC-R006**: 生成された struct のシリアライズ/デシリアライズのラウンドトリップが成功する
+
+## Assumptions
+
+- cargo-typify (typify) の最新版を使用する
+- Rust 最新安定版を対象とする
+- serde および serde_json クレートを使用する
+- JSON Schema は親仕様で定義された Draft 2020-12 形式に準拠している
+- Node.js および npm が json-refs のためにインストールされている
+
+## Out of Scope
+
+- typify 以外のコード生成ツール（schemars、json-schema-to-rust など）
+- カスタムバリデーターの自動生成
+- runtime での JSON Schema 検証（serde のデシリアライズで検証）
+- 生成されたコードの手動編集ルール（CLAUDE.md の Quality Standards に従う）
+- deny_unknown_fields の自動追加（issue #39 で追跡中）
+
+## Related Documents
+
+- [002-data-model](../002-data-model/spec.md) - 親仕様（JSON Schema 定義）
+- [docs/code-generation.md](../../docs/code-generation.md) - コード生成の実行手順
+- [typify GitHub](https://github.com/oxidecomputer/typify) - コード生成ツールのリポジトリ
