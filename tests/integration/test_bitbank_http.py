@@ -12,7 +12,11 @@ import respx
 
 from examples.bitbank.adapter import BitbankAdapter
 from marketschema.exceptions import AdapterError
-from marketschema.http.exceptions import HttpStatusError
+from marketschema.http.exceptions import (
+    HttpConnectionError,
+    HttpStatusError,
+    HttpTimeoutError,
+)
 from marketschema.models import OHLCV, OrderBook, Quote, Trade
 
 BITBANK_API_BASE = "https://public.bitbank.cc"
@@ -263,4 +267,56 @@ class TestFetchErrorHandling:
 
         async with BitbankAdapter() as adapter:
             with pytest.raises(HttpStatusError):
+                await adapter.fetch_ticker("btc_jpy")
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_fetch_with_timeout_error_propagates(self) -> None:
+        """fetch_ticker propagates HttpTimeoutError on timeout."""
+        respx.get(f"{BITBANK_API_BASE}/btc_jpy/ticker").mock(
+            side_effect=httpx.TimeoutException("Connection timeout")
+        )
+
+        async with BitbankAdapter() as adapter:
+            with pytest.raises(HttpTimeoutError):
+                await adapter.fetch_ticker("btc_jpy")
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_fetch_with_connection_error_propagates(self) -> None:
+        """fetch_ticker propagates HttpConnectionError on connection failure."""
+        respx.get(f"{BITBANK_API_BASE}/btc_jpy/ticker").mock(
+            side_effect=httpx.ConnectError("Connection refused")
+        )
+
+        async with BitbankAdapter() as adapter:
+            with pytest.raises(HttpConnectionError):
+                await adapter.fetch_ticker("btc_jpy")
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_fetch_with_missing_success_field_raises_adapter_error(self) -> None:
+        """fetch_ticker raises AdapterError when success field is missing."""
+        response_without_success = {
+            "data": {"sell": "9653004", "buy": "9651884", "timestamp": 1738454400000}
+        }
+        respx.get(f"{BITBANK_API_BASE}/btc_jpy/ticker").mock(
+            return_value=httpx.Response(200, json=response_without_success)
+        )
+
+        async with BitbankAdapter() as adapter:
+            with pytest.raises(AdapterError, match="bitbank API error"):
+                await adapter.fetch_ticker("btc_jpy")
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_fetch_with_missing_data_field_raises_adapter_error(self) -> None:
+        """fetch_ticker raises AdapterError when data field is missing."""
+        response_without_data = {"success": 1}
+        respx.get(f"{BITBANK_API_BASE}/btc_jpy/ticker").mock(
+            return_value=httpx.Response(200, json=response_without_data)
+        )
+
+        async with BitbankAdapter() as adapter:
+            with pytest.raises(AdapterError, match="Missing required field"):
                 await adapter.fetch_ticker("btc_jpy")
