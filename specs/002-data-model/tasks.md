@@ -1,6 +1,6 @@
 # Tasks: 統一マーケットデータスキーマ
 
-**Input**: Design documents from `/specs/001-market-data-schema/`
+**Input**: Design documents from `/specs/002-data-model/`
 **Prerequisites**: plan.md (required), spec.md (required for user stories), research.md, data-model.md, contracts/
 
 **Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
@@ -42,7 +42,7 @@
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
 - [x] T008 Create src/marketschema/schemas/ directory structure
-- [x] T009 Verify JSON Schema contracts in specs/001-market-data-schema/contracts/ are complete (10 files expected)
+- [x] T009 Verify JSON Schema contracts in specs/002-data-model/contracts/ are complete (10 files expected)
 - [x] T010 Create src/marketschema/exceptions.py with base exception classes (MarketSchemaError, ValidationError, TransformError, AdapterError)
 - [x] T011 Create tests/ directory structure (tests/unit/, tests/integration/, tests/contract/)
 - [x] T012 Create tests/conftest.py with shared pytest fixtures
@@ -263,7 +263,7 @@ Task: "Create volume_info.json in src/marketschema/schemas/volume_info.json"
 
 - [P] tasks = different files, no dependencies
 - [Story] label maps task to specific user story for traceability
-- JSON Schema contracts already exist in specs/001-market-data-schema/contracts/ - copy to src/
+- JSON Schema contracts already exist in specs/002-data-model/contracts/ - copy to src/
 - datamodel-codegen generates pydantic v2 models from JSON Schema
 - typify generates Rust structs but requires bundled schemas (no external $ref)
 - All timestamps in UTC, ISO 8601 format

@@ -1,25 +1,27 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version Change: 0.3.0 → 0.4.0
+Version Change: 0.4.0 → 0.5.0
 
 Modified Principles:
-- 業界標準名の採用（Industry Standard Naming）: 決定プロセスを具体化
+- II. 軽量コア: 共通HTTPクライアントをコアに含めることを明記、「通信処理」の除外を撤回
 
 Added Sections:
-- フィールド名決定プロセスの4ステップを明文化
-- 確立された業界標準名リストを拡充（size, bid_size, ask_size, quote_volume, symbol 追加）
-- 情報ソース一覧への参照を追加
+- Scope Definition に「共通HTTPクライアント」を追加
+- 「コアに含めるもの」に共通インフラストラクチャの説明を追加
+- Out of Scope を「個別データソース固有の実装」として明確化
 
-Removed Sections: None
+Removed Sections:
+- Out of Scope から「データソース接続」を削除（コアの共通HTTPで対応するため）
 
 Templates Requiring Updates:
 - .specify/templates/plan-template.md ✅ (Constitution Check セクションは動的に評価)
 - .specify/templates/spec-template.md ✅ (変更不要)
 - .specify/templates/tasks-template.md ✅ (変更不要)
-- docs/adr/index.md ✅ (決定プロセスは既に定義済み)
+- .specify/features/http-client-layer/plan.md ⚠️ (Constitution改訂案を削除すべき - 本改訂で対応済み)
 
-Follow-up TODOs: None
+Follow-up TODOs:
+- HTTP クライアント実装後、TDD Application Scope に http モジュールを追加検討
 ==================
 -->
 
@@ -46,13 +48,27 @@ JSON Schema が単一の真実の源（Single Source of Truth）である。
 
 ### II. 軽量コア
 
-コアは最小限に留める。
+コアは最小限に留めつつ、アダプター実装に必要な共通インフラストラクチャを提供する。
 
-- **コアに含めるもの**: スキーマ定義、基底アダプタークラス、共通変換関数
-- **コアに含めないもの**: 個別データソースへの対応、認証処理、通信処理
+- **コアに含めるもの**:
+  - スキーマ定義
+  - 基底アダプタークラス
+  - 共通変換関数
+  - 共通 HTTP クライアント（データソース非依存のインフラストラクチャ）
 
-**Rationale**: コアを小さく保つことで、メンテナンス負荷を下げ、
-アダプターの独立した開発・リリースを可能にする。
+- **コアに含めないもの**:
+  - 個別データソース向けアダプター（bitbank, binance, stooq 等）
+  - 認証処理（API キー管理、OAuth 等）
+  - データソース固有のビジネスロジック
+
+**共通インフラストラクチャの定義**:
+共通 HTTP クライアントは、アダプター実装の 80% 以上で必要とされる汎用機能であり、
+認証やデータソース固有のロジックを含まない。オプショナル依存として提供し、
+必要なユーザーのみがインストールできる形式とする。
+
+**Rationale**: コアを小さく保ちながらも、実用的なアダプター開発を支援する。
+共通インフラを提供することで、個別アダプターの重複実装を防ぎ、
+プロジェクト全体の品質と一貫性を向上させる。
 
 ### III. シンプルさ優先
 
@@ -79,7 +95,7 @@ JSON Schema が単一の真実の源（Single Source of Truth）である。
 
 業者対応はコア外で行う。
 
-- 各データソース向けアダプターは独立したパッケージ
+- 各データソース向けアダプターは独立したパッケージまたは examples として提供
 - コアへの依存は最小限に
 - サードパーティによる拡張を歓迎する
 
@@ -93,6 +109,7 @@ JSON Schema が単一の真実の源（Single Source of Truth）である。
 |---------|------|
 | データモデル | Quote, OHLCV, Trade, OrderBook, Instrument 等 |
 | アダプター基盤 | BaseAdapter, ModelMapping, 共通変換関数 |
+| 共通 HTTP クライアント | AsyncHttpClient（リトライ、タイムアウト、レート制限対応） |
 | 対象商品 | 株式、投信、債券、デリバティブ、FX、暗号資産、CFD |
 | コード生成 | JSON Schema から各言語へのモデル生成 |
 
@@ -104,8 +121,8 @@ JSON Schema が単一の真実の源（Single Source of Truth）である。
 | ポートフォリオ管理 | 別ドメイン |
 | リスク計算 | 別ドメイン |
 | 会計・税務処理 | 別ドメイン |
-| データソース接続 | アダプターパッケージで実装 |
-| 認証・認可 | アダプターパッケージで実装 |
+| 個別データソースの API 仕様 | 各アダプターパッケージで実装 |
+| 認証・認可 | 各アダプターパッケージで実装 |
 
 ## Compatibility Policy
 
@@ -133,6 +150,7 @@ JSON Schema が単一の真実の源（Single Source of Truth）である。
 - 新しいモデルの追加
 - 新しい変換関数の追加
 - enum への新しい値の追加
+- 新しいオプショナル依存（extras）の追加
 
 ## Defaults and Extensibility
 
@@ -144,6 +162,7 @@ JSON Schema が単一の真実の源（Single Source of Truth）である。
 | タイムスタンプ | ISO 8601 (UTC) | アダプターで任意形式から変換 |
 | NULL 許容 | required フィールドは非 NULL | スキーマで oneOf を使用 |
 | バリデーション | スキーマによる型検証 | カスタムバリデータを追加可能 |
+| HTTP クライアント | httpx（オプショナル） | `pip install marketschema[http]` |
 
 ## Development Workflow
 
@@ -186,6 +205,7 @@ Kent Beck の TDD（テスト駆動開発）サイクルに従う。
 |------|---------|
 | コアライブラリ | 必須 |
 | 変換関数 | 必須 |
+| HTTP クライアント | 必須 |
 | アダプター | 推奨 |
 | コード生成スクリプト | 推奨 |
 
@@ -390,6 +410,13 @@ def get_orderbook(data, depth: int = 10):
 - 変換ロジックはテスト可能な単位で実装
 - データソース固有の例外を共通例外にラップ
 
+### HTTP Client
+
+- 非同期（async/await）を基本とする
+- タイムアウトを必須設定とし、無限待ちを防止
+- リトライはべき等な操作（GET 等）に限定
+- HTTP エラーは明示的な例外として伝播
+
 ## Priority of Principles
 
 設計判断で迷った場合、以下の優先順位に従う：
@@ -423,4 +450,4 @@ def get_orderbook(data, depth: int = 10):
 - 複雑さを追加する場合は正当化が必要
 - 原則に違反する場合は、明示的な例外として文書化する
 
-**Version**: 0.4.0 | **Ratified**: 2026-02-02 | **Last Amended**: 2026-02-02
+**Version**: 0.5.0 | **Ratified**: 2026-02-02 | **Last Amended**: 2026-02-03

@@ -1,7 +1,7 @@
 # Implementation Plan: 統一マーケットデータスキーマ
 
-**Branch**: `001-market-data-schema` | **Date**: 2026-02-02 | **Spec**: [spec.md](spec.md)
-**Input**: Feature specification from `/specs/001-market-data-schema/spec.md`
+**Branch**: `002-data-model` | **Date**: 2026-02-02 | **Spec**: [spec.md](spec.md)
+**Input**: Feature specification from `/specs/002-data-model/spec.md`
 
 ## Summary
 
@@ -46,7 +46,7 @@
 ### Documentation (this feature)
 
 ```text
-specs/001-market-data-schema/
+specs/002-data-model/
 ├── spec.md              # Feature specification
 ├── plan.md              # This file
 ├── research.md          # Phase 0 output
@@ -131,10 +131,10 @@ docs/
 
 | Artifact | Path | Description |
 |----------|------|-------------|
-| research.md | specs/001-market-data-schema/research.md | 技術調査結果（JSON Schema, datamodel-codegen, typify） |
-| data-model.md | specs/001-market-data-schema/data-model.md | エンティティ定義とリレーション |
-| quickstart.md | specs/001-market-data-schema/quickstart.md | 使用方法ガイド |
-| contracts/ | specs/001-market-data-schema/contracts/ | JSON Schema ファイル（9 ファイル） |
+| research.md | specs/002-data-model/research.md | 技術調査結果（JSON Schema, datamodel-codegen, typify） |
+| data-model.md | specs/002-data-model/data-model.md | エンティティ定義とリレーション |
+| quickstart.md | specs/002-data-model/quickstart.md | 使用方法ガイド |
+| contracts/ | specs/002-data-model/contracts/ | JSON Schema ファイル（9 ファイル） |
 
 ## Complexity Tracking
 

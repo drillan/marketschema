@@ -10,7 +10,7 @@ REPO_ROOT = Path(__file__).parent.parent
 
 # Schema directory paths
 SCHEMAS_DIR = REPO_ROOT / "src" / "marketschema" / "schemas"
-CONTRACTS_DIR = REPO_ROOT / "specs" / "001-market-data-schema" / "contracts"
+CONTRACTS_DIR = REPO_ROOT / "specs" / "002-data-model" / "contracts"
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 
 
