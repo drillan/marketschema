@@ -29,13 +29,10 @@ JSON Schema から Python pydantic v2 モデルを生成するための仕様。
 | `--reuse-model` | - | 同一内容のモデルを再利用 |
 | `--disable-timestamp` | - | 生成日時コメントを無効化 |
 
-### 推奨オプション
+### オプション設定
 
-| オプション | 値 | 説明 |
-|-----------|-----|------|
-| `--target-python-version` | `3.13` | ターゲット Python バージョン |
-| `--reuse-scope` | `tree` | ファイル横断的な重複排除 |
-| `--strict-types` | `str int float bool` | 厳格な型チェック |
+設定は `pyproject.toml` の `[tool.datamodel-codegen]` セクションで管理。
+詳細は [docs/code-generation.md](../../../docs/code-generation.md) を参照。
 
 ## pydantic v2 設定
 

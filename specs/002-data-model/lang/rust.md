@@ -24,6 +24,18 @@ typify は外部 `$ref` の解決に制限がある。事前にスキーマを�
 
 Draft 2020-12 の明示的サポートがないため、互換性のために `$defs` と `definitions` の両方を定義することを推奨。
 
+### unevaluatedProperties のサポート
+
+typify は JSON Schema Draft 2020-12 の `unevaluatedProperties` をサポートしていません。
+スキーマで `unevaluatedProperties: false` を指定しても、生成される Rust コードには
+`#[serde(deny_unknown_fields)]` が付与されません。
+
+この問題は issue #39 で追跡しています。
+
+現在の挙動:
+- デシリアライズ時に未知のフィールドは無視される
+- FR-010 の厳密な準拠は Rust 実装では保証されない
+
 ### サポート制限
 
 以下の JSON Schema 機能はサポートが限定的:
@@ -52,7 +64,7 @@ npx json-refs resolve schema.json > bundled-schema.json
 |-----|------|
 | `#[derive(Serialize, Deserialize, Debug, Clone)]` | すべての型 |
 | `#[serde(default)]` | `required` に含まれないプロパティ |
-| `#[serde(deny_unknown_fields)]` | `additionalProperties: false` の場合 |
+| `#[serde(deny_unknown_fields)]` | 手動追加が必要（issue #39 参照） |
 
 ## 型チェック
 
