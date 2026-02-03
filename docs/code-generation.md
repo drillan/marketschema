@@ -2,7 +2,11 @@
 
 This document explains how to generate code from the JSON Schema definitions.
 
+> **Note**: 言語固有の仕様・制約については [specs/002-data-model/lang/](../specs/002-data-model/lang/) を参照してください。本ドキュメントは実行手順に焦点を当てています。
+
 ## Python (pydantic v2)
+
+仕様詳細: [specs/002-data-model/lang/python.md](../specs/002-data-model/lang/python.md)
 
 ### Prerequisites
 
@@ -53,6 +57,8 @@ Options are defined in `pyproject.toml` under `[tool.datamodel-codegen]`.
 | `--snake-case-field` | Convert field names to snake_case |
 
 ## Rust (serde)
+
+仕様詳細: [specs/002-data-model/lang/rust.md](../specs/002-data-model/lang/rust.md)
 
 ### Prerequisites
 

@@ -70,87 +70,25 @@
 
 ---
 
-## 2. Python コード生成 (datamodel-code-generator)
+## 2. 言語別コード生成
 
-### 推奨コマンド
+各言語のコード生成ツールと設定の詳細は、言語別仕様を参照:
 
-```bash
-datamodel-codegen \
-  --input schemas/ \
-  --input-file-type jsonschema \
-  --output-model-type pydantic_v2.BaseModel \
-  --target-python-version 3.13 \
-  --use-annotated \
-  --field-constraints \
-  --strict-types str int float bool \
-  --use-standard-collections \
-  --use-union-operator \
-  --snake-case-field \
-  --use-schema-description \
-  --use-field-description \
-  --reuse-model \
-  --reuse-scope tree \
-  --disable-timestamp \
-  --formatters ruff-format ruff-check \
-  --output src/marketschema/models/
-```
+- **Python**: [lang/python.md](lang/python.md) - datamodel-code-generator + pydantic v2
+- **Rust**: [lang/rust.md](lang/rust.md) - typify + serde
 
-### 主要オプション
+### 調査結果サマリ
 
-| オプション | 説明 |
-|-----------|------|
-| `--output-model-type pydantic_v2.BaseModel` | Pydantic v2 モデル出力 |
-| `--use-annotated` | `typing.Annotated` を使用 |
-| `--reuse-model` | 同一内容のモデルを再利用 |
-| `--reuse-scope tree` | ファイル横断的な重複排除 |
-
-### unevaluatedProperties 対応
-
-- `unevaluatedProperties: false` → `model_config = ConfigDict(extra='forbid')`
-- `unevaluatedProperties: true` → `model_config = ConfigDict(extra='allow')`
-
-**Decision**: pyproject.toml に設定を記載し、Make/uv script で実行。
-
----
-
-## 3. Rust コード生成 (typify)
-
-### インストールと使用
-
-```bash
-cargo install cargo-typify
-cargo typify schema.json --output types.rs
-```
-
-### 制限事項
-
-1. **外部 `$ref` の解決に制限あり** - 事前にスキーマをバンドルする必要
-2. **Draft 2020-12 の明示的サポートなし** - `$defs` と `definitions` 両方定義で互換性確保
-3. **`anyOf`、`if/then/else` のサポートが限定的**
-
-### 推奨ワークフロー
-
-```bash
-# 1. スキーマをバンドル
-npx json-refs resolve schema.json > bundled-schema.json
-
-# 2. Rust コード生成
-cargo typify bundled-schema.json --output src/types.rs
-```
-
-### 自動生成される serde 属性
-
-| 属性 | 条件 |
-|-----|------|
-| `#[derive(Serialize, Deserialize, Debug, Clone)]` | すべての型 |
-| `#[serde(default)]` | `required` に含まれないプロパティ |
-| `#[serde(deny_unknown_fields)]` | `additionalProperties: false` の場合 |
+| 言語 | ツール | 主な制約 |
+|------|--------|----------|
+| Python | datamodel-code-generator | $ref は相対パス推奨 |
+| Rust | cargo-typify | 外部 $ref 解決に制限あり、事前バンドル必要 |
 
 **Decision**: Python 優先でスキーマ設計し、Rust 生成時は事前バンドルで対応。
 
 ---
 
-## 4. スキーマバリデーション (ajv-cli)
+## 3. スキーマバリデーション (ajv-cli)
 
 ### インストールと使用
 
@@ -174,7 +112,7 @@ ajv validate \
 
 ---
 
-## 5. プロジェクト固有の決定事項
+## 4. プロジェクト固有の決定事項
 
 ### スキーマ ID 形式
 
