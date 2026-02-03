@@ -49,9 +49,9 @@ types/format-conventions
 
 ADRで定義されたフィールド情報をまとめた要件表:
 
-- [field-requirements.csv](../../specs/001-market-data-schema/field-requirements.csv) - エンティティ別フィールド定義
-- [enum-values.csv](../../specs/001-market-data-schema/enum-values.csv) - Enum値の定義と代替案
-- [format-conventions.csv](../../specs/001-market-data-schema/format-conventions.csv) - フォーマット規約と標準
+- [field-requirements.csv](../../specs/002-data-model/field-requirements.csv) - エンティティ別フィールド定義
+- [enum-values.csv](../../specs/002-data-model/enum-values.csv) - Enum値の定義と代替案
+- [format-conventions.csv](../../specs/002-data-model/format-conventions.csv) - フォーマット規約と標準
 
 ### field-requirements.csv 列構造
 

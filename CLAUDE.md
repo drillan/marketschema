@@ -72,8 +72,8 @@ uv run pytest            # テスト
 TDD サイクル（Red → Green → Refactor）に従う。コアライブラリと変換関数は TDD 必須。
 
 ## Active Technologies
-- Python 3.13, Rust (latest stable) (001-market-data-schema)
-- N/A（スキーマ定義ファイルのみ） (001-market-data-schema)
+- Python 3.13, Rust (latest stable) (002-data-model)
+- N/A（スキーマ定義ファイルのみ） (002-data-model)
 
 ## Recent Changes
-- 001-market-data-schema: Added Python 3.13, Rust (latest stable)
+- 002-data-model: Added Python 3.13, Rust (latest stable)
