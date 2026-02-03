@@ -218,7 +218,7 @@ HTTP クライアントを簡単に利用したい。
 - すべての API は非同期で実装する
 - TLS 証明書検証は各言語の HTTP ライブラリのデフォルト動作に従う
 - 認証処理は HTTP クライアントの責務外とし、各アダプターで実装する
-- 各言語固有の実装詳細は [lang/](./lang/) ディレクトリを参照
+- 各言語固有の実装詳細は言語別 spec を参照
 
 ## References
 
@@ -229,7 +229,7 @@ HTTP クライアントを簡単に利用したい。
 - [Architecture Design](./features/http-client-layer/architecture.md) - アーキテクチャ設計
 - [Error Taxonomy](./contracts/error-taxonomy.md) - 言語非依存エラー分類
 
-### Language-Specific Implementation Guides
+### Language-Specific Implementation Specs
 
-- [Python Implementation](./lang/python.md) - Python 実装ガイド
-- [Rust Implementation](./lang/rust.md) - Rust 実装ガイド
+- [003-http-client-python](../003-http-client-python/spec.md) - Python Implementation Spec
+- [003-http-client-rust](../003-http-client-rust/spec.md) - Rust Implementation Spec

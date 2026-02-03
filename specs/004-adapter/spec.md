@@ -165,10 +165,13 @@
 
 ## Related Documents
 
-- [contracts/adapter-interface.md](contracts/adapter-interface.md) - BaseAdapter, ModelMapping, AdapterRegistry の契約
-- [contracts/transforms.md](contracts/transforms.md) - 変換関数の入出力仕様
-- [lang/python.md](lang/python.md) - Python 実装ガイド
-- [lang/rust.md](lang/rust.md) - Rust 実装ガイド（Planned）
+- [contracts/adapter-interface.md](contracts/adapter-interface.md) - BaseAdapter, ModelMapping, AdapterRegistry の言語非依存契約
+- [contracts/transforms.md](contracts/transforms.md) - 変換関数の言語非依存仕様
 - [checklists/requirements.md](checklists/requirements.md) - 要件チェックリスト
 - [002-data-model](../002-data-model/spec.md) - User Story 4-5, FR-018〜021 のスコープ定義
 - [docs/guides/adapter-development.md](../../docs/guides/adapter-development.md) - 実践的なアダプター開発チュートリアル
+
+### Language-Specific Implementation Specs
+
+- [004-adapter-python](../004-adapter-python/spec.md) - Python Implementation Spec
+- [004-adapter-rust](../004-adapter-rust/spec.md) - Rust Implementation Spec

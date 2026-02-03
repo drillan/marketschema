@@ -3,429 +3,176 @@
 **Feature**: 004-adapter
 **Date**: 2026-02-03
 
-> Note: アダプターインターフェースは Python ライブラリ内部 API のため、Python の型シグネチャとしてコントラクトを定義する。
+## Overview
 
-## Module: `marketschema.adapters.base`
+本ドキュメントはアダプターインターフェースの言語非依存な概念定義を提供する。
+各言語での型シグネチャは言語別 spec を参照:
+- [004-adapter-python](../../004-adapter-python/contracts/adapter-interface.md)
+- [004-adapter-rust](../../004-adapter-rust/contracts/adapter.md)
 
-### BaseAdapter
+## BaseAdapter
 
-```python
-class BaseAdapter:
-    """Abstract base class for data source adapters.
+### Concept
 
-    Adapters transform data from external sources (exchanges, data providers)
-    into standardized marketschema models.
+データソースから取得したデータを marketschema の標準モデルに変換するための基底クラス/トレイト。
 
-    Subclasses must define:
-    - source_name: Identifier for the data source
-    - get_*_mapping() methods for each supported model type
+### Required Attributes
 
-    Example:
-        class BitbankAdapter(BaseAdapter):
-            source_name = "bitbank"
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `source_name` | string | データソース識別子（空文字列禁止） |
+| `transforms` | Transforms | 変換関数群への参照 |
 
-            def get_quote_mapping(self) -> list[ModelMapping]:
-                return [
-                    ModelMapping("bid", "buy", transform=self.transforms.to_float),
-                    ModelMapping("ask", "sell", transform=self.transforms.to_float),
-                    ModelMapping("timestamp", "timestamp", transform=self.transforms.unix_timestamp_ms),
-                ]
-    """
+### Required Methods
 
-    # Required class attribute
-    source_name: str = ""
+#### Mapping Methods
 
-    # Default transforms class
-    transforms: type[Transforms] = Transforms
+各メソッドは対応するモデルへのフィールドマッピング定義を返す。
 
-    def __init__(
-        self,
-        http_client: AsyncHttpClient | None = None,
-    ) -> None:
-        """Initialize the adapter.
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `get_quote_mapping()` | List of ModelMapping | Quote モデルへのマッピング |
+| `get_ohlcv_mapping()` | List of ModelMapping | OHLCV モデルへのマッピング |
+| `get_trade_mapping()` | List of ModelMapping | Trade モデルへのマッピング |
+| `get_orderbook_mapping()` | List of ModelMapping | OrderBook モデルへのマッピング |
+| `get_instrument_mapping()` | List of ModelMapping | Instrument モデルへのマッピング |
 
-        Args:
-            http_client: Optional HTTP client. If not provided, one will be
-                created lazily when http_client property is accessed.
+#### Core Methods
 
-        Raises:
-            AdapterError: If source_name is not defined (empty string).
-        """
-        ...
+| Method | Description |
+|--------|-------------|
+| `_apply_mapping(raw_data, mappings, model_class)` | マッピングを適用してモデルインスタンスを生成 |
+| `close()` | HTTP クライアントなどのリソースを解放 |
 
-    @property
-    def http_client(self) -> AsyncHttpClient:
-        """Get the HTTP client (lazy initialization).
+### HTTP Client Integration
 
-        If no http_client was provided during initialization, creates a new
-        AsyncHttpClient on first access.
+- `http_client` プロパティ/フィールド: 遅延初期化された HTTP クライアントを取得
+- アダプター内部で作成した場合は `close()` で解放
+- 外部から注入された場合は解放しない
 
-        Returns:
-            The HTTP client instance.
-        """
-        ...
+### Resource Management Pattern
 
-    async def close(self) -> None:
-        """Close the HTTP client if owned by this adapter.
+各言語で適切なリソース管理パターンを実装:
+- Python: `async with` (async context manager)
+- Rust: `Drop` trait / RAII
 
-        Only closes the client if it was created internally (not injected).
-        """
-        ...
+---
 
-    async def __aenter__(self) -> Self:
-        """Enter async context manager.
+## ModelMapping
 
-        Returns:
-            Self for use in async with statement.
-        """
-        ...
+### Concept
 
-    async def __aexit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_val: BaseException | None,
-        exc_tb: TracebackType | None,
-    ) -> None:
-        """Exit async context manager and close resources."""
-        ...
+ソースフィールドからターゲットフィールドへの変換ルールを定義する不変データ構造。
 
-    def get_quote_mapping(self) -> list[ModelMapping]:
-        """Return field mappings for Quote model.
+### Attributes
 
-        Override this method to provide mappings for your data source.
+| Attribute | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `target_field` | string | Yes | - | ターゲットモデルのフィールド名 |
+| `source_field` | string | Yes | - | ソースデータのフィールドパス（ドット記法対応） |
+| `transform` | function | No | null | 値の変換関数 |
+| `default` | any | No | null | ソース値が存在しない場合のデフォルト値 |
+| `required` | boolean | No | true | 必須フィールドかどうか |
 
-        Returns:
-            List of ModelMapping definitions. Empty list if not supported.
-        """
-        ...
+### Dot Notation
 
-    def get_ohlcv_mapping(self) -> list[ModelMapping]:
-        """Return field mappings for OHLCV model.
+`source_field` はドット記法でネストしたデータにアクセス可能:
+- `"price"` → `data["price"]`
+- `"ticker.bid"` → `data["ticker"]["bid"]`
+- `"level1.level2.value"` → `data["level1"]["level2"]["value"]`
 
-        Override this method to provide mappings for your data source.
+### apply() Method Behavior
 
-        Returns:
-            List of ModelMapping definitions. Empty list if not supported.
-        """
-        ...
+1. `source_field` パスでソースデータから値を取得
+2. 値が null/None の場合:
+   - `default` が設定されていればデフォルト値を返す
+   - `required=true` なら MappingError を発生
+   - `required=false` なら null/None を返す
+3. `transform` が設定されていれば変換を適用
+4. 変換後の値を返す
 
-    def get_trade_mapping(self) -> list[ModelMapping]:
-        """Return field mappings for Trade model.
+---
 
-        Override this method to provide mappings for your data source.
+## AdapterRegistry
 
-        Returns:
-            List of ModelMapping definitions. Empty list if not supported.
-        """
-        ...
+### Concept
 
-    def get_orderbook_mapping(self) -> list[ModelMapping]:
-        """Return field mappings for OrderBook model.
+アダプタークラスの登録と取得を管理するシングルトン。
 
-        Override this method to provide mappings for your data source.
+### Methods
 
-        Returns:
-            List of ModelMapping definitions. Empty list if not supported.
-        """
-        ...
+| Method | Description |
+|--------|-------------|
+| `register(adapter_class)` | アダプターを登録（デコレータとしても使用可） |
+| `get(source_name)` | source_name でアダプターの新規インスタンスを取得 |
+| `list_adapters()` | 登録済み source_name のリストを取得 |
+| `is_registered(source_name)` | 登録済みかどうかを確認 |
+| `clear()` | すべての登録を解除（テスト用） |
 
-    def get_instrument_mapping(self) -> list[ModelMapping]:
-        """Return field mappings for Instrument model.
+### Error Conditions
 
-        Override this method to provide mappings for your data source.
+| Condition | Error |
+|-----------|-------|
+| 重複登録 | AdapterError |
+| 未登録の source_name で get | KeyError |
+| source_name が空文字列 | AdapterError |
 
-        Returns:
-            List of ModelMapping definitions. Empty list if not supported.
-        """
-        ...
+---
 
-    def _apply_mapping(
-        self,
-        raw_data: dict[str, Any],
-        mappings: list[ModelMapping],
-        model_class: type[T],
-    ) -> T:
-        """Apply mappings to transform raw data into a model instance.
+## Exception Types
 
-        Args:
-            raw_data: Dictionary containing source data.
-            mappings: List of ModelMapping definitions to apply.
-            model_class: Target model class (e.g., Quote, Trade).
+### Hierarchy
 
-        Returns:
-            Instance of model_class with mapped data.
-
-        Raises:
-            AdapterError: If mapping application or model instantiation fails.
-                Wraps MappingError, TransformError, TypeError, ValueError.
-        """
-        ...
-
-    def _get_nested_value(self, data: dict[str, Any], path: str) -> Any | None:
-        """Get a value from nested dictionary using dot notation.
-
-        Args:
-            data: Dictionary to extract value from.
-            path: Dot-separated path (e.g., "ticker.price").
-
-        Returns:
-            The value at the path, or None if not found.
-        """
-        ...
+```
+MarketSchemaError (base)
+├── AdapterError
+├── MappingError
+└── TransformError
 ```
 
-## Module: `marketschema.adapters.mapping`
+### AdapterError
 
-### ModelMapping
+アダプターの初期化や操作に関するエラー。
 
-```python
-@dataclass(frozen=True, slots=True)
-class ModelMapping:
-    """Defines how to map a source field to a target field.
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `message` | string | エラーの説明 |
 
-    This is an immutable dataclass that encapsulates the mapping logic
-    from source data fields to target model fields.
+**Trigger Conditions**:
+- `source_name` が空文字列
+- 重複登録
 
-    Attributes:
-        target_field: Name of the field in the target model.
-        source_field: Path to the field in the source data.
-            Supports dot notation for nested fields (e.g., "price.bid").
-        transform: Optional callable to transform the source value.
-            Should raise TransformError on failure.
-        default: Optional default value if source field is missing or None.
-        required: If True, raise MappingError when field is missing.
-            Default is True.
+### MappingError
 
-    Example:
-        # Simple mapping
-        ModelMapping("bid", "buy_price")
+フィールドマッピング中のエラー。
 
-        # With transformation
-        ModelMapping("bid", "buy_price", transform=Transforms.to_float)
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `message` | string | エラーの説明（フィールド名を含む） |
 
-        # Nested field access
-        ModelMapping("bid", "prices.buy", transform=Transforms.to_float)
+**Trigger Conditions**:
+- `required=true` で値が存在しない
 
-        # With default value
-        ModelMapping("volume", "vol", default=0.0, required=False)
-    """
+### TransformError
 
-    target_field: str
-    source_field: str
-    transform: Callable[[Any], Any] | None = None
-    default: Any | None = None
-    required: bool = True
+値変換中のエラー。
 
-    def apply(self, source_data: dict[str, Any]) -> Any:
-        """Apply the mapping to source data and return the transformed value.
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `message` | string | エラーの説明（入力値を含む） |
 
-        Args:
-            source_data: Dictionary containing the source data.
+**Trigger Conditions**:
+- 変換関数が値を処理できない
+- 入力値の型が不正
 
-        Returns:
-            The transformed value for the target field.
-            Returns None if not required and value is missing.
-            Returns default if value is missing and default is set.
-
-        Raises:
-            MappingError: If source field is required but missing.
-            TransformError: If transformation fails (propagated from transform).
-        """
-        ...
-
-    def _get_nested_value(self, data: dict[str, Any], path: str) -> Any | None:
-        """Get a value from nested dictionary using dot notation.
-
-        Args:
-            data: Dictionary to extract value from.
-            path: Dot-separated path (e.g., "best_bid.price").
-
-        Returns:
-            The value at the path, or None if not found.
-        """
-        ...
-```
-
-## Module: `marketschema.adapters.registry`
-
-### AdapterRegistry
-
-```python
-class AdapterRegistry:
-    """Registry for managing adapter instances by source name.
-
-    This is a singleton registry that allows adapters to be registered
-    and retrieved by their source_name. Uses class-level state to maintain
-    a single registry across the application.
-
-    Example:
-        # Register using decorator
-        @register
-        class BitbankAdapter(BaseAdapter):
-            source_name = "bitbank"
-            ...
-
-        # Get adapter by name
-        adapter = AdapterRegistry.get("bitbank")
-
-        # List all registered adapters
-        names = AdapterRegistry.list_adapters()
-
-        # Check if registered
-        if AdapterRegistry.is_registered("bitbank"):
-            ...
-    """
-
-    _instance: "AdapterRegistry | None" = None
-    _adapters: dict[str, type[BaseAdapter]]
-
-    def __new__(cls) -> "AdapterRegistry":
-        """Create singleton instance."""
-        ...
-
-    @classmethod
-    def register[T: BaseAdapter](cls, adapter_class: type[T]) -> type[T]:
-        """Register an adapter class with the registry.
-
-        Args:
-            adapter_class: Adapter class to register. Must have source_name defined.
-
-        Returns:
-            The adapter class unchanged (for use as decorator).
-
-        Raises:
-            AdapterError: If adapter has no source_name or name is already registered.
-        """
-        ...
-
-    @classmethod
-    def get(cls, source_name: str) -> BaseAdapter:
-        """Get an adapter instance by source name.
-
-        Creates a new instance of the registered adapter class.
-
-        Args:
-            source_name: Name of the data source.
-
-        Returns:
-            New instance of the registered adapter.
-
-        Raises:
-            KeyError: If no adapter is registered for the source name.
-                Error message includes list of available adapters.
-        """
-        ...
-
-    @classmethod
-    def list_adapters(cls) -> list[str]:
-        """List all registered adapter source names.
-
-        Returns:
-            List of registered source names.
-        """
-        ...
-
-    @classmethod
-    def is_registered(cls, source_name: str) -> bool:
-        """Check if an adapter is registered for a source name.
-
-        Args:
-            source_name: Name of the data source.
-
-        Returns:
-            True if an adapter is registered, False otherwise.
-        """
-        ...
-
-    @classmethod
-    def clear(cls) -> None:
-        """Clear all registered adapters.
-
-        Primarily useful for testing to reset registry state.
-        """
-        ...
-
-
-def register[T: BaseAdapter](adapter_class: type[T]) -> type[T]:
-    """Decorator to register an adapter class with the global registry.
-
-    Convenience function that delegates to AdapterRegistry.register().
-
-    Example:
-        @register
-        class MyAdapter(BaseAdapter):
-            source_name = "my_source"
-            ...
-
-    Args:
-        adapter_class: Adapter class to register.
-
-    Returns:
-        The adapter class unchanged.
-
-    Raises:
-        AdapterError: If adapter has no source_name or name is already registered.
-    """
-    ...
-```
-
-## Module: `marketschema.exceptions`
-
-### Adapter Exceptions
-
-```python
-class AdapterError(MarketSchemaError):
-    """Base exception for adapter-related errors.
-
-    Raised when adapter initialization fails or mapping operations fail.
-
-    Attributes:
-        message: Error description.
-    """
-
-    def __init__(self, message: str) -> None: ...
-
-
-class MappingError(MarketSchemaError):
-    """Error during field mapping.
-
-    Raised when a required field is missing from source data.
-
-    Attributes:
-        message: Error description including field name.
-    """
-
-    def __init__(self, message: str) -> None: ...
-
-
-class TransformError(MarketSchemaError):
-    """Error during value transformation.
-
-    Raised when a transform function cannot process the input value.
-
-    Attributes:
-        message: Error description including value and expected type.
-    """
-
-    def __init__(self, message: str) -> None: ...
-```
+---
 
 ## Type Exports
 
-```python
-# marketschema.adapters.__init__.py
-__all__ = [
-    # Base
-    "BaseAdapter",
+各言語で以下のエクスポートを提供:
 
-    # Mapping
-    "ModelMapping",
-
-    # Registry
-    "AdapterRegistry",
-    "register",
-
-    # Transforms
-    "Transforms",
-]
-```
+- BaseAdapter
+- ModelMapping
+- AdapterRegistry
+- register (decorator/macro)
+- Transforms

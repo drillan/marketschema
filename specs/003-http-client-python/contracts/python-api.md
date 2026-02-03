@@ -1,6 +1,7 @@
 # Python API Contract: HTTP Client Layer
 
-**Feature**: 003-http-client
+**Feature**: 003-http-client-python
+**Parent Spec**: [003-http-client-python](../spec.md)
 **Date**: 2026-02-03
 
 > Note: HTTP クライアントレイヤーは Python ライブラリ内部 API のため、REST/GraphQL スキーマではなく、Python の型シグネチャとしてコントラクトを定義する。

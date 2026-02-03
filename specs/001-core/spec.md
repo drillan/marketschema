@@ -162,12 +162,25 @@ marketschema プロジェクト全体のアーキテクチャと設計原則を�
 
 ## Spec Registry
 
+### Core Specs (Language-Independent)
+
 | ID  | Name        | Description              | Status      | Dependencies |
 |-----|-------------|--------------------------|-------------|--------------|
 | 001 | core        | 全体アーキテクチャ       | Active      | -            |
 | 002 | data-model  | データモデル定義         | Implemented | 001          |
 | 003 | http-client | HTTP クライアント        | Planned     | 001, 002     |
 | 004 | adapter     | アダプターインターフェース | Draft       | 001, 002, 003 |
+
+### Language-Specific Specs
+
+| ID  | Name                 | Description                    | Status      | Dependencies |
+|-----|----------------------|--------------------------------|-------------|--------------|
+| 002-python | data-model-python  | Python データモデル実装    | Active      | 002          |
+| 002-rust   | data-model-rust    | Rust データモデル実装      | Active      | 002          |
+| 003-python | http-client-python | Python HTTP クライアント実装 | Implemented | 003          |
+| 003-rust   | http-client-rust   | Rust HTTP クライアント実装 | Planned     | 003          |
+| 004-python | adapter-python     | Python アダプター実装      | Implemented | 004          |
+| 004-rust   | adapter-rust       | Rust アダプター実装        | Planned     | 004          |
 
 **Status の定義**:
 - **Active**: 有効な仕様として機能中
@@ -250,6 +263,18 @@ marketschema プロジェクト全体のアーキテクチャと設計原則を�
 ## References
 
 - [Constitution](../../.specify/memory/constitution.md) - プロジェクト原則
+
+### Core Specs
+
 - [002-data-model](../002-data-model/spec.md) - データモデル仕様
 - [003-http-client](../003-http-client/spec.md) - HTTP クライアント仕様
 - [004-adapter](../004-adapter/spec.md) - アダプターインターフェース仕様
+
+### Language-Specific Specs
+
+- [002-data-model-python](../002-data-model-python/spec.md) - Python データモデル実装
+- [002-data-model-rust](../002-data-model-rust/spec.md) - Rust データモデル実装
+- [003-http-client-python](../003-http-client-python/spec.md) - Python HTTP クライアント実装
+- [003-http-client-rust](../003-http-client-rust/spec.md) - Rust HTTP クライアント実装
+- [004-adapter-python](../004-adapter-python/spec.md) - Python アダプター実装
+- [004-adapter-rust](../004-adapter-rust/spec.md) - Rust アダプター実装
