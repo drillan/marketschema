@@ -7,6 +7,7 @@ stockanalysis.com から取得した HTML テーブル形式の株価データ�
 | Data Source | Model | Description |
 |-------------|-------|-------------|
 | HTML (`/stocks/{symbol}/history/`) | `OHLCV` | 日足株価データ |
+| HTML (`/stocks/{symbol}/history/`) | `ExtendedOHLCV` | 調整後終値を含む日足株価データ |
 
 ## インストール
 
@@ -73,6 +74,29 @@ ohlcv = adapter.parse_html_row(row, symbol="TSLA")
 print(f"Close: {ohlcv.close.root}")
 ```
 
+### ExtendedOHLCV（調整後終値を含む）
+
+`ExtendedOHLCV` モデルは `OHLCV` を継承し、調整後終値（`adj_close`）フィールドを追加します。
+このモデルは FR-010 に準拠しており、`allOf` によるスキーマ継承パターンを採用しています。
+
+```python
+from examples.stockanalysis.adapter import StockAnalysisAdapter
+from examples.stockanalysis.models import ExtendedOHLCV
+
+adapter = StockAnalysisAdapter()
+
+# HTML → ExtendedOHLCV
+row = ["Feb 2, 2026", "260.03", "270.49", "259.21", "269.96", "269.96", "4.04%", "73,368,699"]
+extended = adapter.parse_html_row_extended(row, symbol="TSLA")
+print(f"Close: {extended.close.root}")
+print(f"Adj Close: {extended.adj_close.root}")
+
+# 複数行の場合
+ohlcvs = adapter.parse_html_extended(html_content, symbol="TSLA")
+for ohlcv in ohlcvs[:5]:
+    print(f"Date: {ohlcv.timestamp.root.date()}, Adj Close: {ohlcv.adj_close.root}")
+```
+
 ## フィールドマッピング
 
 ### HTML → OHLCV
@@ -86,7 +110,21 @@ print(f"Close: {ohlcv.close.root}")
 | `Close` | `close` | `to_float` |
 | `Volume` | `volume` | カンマ除去 → `to_float` |
 
-**Note**: `Adj Close` と `Change` カラムは OHLCV モデルに含まれないため無視されます。
+**Note**: `Change` カラムは OHLCV モデルに含まれないため無視されます。
+
+### HTML → ExtendedOHLCV
+
+| stockanalysis HTML | marketschema | Transform |
+|--------------------|--------------|-----------|
+| `Date` | `timestamp` | `MMM D, YYYY` → `YYYY-MM-DDT00:00:00Z` |
+| `Open` | `open` | `to_float` |
+| `High` | `high` | `to_float` |
+| `Low` | `low` | `to_float` |
+| `Close` | `close` | `to_float` |
+| `Adj Close` | `adj_close` | `to_float` |
+| `Volume` | `volume` | カンマ除去 → `to_float` |
+
+**Note**: `Change` カラムは ExtendedOHLCV モデルに含まれないため無視されます。
 
 ## デモ実行
 

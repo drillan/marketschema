@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://marketschema.example.com/examples/stockanalysis/schemas/extended_ohlcv",
+  "title": "ExtendedOHLCV",
+  "description": "調整後終値を含む拡張OHLCVモデル（stockanalysis.com向け）",
+  "allOf": [
+    { "$ref": "../../../src/marketschema/schemas/ohlcv.json" }
+  ],
+  "properties": {
+    "adj_close": {
+      "$ref": "../../../src/marketschema/schemas/definitions.json#/$defs/Price",
+      "description": "調整後終値（株式分割・配当調整済み）"
+    }
+  },
+  "required": ["adj_close"],
+  "unevaluatedProperties": false
+}

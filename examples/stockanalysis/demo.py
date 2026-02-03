@@ -74,8 +74,8 @@ def demo_ohlcv(adapter: StockAnalysisAdapter, symbol: str) -> None:
     # Show page size info
     print(f"\nReceived {len(html_content):,} bytes of HTML")
 
-    # Parse HTML to OHLCV models
-    ohlcvs = adapter.parse_html(html_content, symbol=symbol.upper())
+    # Parse HTML to ExtendedOHLCV models (includes Adj Close)
+    ohlcvs = adapter.parse_html_extended(html_content, symbol=symbol.upper())
     print(f"Parsed {len(ohlcvs)} OHLCV records")
 
     if not ohlcvs:
@@ -90,6 +90,7 @@ def demo_ohlcv(adapter: StockAnalysisAdapter, symbol: str) -> None:
         print(f"  High: {ohlcv.high.root}")
         print(f"  Low: {ohlcv.low.root}")
         print(f"  Close: {ohlcv.close.root}")
+        print(f"  Adj Close: {ohlcv.adj_close.root}")
         print(f"  Volume: {ohlcv.volume.root:,.0f}")
 
 
