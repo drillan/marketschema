@@ -20,6 +20,10 @@ from marketschema.adapters.registry import register
 from marketschema.exceptions import AdapterError
 from marketschema.models import OHLCV
 
+# Stooq API constants
+STOOQ_BASE_URL = "https://stooq.com/q/d/l/"
+STOOQ_INTERVAL_DAILY = "d"
+
 # Expected CSV column count
 EXPECTED_COLUMN_COUNT = 6
 
@@ -174,5 +178,44 @@ class StooqAdapter(BaseAdapter):
 
         return results
 
+    async def fetch_csv(self, symbol: str) -> str:
+        """Fetch CSV data from stooq.com.
 
-__all__ = ["StooqAdapter"]
+        Args:
+            symbol: Stock symbol (e.g., "spy.us", "aapl.us", "^spx")
+
+        Returns:
+            CSV content as string
+
+        Raises:
+            HttpStatusError: If HTTP request fails with error status
+            HttpRateLimitError: If rate limited (429)
+            HttpTimeoutError: If request times out
+            HttpConnectionError: If connection fails
+        """
+        return await self.http_client.get_text(
+            STOOQ_BASE_URL,
+            params={"s": symbol, "i": STOOQ_INTERVAL_DAILY},
+        )
+
+    async def fetch_and_parse(self, symbol: str) -> list[OHLCV]:
+        """Fetch CSV from stooq.com and parse into OHLCV models.
+
+        Args:
+            symbol: Stock symbol (e.g., "spy.us", "aapl.us", "^spx")
+
+        Returns:
+            List of OHLCV model instances
+
+        Raises:
+            HttpStatusError: If HTTP request fails with error status
+            HttpRateLimitError: If rate limited (429)
+            HttpTimeoutError: If request times out
+            HttpConnectionError: If connection fails
+            AdapterError: If CSV format is invalid
+        """
+        csv_content = await self.fetch_csv(symbol)
+        return self.parse_csv(csv_content, symbol=symbol)
+
+
+__all__ = ["StooqAdapter", "STOOQ_BASE_URL", "STOOQ_INTERVAL_DAILY"]
