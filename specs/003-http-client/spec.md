@@ -35,7 +35,7 @@ JSON/テキスト形式のレスポンスを簡単に取得したい。
 
 1. **Given** AsyncHttpClient インスタンスが生成されている, **When** `get_json(url)` を呼び出す, **Then** JSON レスポンスがオブジェクト/マップ型として返される
 2. **Given** AsyncHttpClient インスタンスが生成されている, **When** `get_text(url)` を呼び出す, **Then** テキストレスポンスが文字列型として返される
-3. **Given** コンテキストマネージャで AsyncHttpClient を使用する, **When** with ブロックを抜ける, **Then** コネクションが自動的にクローズされる
+3. **Given** コンテキストマネージャで AsyncHttpClient を使用する, **When** スコープを抜ける, **Then** コネクションが自動的にクローズされる
 
 ---
 
@@ -127,7 +127,7 @@ HTTP クライアントを簡単に利用したい。
 **Acceptance Scenarios**:
 
 1. **Given** BaseAdapter を継承したクラス, **When** `self.http_client` にアクセスする, **Then** AsyncHttpClient インスタンスが遅延初期化される
-2. **Given** アダプターをコンテキストマネージャで使用する, **When** with ブロックを抜ける, **Then** HTTP クライアントが自動的にクローズされる
+2. **Given** アダプターをコンテキストマネージャで使用する, **When** スコープを抜ける, **Then** HTTP クライアントが自動的にクローズされる
 3. **Given** カスタム HTTP クライアントを渡す, **When** アダプターを生成する, **Then** 渡されたクライアントが使用される
 
 ---
