@@ -12,8 +12,8 @@ Usage:
 
 from __future__ import annotations
 
+import asyncio
 import sys
-import urllib.request
 from pathlib import Path
 
 # Add project root to path for direct execution
@@ -24,52 +24,16 @@ if __name__ == "__main__":
 
 from examples.stockanalysis.adapter import StockAnalysisAdapter
 
-STOCKANALYSIS_URL = "https://stockanalysis.com/stocks"
 DEFAULT_SYMBOL = "tsla"
 
 
-def fetch_html(symbol: str) -> str:
-    """Fetch HTML data from stockanalysis.com.
-
-    Args:
-        symbol: Stock symbol (e.g., "tsla", "aapl", "msft")
-
-    Returns:
-        HTML content as string
-
-    Raises:
-        RuntimeError: If fetch fails
-    """
-    url = f"{STOCKANALYSIS_URL}/{symbol.lower()}/history/"
-    print(f"GET {url}")
-
-    try:
-        request = urllib.request.Request(
-            url,
-            headers={
-                "User-Agent": (
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                    "AppleWebKit/537.36 (KHTML, like Gecko) "
-                    "Chrome/120.0.0.0 Safari/537.36"
-                )
-            },
-        )
-        with urllib.request.urlopen(request) as response:
-            content: str = response.read().decode("utf-8")
-            return content
-    except urllib.error.URLError as e:
-        raise RuntimeError(f"Failed to fetch data: {e}") from e
-    except UnicodeDecodeError as e:
-        raise RuntimeError(f"Failed to decode response as UTF-8: {e}") from e
-
-
-def demo_ohlcv(adapter: StockAnalysisAdapter, symbol: str) -> None:
+async def demo_ohlcv(adapter: StockAnalysisAdapter, symbol: str) -> None:
     """Demonstrate HTML → ExtendedOHLCV parsing."""
     print(f"\n{'=' * 60}")
     print(f"HTML → ExtendedOHLCV ({symbol.upper()})")
     print("=" * 60)
 
-    html_content = fetch_html(symbol)
+    html_content = await adapter.fetch_history(symbol)
 
     # Show page size info
     print(f"\nReceived {len(html_content):,} bytes of HTML")
@@ -94,18 +58,17 @@ def demo_ohlcv(adapter: StockAnalysisAdapter, symbol: str) -> None:
         print(f"  Volume: {ohlcv.volume.root:,.0f}")
 
 
-def main() -> None:
+async def main() -> None:
     """Run demo."""
     print("=" * 60)
     print("stockanalysis.com HTML Stock Data Adapter Demo")
     print("=" * 60)
 
-    adapter = StockAnalysisAdapter()
-
     # Get symbol from command line or use default
     symbol = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_SYMBOL
 
-    demo_ohlcv(adapter, symbol)
+    async with StockAnalysisAdapter() as adapter:
+        await demo_ohlcv(adapter, symbol)
 
     print(f"\n{'=' * 60}")
     print("Demo completed!")
@@ -113,4 +76,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
