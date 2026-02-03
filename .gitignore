@@ -211,7 +211,7 @@ __marimo__/
 
 # working directorys
 /work/
-/ak_working/
+/ai_working/
 
 # Rust
 target/
