@@ -276,7 +276,7 @@ crates/marketschema-http/
 
 - **Phase 1 (Setup)**: No dependencies - 即座に開始可能
 - **Phase 2 (Foundational)**: Phase 1 完了後
-- **Phase 3 (US1) + Phase 4 (US2)**: Phase 2 完了後、並列実行可能だが US1 は US2 のエラー型に依存
+- **Phase 3 (US1) → Phase 4 (US2)**: Phase 2 完了後、逐次実行（US1 は US2 の HttpError に依存するため T017 でスタブを作成）
 - **Phase 5 (US3)**: Phase 3 + Phase 4 完了後
 - **Phase 6 (US4)**: Phase 3 + Phase 4 完了後（US3 と並列可能）
 - **Phase 7 (US5)**: Phase 3 + Phase 4 完了後（US3/US4 と並列可能）

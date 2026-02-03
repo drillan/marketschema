@@ -273,42 +273,39 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ```rust
 use marketschema_http::{AsyncHttpClient, AsyncHttpClientBuilder, HttpError, RetryConfig, RateLimiter};
-use std::sync::Arc;
-use tokio::sync::OnceCell;
+use std::sync::{Arc, OnceLock};
 
 pub struct MyExchangeAdapter {
-    http_client: OnceCell<Arc<AsyncHttpClient>>,
+    http_client: OnceLock<Arc<AsyncHttpClient>>,
     base_url: String,
 }
 
 impl MyExchangeAdapter {
     pub fn new(base_url: &str) -> Self {
         Self {
-            http_client: OnceCell::new(),
+            http_client: OnceLock::new(),
             base_url: base_url.to_string(),
         }
     }
 
-    async fn http_client(&self) -> &Arc<AsyncHttpClient> {
-        self.http_client
-            .get_or_init(|| async {
-                let retry = RetryConfig::new().max_retries(3);
-                let limiter = Arc::new(RateLimiter::new(10.0, 20));
+    fn http_client(&self) -> &Arc<AsyncHttpClient> {
+        self.http_client.get_or_init(|| {
+            let retry = RetryConfig::new().max_retries(3);
+            let limiter = Arc::new(RateLimiter::new(10.0, 20));
 
-                Arc::new(
-                    AsyncHttpClientBuilder::new()
-                        .retry(retry)
-                        .rate_limit(limiter)
-                        .build()
-                        .expect("Failed to build HTTP client"),
-                )
-            })
-            .await
+            Arc::new(
+                AsyncHttpClientBuilder::new()
+                    .retry(retry)
+                    .rate_limit(limiter)
+                    .build()
+                    .expect("Failed to build HTTP client"),
+            )
+        })
     }
 
     pub async fn get_ticker(&self, symbol: &str) -> Result<serde_json::Value, HttpError> {
         let url = format!("{}/ticker/{}", self.base_url, symbol);
-        self.http_client().await.get_json(&url).await
+        self.http_client().get_json(&url).await
     }
 }
 
@@ -329,6 +326,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::time::Duration;
     use wiremock::{MockServer, Mock, ResponseTemplate};
     use wiremock::matchers::{method, path};
 

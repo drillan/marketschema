@@ -28,7 +28,7 @@
 
 ## 2. Token Bucket Rate Limiting in Rust
 
-**Decision**: `leaky_bucket` クレートを使用。高スループットが必要な場合は `rater` も検討。
+**Decision**: 手動実装を採用。外部依存を減らし、`Send + Sync` 境界を確実に満たすため。
 
 **Rationale**:
 - **leaky_bucket**: Tokio/async_std と完全互換の非同期対応

@@ -195,11 +195,16 @@ delay = backoff_factor * (2 ^ attempt) * (1 + random(0, jitter))
 トークンバケットアルゴリズムによるレート制限。
 
 ```rust
+/// Internal state for rate limiter (protected by single Mutex to avoid deadlocks).
+struct RateLimiterState {
+    tokens: f64,
+    last_update: Instant,
+}
+
 pub struct RateLimiter {
     requests_per_second: f64,
     burst_size: usize,
-    tokens: Mutex<f64>,
-    last_update: Mutex<Instant>,
+    state: Mutex<RateLimiterState>,
 }
 ```
 
@@ -207,8 +212,7 @@ pub struct RateLimiter {
 |-------|------|-------------|
 | `requests_per_second` | `f64` | 1秒あたりの許可リクエスト数 |
 | `burst_size` | `usize` | バーストサイズ（最大トークン数） |
-| `tokens` | `Mutex<f64>` | 現在のトークン数 |
-| `last_update` | `Mutex<Instant>` | 最終更新時刻 |
+| `state` | `Mutex<RateLimiterState>` | 内部状態（tokens + last_update、単一 Mutex で保護） |
 
 **Token Replenishment**:
 ```
@@ -339,7 +343,7 @@ pub const DEFAULT_JITTER: f64 = 0.1;
 /// Default cache TTL in seconds
 pub const DEFAULT_CACHE_TTL_SECS: u64 = 300;
 
-/// Default cache max size
+/// Default cache max size (matches moka max_capacity type)
 pub const DEFAULT_CACHE_MAX_SIZE: u64 = 1000;
 
 /// Retryable status codes

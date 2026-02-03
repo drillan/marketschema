@@ -155,13 +155,15 @@ impl AsyncHttpClient {
 /// # Example
 ///
 /// ```rust
+/// use std::sync::Arc;
+///
 /// let client = AsyncHttpClientBuilder::new()
 ///     .timeout(Duration::from_secs(60))
 ///     .max_connections(200)
 ///     .default_headers(headers)
 ///     .retry(RetryConfig::default())
-///     .rate_limit(RateLimiter::new(10.0, 10))
-///     .cache(ResponseCache::new(1000, Duration::from_secs(300)))
+///     .rate_limit(Arc::new(RateLimiter::new(10.0, 10)))
+///     .cache(Arc::new(ResponseCache::new(1000, Duration::from_secs(300))))
 ///     .build()?;
 /// ```
 pub struct AsyncHttpClientBuilder {
@@ -337,10 +339,14 @@ impl HttpError {
     }
 
     /// Check if this error is retryable.
+    ///
+    /// Note: Connection errors are always considered retryable in this implementation,
+    /// as temporary network issues are common. This differs from error-taxonomy.md which
+    /// marks Connection as "Depends" - we choose the more aggressive retry strategy.
     pub fn is_retryable(&self) -> bool {
         match self {
             Self::Timeout { .. } => true,
-            Self::Connection { .. } => true,
+            Self::Connection { .. } => true,  // Always retry connection errors
             Self::Status { status_code, .. } => {
                 matches!(status_code, 500 | 502 | 503 | 504)
             }
@@ -453,11 +459,16 @@ use std::time::{Duration, Instant};
 ///     .rate_limit(limiter.clone())
 ///     .build()?;
 /// ```
+/// Internal state for rate limiter.
+struct RateLimiterState {
+    tokens: f64,
+    last_update: Instant,
+}
+
 pub struct RateLimiter {
     requests_per_second: f64,
     burst_size: usize,
-    tokens: Mutex<f64>,
-    last_update: Mutex<Instant>,
+    state: Mutex<RateLimiterState>,
 }
 
 impl RateLimiter {
@@ -471,8 +482,10 @@ impl RateLimiter {
         Self {
             requests_per_second,
             burst_size,
-            tokens: Mutex::new(burst_size as f64),
-            last_update: Mutex::new(Instant::now()),
+            state: Mutex::new(RateLimiterState {
+                tokens: burst_size as f64,
+                last_update: Instant::now(),
+            }),
         }
     }
 
@@ -499,11 +512,13 @@ impl RateLimiter {
 ### ResponseCache (Phase 3)
 
 ```rust
-use std::collections::HashMap;
-use std::sync::RwLock;
-use std::time::{Duration, Instant};
+use moka::future::Cache;
+use std::time::Duration;
 
-/// LRU cache for HTTP responses.
+/// LRU cache for HTTP responses using moka.
+///
+/// Uses moka's TinyLFU eviction policy for optimal hit rates.
+/// TTL and max capacity are managed by moka internally.
 ///
 /// # Example
 ///
@@ -516,14 +531,8 @@ use std::time::{Duration, Instant};
 ///     .build()?;
 /// ```
 pub struct ResponseCache {
-    max_size: usize,
+    inner: Cache<String, String>,
     default_ttl: Duration,
-    entries: RwLock<HashMap<String, CacheEntry>>,
-}
-
-struct CacheEntry {
-    value: String,
-    expires_at: Instant,
 }
 
 impl ResponseCache {
@@ -533,12 +542,12 @@ impl ResponseCache {
     ///
     /// * `max_size` - Maximum number of cached entries.
     /// * `default_ttl` - Default time-to-live for cache entries.
-    pub fn new(max_size: usize, default_ttl: Duration) -> Self {
-        Self {
-            max_size,
-            default_ttl,
-            entries: RwLock::new(HashMap::new()),
-        }
+    pub fn new(max_size: u64, default_ttl: Duration) -> Self {
+        let inner = Cache::builder()
+            .max_capacity(max_size)
+            .time_to_live(default_ttl)
+            .build();
+        Self { inner, default_ttl }
     }
 
     /// Get a value from the cache.
@@ -550,8 +559,8 @@ impl ResponseCache {
     /// # Returns
     ///
     /// The cached value, or None if not found or expired.
-    pub fn get(&self, key: &str) -> Option<String> {
-        todo!()
+    pub async fn get(&self, key: &str) -> Option<String> {
+        self.inner.get(key).await
     }
 
     /// Set a value in the cache.
@@ -560,9 +569,9 @@ impl ResponseCache {
     ///
     /// * `key` - The cache key.
     /// * `value` - The value to cache.
-    /// * `ttl` - Time-to-live. Defaults to default_ttl.
-    pub fn set(&self, key: &str, value: String, ttl: Option<Duration>) {
-        todo!()
+    /// * `ttl` - Time-to-live (ignored, uses default_ttl from moka config).
+    pub async fn set(&self, key: &str, value: String, _ttl: Option<Duration>) {
+        self.inner.insert(key.to_string(), value).await;
     }
 
     /// Delete a value from the cache.
@@ -570,13 +579,13 @@ impl ResponseCache {
     /// # Arguments
     ///
     /// * `key` - The cache key.
-    pub fn delete(&self, key: &str) {
-        todo!()
+    pub async fn delete(&self, key: &str) {
+        self.inner.invalidate(key).await;
     }
 
     /// Clear all cached entries.
     pub fn clear(&self) {
-        todo!()
+        self.inner.invalidate_all();
     }
 }
 
