@@ -1,6 +1,7 @@
 # Feature Specification: 統一マーケットデータスキーマ
 
 **Feature Branch**: `002-data-model`
+**Parent Spec**: [001-core](../001-core/spec.md)
 **Created**: 2026-02-02
 **Status**: Draft
 **Input**: User description: "drafts/00-03*.md を基に金融データソースの統一スキーマとアダプター仕様を定義"
