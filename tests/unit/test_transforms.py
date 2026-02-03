@@ -57,6 +57,16 @@ class TestIsoTimestamp:
         result = Transforms.iso_timestamp("2026-02-02T09:00:00+00:00")
         assert result == "2026-02-02T09:00:00Z"
 
+    def test_jst_offset_converts_to_utc(self) -> None:
+        """JST timestamp (+09:00) is converted to UTC."""
+        result = Transforms.iso_timestamp("2026-02-02T09:00:00+09:00")
+        assert result == "2026-02-02T00:00:00Z"
+
+    def test_negative_offset_converts_to_utc(self) -> None:
+        """Negative offset timestamp is converted to UTC."""
+        result = Transforms.iso_timestamp("2026-02-01T19:00:00-05:00")
+        assert result == "2026-02-02T00:00:00Z"
+
     def test_invalid_timestamp_raises_error(self) -> None:
         """Invalid timestamp string raises TransformError."""
         with pytest.raises(TransformError, match="Invalid ISO timestamp"):

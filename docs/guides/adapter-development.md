@@ -168,7 +168,7 @@ class MySourceAdapter(BaseAdapter):
 | `to_int(value)` | 文字列を int に変換 | `"123"` | `123` |
 | `unix_timestamp_ms(value)` | ミリ秒タイムスタンプを ISO 8601 に変換 | `1704067200000` | `"2024-01-01T00:00:00Z"` |
 | `unix_timestamp_sec(value)` | 秒タイムスタンプを ISO 8601 に変換 | `1704067200` | `"2024-01-01T00:00:00Z"` |
-| `iso_timestamp(value)` | ISO 8601 文字列をそのまま返す | `"2024-01-01T00:00:00Z"` | `"2024-01-01T00:00:00Z"` |
+| `iso_timestamp(value)` | ISO 8601 文字列を UTC に正規化 | `"2024-01-01T09:00:00+09:00"` | `"2024-01-01T00:00:00Z"` |
 | `side_from_string(value)` | 文字列を `"buy"`/`"sell"` に正規化 | `"BUY"` | `"buy"` |
 
 ## データソース別パターン

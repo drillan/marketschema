@@ -56,21 +56,22 @@ class Transforms:
 
     @staticmethod
     def iso_timestamp(value: str) -> str:
-        """Validate and return ISO 8601 timestamp string.
+        """Validate and normalize ISO 8601 timestamp to UTC.
 
         Args:
             value: ISO 8601 formatted timestamp string
 
         Returns:
-            The validated timestamp string in ISO 8601 format
+            The validated timestamp string in ISO 8601 format (UTC)
 
         Raises:
             TransformError: If the timestamp is not valid ISO 8601
         """
         try:
-            # Parse and re-format to ensure consistent format
+            # Parse ISO timestamp and normalize to UTC
             dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
-            return dt.isoformat().replace("+00:00", "Z")
+            utc_dt = dt.astimezone(UTC)
+            return utc_dt.isoformat().replace("+00:00", "Z")
         except (TypeError, ValueError) as e:
             raise TransformError(f"Invalid ISO timestamp: {value!r}") from e
 
