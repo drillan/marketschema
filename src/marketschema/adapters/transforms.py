@@ -68,7 +68,7 @@ class Transforms:
             TransformError: If the timestamp is not valid ISO 8601
         """
         try:
-            # Parse and re-format to ensure consistent format
+            # Parse ISO timestamp and normalize to UTC
             dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
             utc_dt = dt.astimezone(UTC)
             return utc_dt.isoformat().replace("+00:00", "Z")
