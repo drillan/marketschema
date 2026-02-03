@@ -130,7 +130,8 @@ async def main() -> None:
             await demo_depth(adapter, pair)
     except HttpRateLimitError as e:
         retry_msg = f" Retry after {e.retry_after}s." if e.retry_after else ""
-        print(f"\nError: Rate limited.{retry_msg}")
+        url_msg = f" (URL: {e.url})" if e.url else ""
+        print(f"\nError: Rate limited.{retry_msg}{url_msg}")
         sys.exit(1)
     except HttpStatusError as e:
         print(f"\nError: HTTP {e.status_code} - {e.message}")

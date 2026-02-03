@@ -82,7 +82,8 @@ async def main() -> None:
             await demo_ohlcv(adapter, symbol)
     except HttpRateLimitError as e:
         retry_msg = f" Retry after {e.retry_after}s." if e.retry_after else ""
-        print(f"\nError: Rate limited.{retry_msg}")
+        url_msg = f" (URL: {e.url})" if e.url else ""
+        print(f"\nError: Rate limited.{retry_msg}{url_msg}")
         sys.exit(1)
     except HttpStatusError as e:
         if e.status_code == 404:
