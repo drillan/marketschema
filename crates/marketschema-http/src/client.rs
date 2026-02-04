@@ -26,6 +26,7 @@ use reqwest::header::HeaderMap;
 use reqwest::Response;
 use serde_json::Value;
 
+use crate::cache::ResponseCache;
 use crate::error::HttpError;
 use crate::rate_limit::RateLimiter;
 use crate::retry::RetryConfig;
@@ -61,6 +62,7 @@ pub struct AsyncHttpClient {
     inner: reqwest::Client,
     retry_config: Option<RetryConfig>,
     rate_limiter: Option<Arc<RateLimiter>>,
+    cache: Option<Arc<ResponseCache>>,
 }
 
 impl AsyncHttpClient {
@@ -306,6 +308,10 @@ impl AsyncHttpClient {
 
     /// Send a GET request with query parameters and return the JSON response.
     ///
+    /// If caching is enabled, this method will use the same cache as
+    /// [`get_text_with_params`]. The text response is cached, then parsed
+    /// as JSON on each request.
+    ///
     /// # Arguments
     ///
     /// * `url` - The base URL to request.
@@ -329,12 +335,8 @@ impl AsyncHttpClient {
         url: &str,
         params: &[(&str, &str)],
     ) -> Result<Value, HttpError> {
-        let response = self.get_with_params(url, params).await?;
-        let text = response.text().await.map_err(|e| HttpError::Connection {
-            message: e.to_string(),
-            url: Some(url.to_string()),
-            source: Some(e),
-        })?;
+        // Use get_text_with_params to leverage caching
+        let text = self.get_text_with_params(url, params).await?;
 
         serde_json::from_str(&text).map_err(|e| HttpError::Parse {
             message: e.to_string(),
@@ -344,6 +346,11 @@ impl AsyncHttpClient {
     }
 
     /// Send a GET request and return the text response.
+    ///
+    /// If caching is enabled, this method will:
+    /// 1. Check the cache for a stored response
+    /// 2. If found, return the cached response without making an HTTP request
+    /// 3. If not found, make the request and cache the successful response
     ///
     /// # Arguments
     ///
@@ -377,6 +384,11 @@ impl AsyncHttpClient {
 
     /// Send a GET request with query parameters and return the text response.
     ///
+    /// If caching is enabled, this method will:
+    /// 1. Check the cache for a stored response
+    /// 2. If found, return the cached response without making an HTTP request
+    /// 3. If not found, make the request and cache the successful response
+    ///
     /// # Arguments
     ///
     /// * `url` - The base URL to request.
@@ -400,12 +412,62 @@ impl AsyncHttpClient {
         url: &str,
         params: &[(&str, &str)],
     ) -> Result<String, HttpError> {
+        // Build cache key from URL and query parameters
+        let cache_key = Self::build_cache_key(url, params);
+
+        // Check cache first
+        if let Some(ref cache) = self.cache {
+            if let Some(cached) = cache.get(&cache_key).await {
+                tracing::debug!(url = %url, "Cache hit");
+                return Ok(cached);
+            }
+            tracing::debug!(url = %url, "Cache miss");
+        }
+
+        // Make the actual request
         let response = self.get_with_params(url, params).await?;
-        response.text().await.map_err(|e| HttpError::Connection {
+        let text = response.text().await.map_err(|e| HttpError::Connection {
             message: e.to_string(),
             url: Some(url.to_string()),
             source: Some(e),
-        })
+        })?;
+
+        // Cache the successful response
+        if let Some(ref cache) = self.cache {
+            cache.set(&cache_key, text.clone()).await;
+        }
+
+        Ok(text)
+    }
+
+    /// Build a cache key from URL and query parameters.
+    ///
+    /// The cache key is the full URL with query parameters appended and URL-encoded.
+    /// This ensures that special characters in parameter values don't cause
+    /// cache key collisions.
+    fn build_cache_key(url: &str, params: &[(&str, &str)]) -> String {
+        if params.is_empty() {
+            return url.to_string();
+        }
+
+        // URL-encode each parameter to prevent collisions with special characters
+        let query_string: String = params
+            .iter()
+            .map(|(k, v)| {
+                format!(
+                    "{}={}",
+                    urlencoding::encode(k),
+                    urlencoding::encode(v)
+                )
+            })
+            .collect::<Vec<_>>()
+            .join("&");
+
+        if url.contains('?') {
+            format!("{}&{}", url, query_string)
+        } else {
+            format!("{}?{}", url, query_string)
+        }
     }
 
     /// Convert a reqwest error to an HttpError.
@@ -558,6 +620,7 @@ pub struct AsyncHttpClientBuilder {
     default_headers: HeaderMap,
     retry_config: Option<RetryConfig>,
     rate_limiter: Option<Arc<RateLimiter>>,
+    cache: Option<Arc<ResponseCache>>,
 }
 
 impl AsyncHttpClientBuilder {
@@ -575,6 +638,7 @@ impl AsyncHttpClientBuilder {
             default_headers: HeaderMap::new(),
             retry_config: None,
             rate_limiter: None,
+            cache: None,
         }
     }
 
@@ -673,6 +737,35 @@ impl AsyncHttpClientBuilder {
         self
     }
 
+    /// Set response cache for caching HTTP responses.
+    ///
+    /// When set, the client will cache successful responses and return
+    /// cached responses for subsequent requests to the same URL within
+    /// the cache TTL.
+    ///
+    /// # Arguments
+    ///
+    /// * `cache` - The response cache wrapped in `Arc` for sharing.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use marketschema_http::{AsyncHttpClientBuilder, ResponseCache};
+    /// use std::sync::Arc;
+    /// use std::time::Duration;
+    ///
+    /// let cache = Arc::new(ResponseCache::new(1000, Duration::from_secs(300)));
+    /// let client = AsyncHttpClientBuilder::new()
+    ///     .cache(cache)
+    ///     .build()
+    ///     .unwrap();
+    /// ```
+    #[must_use]
+    pub fn cache(mut self, cache: Arc<ResponseCache>) -> Self {
+        self.cache = Some(cache);
+        self
+    }
+
     /// Build the [`AsyncHttpClient`].
     ///
     /// # Errors
@@ -693,6 +786,7 @@ impl AsyncHttpClientBuilder {
             inner: client,
             retry_config: self.retry_config,
             rate_limiter: self.rate_limiter,
+            cache: self.cache,
         })
     }
 }
