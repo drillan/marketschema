@@ -36,7 +36,10 @@ fn deserialize_examples() -> Result<(), Box<dyn std::error::Error>> {
         "ask_size": 500.0
     }"#;
     let quote: Quote = serde_json::from_str(quote_json)?;
-    println!("Quote: {} bid={} ask={}", *quote.symbol, quote.bid, quote.ask);
+    println!(
+        "Quote: {} bid={} ask={}",
+        *quote.symbol, quote.bid, quote.ask
+    );
 
     // Trade
     let trade_json = r#"{

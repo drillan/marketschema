@@ -139,8 +139,14 @@ impl MarketDataAdapter {
             http_client,
             base_url: base_url.to_string(),
             retry_config: RetryConfig::new(),
-            rate_limiter: Arc::new(RateLimiter::new(TEST_RATE_LIMIT_PER_SEC * 2.0, TEST_RATE_LIMIT_BURST * 2)),
-            cache: Arc::new(ResponseCache::new(TEST_CACHE_CAPACITY, Duration::from_secs(TEST_CACHE_TTL_SECS))),
+            rate_limiter: Arc::new(RateLimiter::new(
+                TEST_RATE_LIMIT_PER_SEC * 2.0,
+                TEST_RATE_LIMIT_BURST * 2,
+            )),
+            cache: Arc::new(ResponseCache::new(
+                TEST_CACHE_CAPACITY,
+                Duration::from_secs(TEST_CACHE_TTL_SECS),
+            )),
         }
     }
 
@@ -497,7 +503,10 @@ mod rate_limiting_scenario_tests {
             TEST_STRICT_RATE_LIMIT_PER_SEC,
             TEST_STRICT_RATE_LIMIT_BURST,
         ));
-        let cache = Arc::new(ResponseCache::new(TEST_CACHE_CAPACITY, Duration::from_secs(1)));
+        let cache = Arc::new(ResponseCache::new(
+            TEST_CACHE_CAPACITY,
+            Duration::from_secs(1),
+        ));
 
         let client = Arc::new(
             AsyncHttpClientBuilder::new()
@@ -579,9 +588,8 @@ mod concurrent_access_tests {
         let mut results = Vec::new();
         while let Some(result) = join_set.join_next().await {
             let task_result = result.expect("Spawned task should not panic");
-            let ticker = task_result.unwrap_or_else(|e| {
-                panic!("HTTP request failed in concurrent test: {:?}", e)
-            });
+            let ticker = task_result
+                .unwrap_or_else(|e| panic!("HTTP request failed in concurrent test: {:?}", e));
             results.push(ticker);
         }
 
