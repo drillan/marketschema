@@ -52,6 +52,9 @@ impl Transforms {
     }
 
     /// Converts an ISO 8601 timestamp string to UTC normalized format.
+    ///
+    /// Uses RFC 3339 format with automatic sub-second precision to preserve
+    /// millisecond/microsecond information from the input.
     pub fn iso_timestamp(value: &Value) -> Result<String, TransformError> {
         let s = value.as_str().ok_or_else(|| {
             TransformError::new(format!("Expected string for timestamp: {:?}", value))
@@ -61,10 +64,10 @@ impl Transforms {
         let dt = chrono::DateTime::parse_from_rfc3339(s)
             .map_err(|e| TransformError::new(format!("Invalid ISO timestamp '{}': {}", s, e)))?;
 
+        // Use RFC 3339 format with automatic sub-second precision
         Ok(dt
             .with_timezone(&chrono::Utc)
-            .format("%Y-%m-%dT%H:%M:%SZ")
-            .to_string())
+            .to_rfc3339_opts(chrono::SecondsFormat::AutoSi, true))
     }
 
     /// Returns a TransformFn for ISO timestamp normalization.
@@ -130,8 +133,7 @@ impl Transforms {
         if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(s) {
             return Ok(dt
                 .with_timezone(&chrono::Utc)
-                .format("%Y-%m-%dT%H:%M:%SZ")
-                .to_string());
+                .to_rfc3339_opts(chrono::SecondsFormat::AutoSi, true));
         }
 
         // Parse as naive datetime and assume JST
@@ -139,8 +141,9 @@ impl Transforms {
             .or_else(|_| chrono::NaiveDateTime::parse_from_str(s, "%Y-%m-%d %H:%M:%S"))
             .map_err(|e| TransformError::new(format!("Invalid datetime '{}': {}", s, e)))?;
 
-        let jst = chrono::FixedOffset::east_opt(JST_UTC_OFFSET_HOURS * 3600)
-            .expect("JST offset is valid");
+        let jst = chrono::FixedOffset::east_opt(JST_UTC_OFFSET_HOURS * 3600).ok_or_else(|| {
+            TransformError::new(format!("Invalid JST offset: {} hours", JST_UTC_OFFSET_HOURS))
+        })?;
         let dt = naive
             .and_local_timezone(jst)
             .single()
@@ -148,8 +151,7 @@ impl Transforms {
 
         Ok(dt
             .with_timezone(&chrono::Utc)
-            .format("%Y-%m-%dT%H:%M:%SZ")
-            .to_string())
+            .to_rfc3339_opts(chrono::SecondsFormat::AutoSi, true))
     }
 
     /// Returns a TransformFn for JST to UTC conversion.

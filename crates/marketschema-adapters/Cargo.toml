@@ -1,8 +1,8 @@
 [package]
 name = "marketschema-adapters"
 version = "0.0.1"
-edition = "2021"
-rust-version = "1.71.1"
+edition = "2024"
+rust-version = "1.85.0"
 authors = ["driller <eleshis@gmail.com>"]
 description = "Adapter framework for marketschema data transformations"
 license = "MIT"
@@ -11,6 +11,10 @@ repository = "https://github.com/drillan/marketschema"
 
 [lib]
 path = "src/lib.rs"
+
+[features]
+default = []
+test-utils = []
 
 [dependencies]
 async-trait = "0.1"

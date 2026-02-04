@@ -27,7 +27,7 @@ static REGISTRY: Lazy<RwLock<HashMap<String, AdapterFactory>>> =
 /// AdapterRegistry::register("myapi", || Box::new(MyAdapter::new()))?;
 ///
 /// // Get an adapter instance
-/// if let Some(adapter) = AdapterRegistry::get("myapi") {
+/// if let Some(adapter) = AdapterRegistry::get("myapi")? {
 ///     println!("Source: {}", adapter.source_name());
 /// }
 /// ```
@@ -36,13 +36,16 @@ pub struct AdapterRegistry;
 impl AdapterRegistry {
     /// Registers an adapter factory with the given source name.
     ///
-    /// Returns an error if an adapter with the same name is already registered.
+    /// Returns an error if an adapter with the same name is already registered,
+    /// or if the registry lock is poisoned.
     pub fn register<F>(source_name: impl Into<String>, factory: F) -> Result<(), AdapterError>
     where
         F: Fn() -> Box<dyn BaseAdapter> + Send + Sync + 'static,
     {
         let name = source_name.into();
-        let mut registry = REGISTRY.write().expect("Registry lock poisoned");
+        let mut registry = REGISTRY.write().map_err(|e| {
+            AdapterError::LockPoisoned(format!("Failed to acquire write lock: {}", e))
+        })?;
 
         if registry.contains_key(&name) {
             return Err(AdapterError::DuplicateRegistration(name));
@@ -54,29 +57,48 @@ impl AdapterRegistry {
 
     /// Gets an adapter instance by source name.
     ///
-    /// Returns None if no adapter is registered with the given name.
-    pub fn get(source_name: &str) -> Option<Box<dyn BaseAdapter>> {
-        let registry = REGISTRY.read().expect("Registry lock poisoned");
-        registry.get(source_name).map(|factory| factory())
+    /// Returns `Ok(None)` if no adapter is registered with the given name.
+    /// Returns an error if the registry lock is poisoned.
+    pub fn get(source_name: &str) -> Result<Option<Box<dyn BaseAdapter>>, AdapterError> {
+        let registry = REGISTRY.read().map_err(|e| {
+            AdapterError::LockPoisoned(format!("Failed to acquire read lock: {}", e))
+        })?;
+        Ok(registry.get(source_name).map(|factory| factory()))
     }
 
     /// Returns a list of all registered adapter source names.
-    pub fn list_adapters() -> Vec<String> {
-        let registry = REGISTRY.read().expect("Registry lock poisoned");
-        registry.keys().cloned().collect()
+    ///
+    /// Returns an error if the registry lock is poisoned.
+    pub fn list_adapters() -> Result<Vec<String>, AdapterError> {
+        let registry = REGISTRY.read().map_err(|e| {
+            AdapterError::LockPoisoned(format!("Failed to acquire read lock: {}", e))
+        })?;
+        Ok(registry.keys().cloned().collect())
     }
 
     /// Checks if an adapter is registered with the given source name.
-    pub fn is_registered(source_name: &str) -> bool {
-        let registry = REGISTRY.read().expect("Registry lock poisoned");
-        registry.contains_key(source_name)
+    ///
+    /// Returns an error if the registry lock is poisoned.
+    pub fn is_registered(source_name: &str) -> Result<bool, AdapterError> {
+        let registry = REGISTRY.read().map_err(|e| {
+            AdapterError::LockPoisoned(format!("Failed to acquire read lock: {}", e))
+        })?;
+        Ok(registry.contains_key(source_name))
     }
 
     /// Clears all registered adapters.
     ///
-    /// This is primarily intended for testing to ensure test isolation.
-    pub fn clear() {
-        let mut registry = REGISTRY.write().expect("Registry lock poisoned");
+    /// This is intended for testing to ensure test isolation.
+    ///
+    /// # Warning
+    ///
+    /// Do not use in production code as it removes all registered adapters.
+    #[cfg(any(test, feature = "test-utils"))]
+    pub fn clear() -> Result<(), AdapterError> {
+        let mut registry = REGISTRY.write().map_err(|e| {
+            AdapterError::LockPoisoned(format!("Failed to acquire write lock: {}", e))
+        })?;
         registry.clear();
+        Ok(())
     }
 }

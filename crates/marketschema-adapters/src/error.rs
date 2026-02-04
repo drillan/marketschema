@@ -45,6 +45,10 @@ pub enum AdapterError {
     #[error("Adapter '{0}' is already registered")]
     DuplicateRegistration(String),
 
+    /// Registry lock poisoned error.
+    #[error("Registry lock poisoned: {0}")]
+    LockPoisoned(String),
+
     /// Mapping error.
     #[error(transparent)]
     Mapping(#[from] MappingError),
