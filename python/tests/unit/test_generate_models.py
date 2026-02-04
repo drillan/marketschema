@@ -62,32 +62,14 @@ class TestInitFilePrerequisites:
 class TestGenerateModelsScript:
     """Tests for generate_models.sh script execution."""
 
+    # Timeout for script execution (2 minutes)
+    SCRIPT_TIMEOUT_SECONDS = 120
+
     @pytest.mark.slow
-    def test_generate_models_preserves_init_file(self) -> None:
-        """Verify that running generate_models.sh preserves __init__.py content."""
+    def test_generate_models_preserves_init_file_and_cleans_backup(self) -> None:
+        """Verify that generate_models.sh preserves __init__.py and cleans up backup."""
         # Capture original content
         original_content = INIT_FILE.read_text()
-
-        # Run the generation script
-        result = subprocess.run(
-            [str(GENERATE_SCRIPT)],
-            cwd=str(PROJECT_ROOT),
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-
-        assert result.returncode == 0, f"Script failed: {result.stderr}"
-
-        # Verify content is preserved
-        new_content = INIT_FILE.read_text()
-        assert new_content == original_content, (
-            "__init__.py content was modified by generate_models.sh"
-        )
-
-    @pytest.mark.slow
-    def test_generate_models_no_backup_file_left(self) -> None:
-        """Verify that no backup file is left after script execution."""
         backup_file = MODELS_DIR / "__init__.py.bak"
 
         # Run the generation script
@@ -97,9 +79,20 @@ class TestGenerateModelsScript:
             capture_output=True,
             text=True,
             check=False,
+            timeout=self.SCRIPT_TIMEOUT_SECONDS,
         )
 
-        assert result.returncode == 0, f"Script failed: {result.stderr}"
+        assert result.returncode == 0, (
+            f"Script failed with return code {result.returncode}\n"
+            f"stdout:\n{result.stdout}\n"
+            f"stderr:\n{result.stderr}"
+        )
+
+        # Verify content is preserved
+        new_content = INIT_FILE.read_text()
+        assert new_content == original_content, (
+            "__init__.py content was modified by generate_models.sh"
+        )
 
         # Verify no backup file remains
         assert not backup_file.exists(), (
@@ -111,7 +104,9 @@ class TestModelImports:
     """Tests for model import functionality."""
 
     def test_import_public_models(self) -> None:
-        """Verify that all public models can be imported from marketschema.models."""
+        """Verify that all public models can be imported as Pydantic models."""
+        from pydantic import BaseModel
+
         from marketschema.models import (
             OHLCV,
             DerivativeInfo,
@@ -124,16 +119,26 @@ class TestModelImports:
             VolumeInfo,
         )
 
-        # Verify these are actual classes, not None
-        assert OHLCV is not None
-        assert Quote is not None
-        assert Trade is not None
-        assert OrderBook is not None
-        assert Instrument is not None
-        assert VolumeInfo is not None
-        assert DerivativeInfo is not None
-        assert ExpiryInfo is not None
-        assert OptionInfo is not None
+        # Verify these are Pydantic model classes
+        assert issubclass(OHLCV, BaseModel), "OHLCV should be a Pydantic model"
+        assert issubclass(Quote, BaseModel), "Quote should be a Pydantic model"
+        assert issubclass(Trade, BaseModel), "Trade should be a Pydantic model"
+        assert issubclass(OrderBook, BaseModel), "OrderBook should be a Pydantic model"
+        assert issubclass(Instrument, BaseModel), (
+            "Instrument should be a Pydantic model"
+        )
+        assert issubclass(VolumeInfo, BaseModel), (
+            "VolumeInfo should be a Pydantic model"
+        )
+        assert issubclass(DerivativeInfo, BaseModel), (
+            "DerivativeInfo should be a Pydantic model"
+        )
+        assert issubclass(ExpiryInfo, BaseModel), (
+            "ExpiryInfo should be a Pydantic model"
+        )
+        assert issubclass(OptionInfo, BaseModel), (
+            "OptionInfo should be a Pydantic model"
+        )
 
     def test_import_common_types(self) -> None:
         """Verify that common types can be imported from marketschema.models."""
@@ -148,7 +153,7 @@ class TestModelImports:
             Timestamp,
         )
 
-        # Verify these are actual types, not None
+        # Verify these are actual types (enums or type aliases)
         assert AssetClass is not None
         assert Currency is not None
         assert Exchange is not None
