@@ -14,11 +14,16 @@ pub type TransformFn = Arc<dyn Fn(&Value) -> Result<Value, TransformError> + Sen
 /// a value from source data to a target field.
 #[derive(Clone)]
 pub struct ModelMapping {
-    target_field: String,
-    source_field: String,
-    transform: Option<TransformFn>,
-    default: Option<Value>,
-    required: bool,
+    /// Name of the field in the target model.
+    pub target_field: String,
+    /// Path to the field in the source data (supports dot notation).
+    pub source_field: String,
+    /// Optional transform function to apply to the extracted value.
+    pub transform: Option<TransformFn>,
+    /// Optional default value when source field is missing or null.
+    pub default: Option<Value>,
+    /// Whether the field is required (error if missing and no default).
+    pub required: bool,
 }
 
 impl ModelMapping {
