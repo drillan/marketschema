@@ -46,6 +46,17 @@
    return ms / MS_PER_SECOND
    ```
 
+3. **一時ファイルの配置**: 一時的なスクリプト、デバッグ出力、テスト用ファイルはプロジェクトルートや新規ディレクトリを作成せず、`ai_working/` に配置する
+   ```
+   # NG
+   <project-root>/test_script.py
+   <project-root>/debug/output.txt
+
+   # OK
+   <project-root>/ai_working/test_script.py
+   <project-root>/ai_working/output.txt
+   ```
+
 ### Quality Standards
 
 - 型ヒント / 型注釈は必須
