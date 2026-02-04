@@ -5,33 +5,33 @@ all: lint typecheck test
 
 # Install dependencies
 install:
-	uv sync --group dev
+	cd python && uv sync --group dev
 
 # Lint code
 lint:
-	uv run ruff check src tests
+	cd python && uv run ruff check src tests
 
 # Format code
 format:
-	uv run ruff format src tests
-	uv run ruff check --fix src tests
+	cd python && uv run ruff format src tests
+	cd python && uv run ruff check --fix src tests
 
 # Type check
 typecheck:
-	uv run mypy src/marketschema
+	cd python && uv run mypy src/marketschema
 
 # Run all tests
 test:
-	uv run pytest tests -v
+	cd python && uv run pytest tests -v
 
 # Run tests with coverage
 test-cov:
-	uv run pytest tests -v --cov=src/marketschema --cov-report=term-missing --cov-report=html
+	cd python && uv run pytest tests -v --cov=src/marketschema --cov-report=term-missing --cov-report=html
 
 # Validate JSON schemas
 validate-schemas:
 	@echo "Validating JSON Schemas..."
-	@cd src/marketschema/schemas && for f in *.json; do \
+	@cd schemas && for f in *.json; do \
 		echo "  Checking $$f..."; \
 		npx ajv compile --spec=draft2020 -s "$$f" -r definitions.json || exit 1; \
 	done
@@ -60,10 +60,10 @@ rust-test:
 # Clean generated files
 clean:
 	rm -rf rust/bundled/*.json
-	rm -rf src/marketschema/models/*.py
+	rm -rf python/src/marketschema/models/*.py
 	rm -rf rust/src/types/*.rs
-	rm -rf .pytest_cache .mypy_cache .ruff_cache
-	rm -rf htmlcov .coverage
+	rm -rf python/.pytest_cache python/.mypy_cache python/.ruff_cache
+	rm -rf python/htmlcov python/.coverage
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
 
 # Full CI check
