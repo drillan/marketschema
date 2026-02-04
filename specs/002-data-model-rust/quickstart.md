@@ -64,11 +64,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 ### Builder Pattern
 
 ```rust
-use marketschema::types::quote::{Quote, QuoteSymbol};
+use marketschema::Quote;
+use marketschema::types::quote::QuoteSymbol;
 use chrono::Utc;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let quote = Quote::builder()
+    let quote: Quote = Quote::builder()
         .symbol("7203.T".parse::<QuoteSymbol>()?)
         .timestamp(Utc::now())
         .bid(2850.0)
