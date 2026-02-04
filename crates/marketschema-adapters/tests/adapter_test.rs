@@ -2,7 +2,44 @@
 
 use marketschema_adapters::{AdapterError, AdapterRegistry, BaseAdapter, ModelMapping, Transforms};
 use serde_json::json;
+use serial_test::serial;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering as AtomicOrdering};
+
+// ====================
+// Test Utilities
+// ====================
+
+/// Atomic counter to ensure unique IDs across all test runs
+static TEST_COUNTER: AtomicU64 = AtomicU64::new(0);
+
+/// Generate a unique test ID for isolation.
+///
+/// Combines system time (nanoseconds) with an atomic counter to guarantee
+/// uniqueness even when called multiple times within the same nanosecond.
+fn unique_id() -> u128 {
+    let time_part = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .expect("System time should be after UNIX epoch")
+        .as_nanos();
+    let counter_part = TEST_COUNTER.fetch_add(1, AtomicOrdering::Relaxed) as u128;
+    time_part.wrapping_add(counter_part)
+}
+
+/// Register an adapter, ignoring `DuplicateRegistration` errors but panicking
+/// on unexpected errors like `LockPoisoned`.
+fn register_ignoring_duplicate<F>(name: String, factory: F)
+where
+    F: Fn() -> Box<dyn BaseAdapter> + Send + Sync + 'static,
+{
+    match AdapterRegistry::register(name, factory) {
+        Ok(()) => {}
+        Err(AdapterError::DuplicateRegistration(_)) => {
+            // Expected in parallel test runs - ignore
+        }
+        Err(e) => panic!("Unexpected registration error: {:?}", e),
+    }
+}
 
 // ====================
 // Test Constants
@@ -348,18 +385,16 @@ mod mapping_apply_integration {
 mod registry_integration {
     use super::*;
 
-    fn setup() {
-        #[cfg(any(test, feature = "test-utils"))]
-        AdapterRegistry::clear().unwrap();
-    }
-
     #[test]
     fn register_and_get_adapter() {
-        setup();
+        let id = unique_id();
+        let name = format!("sample_exchange_{}", id);
 
-        AdapterRegistry::register("sample_exchange", || Box::new(SampleAdapter)).unwrap();
+        // Registration with unique name should succeed
+        AdapterRegistry::register(name.clone(), || Box::new(SampleAdapter))
+            .expect("Registration with unique name should succeed");
 
-        let adapter = AdapterRegistry::get("sample_exchange")
+        let adapter = AdapterRegistry::get(&name)
             .expect("Registry lock should not be poisoned")
             .expect("Adapter should be registered");
         assert_eq!(adapter.source_name(), "sample_exchange");
@@ -367,22 +402,27 @@ mod registry_integration {
 
     #[test]
     fn get_nonexistent_adapter_returns_none() {
-        setup();
+        let id = unique_id();
+        let name = format!("nonexistent_{}", id);
 
-        let result = AdapterRegistry::get("nonexistent").unwrap();
+        let result = AdapterRegistry::get(&name).unwrap();
         assert!(result.is_none());
     }
 
     #[test]
     fn duplicate_registration_returns_error() {
-        setup();
+        let id = unique_id();
+        let name = format!("duplicate_test_{}", id);
 
-        AdapterRegistry::register("sample", || Box::new(MinimalAdapter)).unwrap();
-        let result = AdapterRegistry::register("sample", || Box::new(MinimalAdapter));
+        // First registration should succeed
+        let result1 = AdapterRegistry::register(name.clone(), || Box::new(MinimalAdapter));
+        assert!(result1.is_ok(), "First registration should succeed");
 
-        match result {
-            Err(AdapterError::DuplicateRegistration(name)) => {
-                assert_eq!(name, "sample");
+        // Second registration with same name should fail
+        let result2 = AdapterRegistry::register(name.clone(), || Box::new(MinimalAdapter));
+        match result2 {
+            Err(AdapterError::DuplicateRegistration(dup_name)) => {
+                assert_eq!(dup_name, name);
             }
             Err(other) => panic!("Expected DuplicateRegistration, got {:?}", other),
             Ok(_) => panic!("Expected error, got Ok"),
@@ -391,33 +431,41 @@ mod registry_integration {
 
     #[test]
     fn list_adapters_returns_registered_names() {
-        setup();
+        let id = unique_id();
+        let name_a = format!("list_adapter_a_{}", id);
+        let name_b = format!("list_adapter_b_{}", id);
 
-        AdapterRegistry::register("adapter_a", || Box::new(MinimalAdapter)).unwrap();
-        AdapterRegistry::register("adapter_b", || Box::new(SampleAdapter)).unwrap();
+        // Register adapters (ignore duplicates from parallel runs)
+        register_ignoring_duplicate(name_a.clone(), || Box::new(MinimalAdapter));
+        register_ignoring_duplicate(name_b.clone(), || Box::new(SampleAdapter));
 
         let names = AdapterRegistry::list_adapters().unwrap();
-        assert!(names.contains(&"adapter_a".to_string()));
-        assert!(names.contains(&"adapter_b".to_string()));
+        assert!(names.contains(&name_a));
+        assert!(names.contains(&name_b));
     }
 
     #[test]
     fn is_registered_returns_correct_status() {
-        setup();
+        let id = unique_id();
+        let name = format!("is_registered_test_{}", id);
+        let nonexistent_name = format!("not_registered_{}", id);
 
-        AdapterRegistry::register("registered_one", || Box::new(MinimalAdapter)).unwrap();
+        // Register adapter (ignore duplicates)
+        register_ignoring_duplicate(name.clone(), || Box::new(MinimalAdapter));
 
-        assert!(AdapterRegistry::is_registered("registered_one").unwrap());
-        assert!(!AdapterRegistry::is_registered("not_registered").unwrap());
+        assert!(AdapterRegistry::is_registered(&name).unwrap());
+        assert!(!AdapterRegistry::is_registered(&nonexistent_name).unwrap());
     }
 
     #[test]
     fn adapter_from_registry_has_working_mappings() {
-        setup();
+        let id = unique_id();
+        let name = format!("full_adapter_{}", id);
 
-        AdapterRegistry::register("full_adapter", || Box::new(SampleAdapter)).unwrap();
+        // Register adapter (ignore duplicates)
+        register_ignoring_duplicate(name.clone(), || Box::new(SampleAdapter));
 
-        let adapter = AdapterRegistry::get("full_adapter")
+        let adapter = AdapterRegistry::get(&name)
             .expect("Registry lock should not be poisoned")
             .expect("Adapter should be registered");
 
@@ -449,7 +497,31 @@ mod registry_integration {
 
 mod thread_safety {
     use super::*;
+    use std::sync::atomic::{AtomicUsize, Ordering};
     use std::thread;
+
+    // Thread count for concurrent tests.
+    // 8 threads provides good concurrency testing coverage while remaining
+    // reasonable on most CI systems.
+    const NUM_THREADS: usize = 8;
+
+    // Operations per thread for read-heavy tests.
+    // 100 iterations per thread gives 800 total operations with 8 threads,
+    // sufficient to trigger race conditions if they exist.
+    const READS_PER_THREAD: usize = 100;
+
+    // Registrations per thread for write tests.
+    // 10 registrations per thread creates 80 total entries, which tests
+    // the registry under moderate load without excessive memory usage.
+    const REGISTRATIONS_PER_THREAD: usize = 10;
+
+    // Reader/writer thread counts for mixed operations test.
+    // Equal reader/writer counts test balanced contention.
+    const NUM_READER_THREADS: usize = 4;
+    const NUM_WRITER_THREADS: usize = 4;
+
+    // Operations per thread for mixed read/write tests.
+    const OPS_PER_THREAD: usize = 50;
 
     #[test]
     fn adapter_can_be_shared_across_threads() {
@@ -503,6 +575,372 @@ mod thread_safety {
         for handle in handles {
             handle.join().unwrap();
         }
+    }
+
+    #[test]
+    #[serial]
+    fn concurrent_registry_read_operations() {
+        // Use a unique prefix to avoid interference with other tests
+        let test_id = unique_id();
+
+        // Pre-register some adapters with unique names
+        for i in 0..5 {
+            let name = format!("concurrent_read_{}_{}", test_id, i);
+            register_ignoring_duplicate(name, || Box::new(MinimalAdapter));
+        }
+
+        // Spawn multiple threads that concurrently read from the registry
+        let completed_count = Arc::new(AtomicUsize::new(0));
+
+        let handles: Vec<_> = (0..NUM_THREADS)
+            .map(|_thread_id| {
+                let completed_count = Arc::clone(&completed_count);
+                thread::spawn(move || {
+                    for i in 0..READS_PER_THREAD {
+                        // Read operations: get, is_registered, list_adapters
+                        let adapter_id = i % 5;
+                        let name = format!("concurrent_read_{}_{}", test_id, adapter_id);
+
+                        // Test get() - verify we get an adapter back
+                        let adapter = AdapterRegistry::get(&name)
+                            .expect("Registry lock should not be poisoned");
+                        assert!(adapter.is_some(), "Adapter {} should be found", name);
+
+                        // Test is_registered() - verify expected result
+                        let is_registered = AdapterRegistry::is_registered(&name)
+                            .expect("Registry lock should not be poisoned");
+                        assert!(is_registered, "Adapter {} should be registered", name);
+
+                        // Test list_adapters() - verify our adapter is in the list
+                        let names = AdapterRegistry::list_adapters()
+                            .expect("Registry lock should not be poisoned");
+                        assert!(names.contains(&name), "Adapter {} should be in list", name);
+
+                        completed_count.fetch_add(1, Ordering::Relaxed);
+                    }
+                })
+            })
+            .collect();
+
+        // Wait for all threads to complete
+        for handle in handles {
+            handle.join().expect("Thread should not panic");
+        }
+
+        // Verify all iterations completed without panic
+        let expected_completions = NUM_THREADS * READS_PER_THREAD;
+        assert_eq!(
+            completed_count.load(Ordering::Relaxed),
+            expected_completions,
+            "All concurrent read operations should complete without panic"
+        );
+    }
+
+    #[test]
+    #[serial]
+    fn concurrent_registry_write_operations() {
+        // Use a unique prefix to avoid interference with other tests
+        let test_id = unique_id();
+
+        // Spawn multiple threads that concurrently register adapters with unique names
+        let success_count = Arc::new(AtomicUsize::new(0));
+
+        let handles: Vec<_> = (0..NUM_THREADS)
+            .map(|thread_id| {
+                let success_count = Arc::clone(&success_count);
+                thread::spawn(move || {
+                    for i in 0..REGISTRATIONS_PER_THREAD {
+                        // Each thread registers uniquely named adapters
+                        let name =
+                            format!("write_{}__thread_{}__adapter_{}", test_id, thread_id, i);
+                        match AdapterRegistry::register(name, || Box::new(MinimalAdapter)) {
+                            Ok(()) => {
+                                success_count.fetch_add(1, Ordering::Relaxed);
+                            }
+                            Err(AdapterError::DuplicateRegistration(_)) => {
+                                // This should never happen with unique names
+                                panic!("Unexpected duplicate registration");
+                            }
+                            Err(e) => {
+                                panic!("Unexpected error: {:?}", e);
+                            }
+                        }
+                    }
+                    thread_id
+                })
+            })
+            .collect();
+
+        // Wait for all threads to complete
+        for handle in handles {
+            handle.join().expect("Thread should not panic");
+        }
+
+        // Verify all registrations succeeded
+        let expected_registrations = NUM_THREADS * REGISTRATIONS_PER_THREAD;
+        assert_eq!(
+            success_count.load(Ordering::Relaxed),
+            expected_registrations,
+            "All concurrent registrations should succeed"
+        );
+
+        // Verify all adapters we registered are actually there
+        for thread_id in 0..NUM_THREADS {
+            for i in 0..REGISTRATIONS_PER_THREAD {
+                let name = format!("write_{}__thread_{}__adapter_{}", test_id, thread_id, i);
+                assert!(
+                    AdapterRegistry::is_registered(&name).unwrap(),
+                    "Adapter {} should be registered",
+                    name
+                );
+            }
+        }
+    }
+
+    #[test]
+    #[serial]
+    fn concurrent_mixed_read_write_operations() {
+        // Use a unique prefix to avoid interference with other tests
+        let test_id = unique_id();
+
+        // Pre-register a base set of adapters with unique names
+        for i in 0..3 {
+            let name = format!("mixed_base_{}_{}", test_id, i);
+            register_ignoring_duplicate(name, || Box::new(MinimalAdapter));
+        }
+
+        let read_completed = Arc::new(AtomicUsize::new(0));
+        let write_success = Arc::new(AtomicUsize::new(0));
+
+        // Spawn reader threads
+        let reader_handles: Vec<_> = (0..NUM_READER_THREADS)
+            .map(|_thread_id| {
+                let read_completed = Arc::clone(&read_completed);
+                thread::spawn(move || {
+                    for i in 0..OPS_PER_THREAD {
+                        let name = format!("mixed_base_{}_{}", test_id, i % 3);
+                        // Verify read operations return expected results
+                        let is_registered = AdapterRegistry::is_registered(&name)
+                            .expect("Registry lock should not be poisoned");
+                        assert!(is_registered, "Adapter {} should be registered", name);
+                        read_completed.fetch_add(1, Ordering::Relaxed);
+                    }
+                })
+            })
+            .collect();
+
+        // Spawn writer threads
+        let writer_handles: Vec<_> = (0..NUM_WRITER_THREADS)
+            .map(|thread_id| {
+                let write_success = Arc::clone(&write_success);
+                thread::spawn(move || {
+                    for i in 0..OPS_PER_THREAD {
+                        let name = format!(
+                            "mixed_writer_{}__thread_{}__adapter_{}",
+                            test_id, thread_id, i
+                        );
+                        match AdapterRegistry::register(name, || Box::new(MinimalAdapter)) {
+                            Ok(()) => {
+                                write_success.fetch_add(1, Ordering::Relaxed);
+                            }
+                            Err(AdapterError::DuplicateRegistration(_)) => {
+                                // This should never happen with unique names
+                                panic!("Unexpected duplicate registration");
+                            }
+                            Err(e) => {
+                                panic!("Unexpected registration error: {:?}", e);
+                            }
+                        }
+                    }
+                })
+            })
+            .collect();
+
+        // Wait for all threads
+        for handle in reader_handles {
+            handle.join().expect("Reader thread should not panic");
+        }
+        for handle in writer_handles {
+            handle.join().expect("Writer thread should not panic");
+        }
+
+        // Verify all read operations completed without panic
+        let expected_reads = NUM_READER_THREADS * OPS_PER_THREAD;
+        assert_eq!(
+            read_completed.load(Ordering::Relaxed),
+            expected_reads,
+            "All read operations should complete"
+        );
+
+        // Verify all write operations succeeded
+        let expected_writes = NUM_WRITER_THREADS * OPS_PER_THREAD;
+        assert_eq!(
+            write_success.load(Ordering::Relaxed),
+            expected_writes,
+            "All write operations should succeed"
+        );
+    }
+
+    #[test]
+    #[serial]
+    fn clear_provides_test_isolation() {
+        // Use unique names to avoid interference with parallel tests
+        let test_id = unique_id();
+        let adapter_name = format!("isolation_test_adapter_{}", test_id);
+
+        // Clear and register an adapter
+        AdapterRegistry::clear().expect("Clear should not fail");
+        AdapterRegistry::register(adapter_name.clone(), || Box::new(MinimalAdapter))
+            .expect("Registration should succeed after clear");
+        assert!(
+            AdapterRegistry::is_registered(&adapter_name)
+                .expect("Registry lock should not be poisoned"),
+            "Adapter should be registered after registration"
+        );
+
+        // Clear and verify it's gone
+        AdapterRegistry::clear().expect("Clear should not fail");
+        assert!(
+            !AdapterRegistry::is_registered(&adapter_name)
+                .expect("Registry lock should not be poisoned"),
+            "Adapter should not be registered after clear"
+        );
+
+        // Verify we can re-register the same name
+        let result = AdapterRegistry::register(adapter_name, || Box::new(MinimalAdapter));
+        assert!(result.is_ok(), "Should be able to re-register after clear");
+    }
+
+    #[test]
+    #[serial]
+    fn concurrent_clear_operations() {
+        // Test that multiple threads calling clear() simultaneously doesn't cause issues
+        let test_id = unique_id();
+
+        // Pre-register some adapters
+        for i in 0..10 {
+            let name = format!("clear_test_{}_{}", test_id, i);
+            register_ignoring_duplicate(name, || Box::new(MinimalAdapter));
+        }
+
+        let clear_success_count = Arc::new(AtomicUsize::new(0));
+
+        // Spawn threads that all call clear() simultaneously
+        let handles: Vec<_> = (0..NUM_THREADS)
+            .map(|_| {
+                let clear_success_count = Arc::clone(&clear_success_count);
+                thread::spawn(move || {
+                    // Each thread attempts to clear multiple times
+                    for _ in 0..5 {
+                        match AdapterRegistry::clear() {
+                            Ok(()) => {
+                                clear_success_count.fetch_add(1, Ordering::Relaxed);
+                            }
+                            Err(e) => {
+                                panic!("Clear operation failed: {:?}", e);
+                            }
+                        }
+                    }
+                })
+            })
+            .collect();
+
+        for handle in handles {
+            handle.join().expect("Thread should not panic");
+        }
+
+        // All clear operations should have succeeded
+        let expected_clears = NUM_THREADS * 5;
+        assert_eq!(
+            clear_success_count.load(Ordering::Relaxed),
+            expected_clears,
+            "All clear operations should succeed"
+        );
+
+        // Registry should be empty after all clears
+        let names = AdapterRegistry::list_adapters().expect("Registry lock should not be poisoned");
+        // Note: Other parallel tests may have registered adapters, so we just verify
+        // our specific test adapters are gone
+        for i in 0..10 {
+            let name = format!("clear_test_{}_{}", test_id, i);
+            assert!(!names.contains(&name), "Adapter {} should be cleared", name);
+        }
+    }
+
+    #[test]
+    #[serial]
+    fn clear_during_concurrent_registration() {
+        // Test clear() being called while other threads are registering
+        let test_id = unique_id();
+
+        let register_success = Arc::new(AtomicUsize::new(0));
+        let clear_success = Arc::new(AtomicUsize::new(0));
+
+        // Spawn writer threads
+        let writer_handles: Vec<_> = (0..NUM_WRITER_THREADS)
+            .map(|thread_id| {
+                let register_success = Arc::clone(&register_success);
+                thread::spawn(move || {
+                    for i in 0..OPS_PER_THREAD {
+                        let name = format!(
+                            "clear_concurrent_{}__thread_{}__adapter_{}",
+                            test_id, thread_id, i
+                        );
+                        match AdapterRegistry::register(name, || Box::new(MinimalAdapter)) {
+                            Ok(()) => {
+                                register_success.fetch_add(1, Ordering::Relaxed);
+                            }
+                            Err(AdapterError::DuplicateRegistration(_)) => {
+                                // Possible if a previous registration survived a clear
+                                register_success.fetch_add(1, Ordering::Relaxed);
+                            }
+                            Err(e) => {
+                                panic!("Unexpected registration error: {:?}", e);
+                            }
+                        }
+                    }
+                })
+            })
+            .collect();
+
+        // Spawn clear threads
+        let clear_handles: Vec<_> = (0..2)
+            .map(|_| {
+                let clear_success = Arc::clone(&clear_success);
+                thread::spawn(move || {
+                    for _ in 0..10 {
+                        match AdapterRegistry::clear() {
+                            Ok(()) => {
+                                clear_success.fetch_add(1, Ordering::Relaxed);
+                            }
+                            Err(e) => {
+                                panic!("Clear operation failed: {:?}", e);
+                            }
+                        }
+                        // Small yield to allow registration threads to make progress
+                        thread::yield_now();
+                    }
+                })
+            })
+            .collect();
+
+        // Wait for all threads
+        for handle in writer_handles {
+            handle.join().expect("Writer thread should not panic");
+        }
+        for handle in clear_handles {
+            handle.join().expect("Clear thread should not panic");
+        }
+
+        // Verify all operations completed (exact counts depend on timing)
+        assert!(
+            register_success.load(Ordering::Relaxed) > 0,
+            "At least some registrations should complete"
+        );
+        assert!(
+            clear_success.load(Ordering::Relaxed) > 0,
+            "At least some clears should complete"
+        );
     }
 }
 
