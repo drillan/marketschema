@@ -50,10 +50,18 @@ pub enum AdapterError {
     LockPoisoned(String),
 
     /// Mapping error.
-    #[error(transparent)]
-    Mapping(#[from] MappingError),
+    #[error("{0}")]
+    Mapping(
+        #[source]
+        #[from]
+        MappingError,
+    ),
 
     /// Transform error.
-    #[error(transparent)]
-    Transform(#[from] TransformError),
+    #[error("{0}")]
+    Transform(
+        #[source]
+        #[from]
+        TransformError,
+    ),
 }

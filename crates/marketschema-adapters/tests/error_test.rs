@@ -96,6 +96,13 @@ fn adapter_error_duplicate_registration_displays_message() {
 }
 
 #[test]
+fn adapter_error_lock_poisoned_displays_message() {
+    let error = AdapterError::LockPoisoned("test reason".to_string());
+    assert!(error.to_string().contains("Registry lock poisoned"));
+    assert!(error.to_string().contains("test reason"));
+}
+
+#[test]
 fn adapter_error_implements_std_error() {
     let error = AdapterError::General("test".to_string());
     let _: &dyn std::error::Error = &error;
@@ -106,6 +113,36 @@ fn adapter_error_is_debug() {
     let error = AdapterError::General("test".to_string());
     let debug_str = format!("{:?}", error);
     assert!(debug_str.contains("General"));
+}
+
+// ============================================================================
+// source() Method Tests
+// ============================================================================
+
+#[test]
+fn adapter_error_mapping_has_source() {
+    let mapping_error = MappingError::new("inner");
+    let adapter_error: AdapterError = mapping_error.into();
+
+    let source = std::error::Error::source(&adapter_error);
+    assert!(source.is_some());
+}
+
+#[test]
+fn adapter_error_transform_has_source() {
+    let transform_error = TransformError::new("inner");
+    let adapter_error: AdapterError = transform_error.into();
+
+    let source = std::error::Error::source(&adapter_error);
+    assert!(source.is_some());
+}
+
+#[test]
+fn adapter_error_general_has_no_source() {
+    let error = AdapterError::General("test".to_string());
+
+    let source = std::error::Error::source(&error);
+    assert!(source.is_none());
 }
 
 // ============================================================================
@@ -156,7 +193,7 @@ fn adapter_error_transform_is_transparent() {
     assert_eq!(adapter_error.to_string(), "inner message");
 }
 
-/// Test that `?` operator works with #[from] conversion
+/// Helper function that returns a MappingError for testing `?` operator propagation.
 fn function_returning_mapping_error() -> Result<(), MappingError> {
     Err(MappingError::new("test"))
 }
