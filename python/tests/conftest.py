@@ -5,11 +5,11 @@ from typing import Any
 
 import pytest
 
-# Repository root directory
-REPO_ROOT = Path(__file__).parent.parent
+# Repository root directory (python/ -> marketschema/)
+REPO_ROOT = Path(__file__).parent.parent.parent
 
 # Schema directory paths
-SCHEMAS_DIR = REPO_ROOT / "src" / "marketschema" / "schemas"
+SCHEMAS_DIR = REPO_ROOT / "schemas"
 CONTRACTS_DIR = REPO_ROOT / "specs" / "002-data-model" / "contracts"
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 

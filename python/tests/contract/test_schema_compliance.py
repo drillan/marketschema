@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-SCHEMAS_DIR = Path(__file__).parent.parent.parent / "src" / "marketschema" / "schemas"
+SCHEMAS_DIR = Path(__file__).parent.parent.parent.parent / "schemas"
 
 EXPECTED_SCHEMAS = [
     "definitions.json",

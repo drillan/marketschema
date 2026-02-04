@@ -10,8 +10,8 @@ from jsonschema import Draft202012Validator  # type: ignore[import-untyped]
 from referencing import Registry, Resource
 from referencing.jsonschema import DRAFT202012
 
-REPO_ROOT = Path(__file__).parent.parent.parent
-SCHEMAS_DIR = REPO_ROOT / "src" / "marketschema" / "schemas"
+REPO_ROOT = Path(__file__).parent.parent.parent.parent
+SCHEMAS_DIR = REPO_ROOT / "schemas"
 FIXTURES_DIR = Path(__file__).parent.parent / "fixtures"
 
 
