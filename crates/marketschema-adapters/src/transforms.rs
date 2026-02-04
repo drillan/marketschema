@@ -88,6 +88,12 @@ impl Transforms {
     }
 
     /// Converts Unix milliseconds timestamp to ISO 8601 UTC string.
+    ///
+    /// # Output Format
+    ///
+    /// Returns timestamps in whole-second precision (`%Y-%m-%dT%H:%M:%SZ`).
+    /// Millisecond precision from the input is **not** preserved in the output.
+    /// Use `iso_timestamp()` if you need to preserve sub-second precision.
     pub fn unix_timestamp_ms(value: &Value) -> Result<String, TransformError> {
         use super::{MS_PER_SECOND, NS_PER_MS};
 
@@ -135,6 +141,16 @@ impl Transforms {
     }
 
     /// Converts JST (Japan Standard Time) timestamp to UTC.
+    ///
+    /// This function accepts two input formats:
+    /// - RFC 3339 with timezone (e.g., `"2024-01-01T09:00:00+09:00"`) - timezone is respected
+    /// - Naive datetime (e.g., `"2024-01-01T09:00:00"` or `"2024-01-01 09:00:00"`) - assumed to be JST
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - The input appears to contain timezone markers but fails RFC 3339 parsing
+    /// - The input cannot be parsed as a valid datetime
     pub fn jst_to_utc(value: &Value) -> Result<String, TransformError> {
         use super::{JST_UTC_OFFSET_HOURS, SECONDS_PER_HOUR};
 
@@ -147,6 +163,16 @@ impl Transforms {
             return Ok(dt
                 .with_timezone(&chrono::Utc)
                 .to_rfc3339_opts(chrono::SecondsFormat::AutoSi, true));
+        }
+
+        // Reject strings that appear to have timezone markers but failed RFC3339 parsing.
+        // This prevents silent misinterpretation of malformed timezone data.
+        // Check for: +HH:MM offset, trailing Z, or "UTC" marker anywhere in the string.
+        if s.contains('+') || s.contains('Z') || s.to_uppercase().contains("UTC") {
+            return Err(TransformError::new(format!(
+                "Datetime '{}' appears to contain timezone but failed RFC3339 parsing",
+                s
+            )));
         }
 
         // Parse as naive datetime and assume JST
@@ -178,8 +204,15 @@ impl Transforms {
 
     /// Normalizes trade side strings to "buy" or "sell".
     ///
-    /// Recognized buy values: "buy", "bid", "b"
-    /// Recognized sell values: "sell", "ask", "offer", "s", "a"
+    /// Recognized buy values: "buy", "bid", "b" (case-insensitive)
+    /// Recognized sell values: "sell", "ask", "offer", "s", "a" (case-insensitive)
+    ///
+    /// # Design Note
+    ///
+    /// "long" and "short" are intentionally NOT supported. These terms represent
+    /// position direction in derivatives trading, not trade execution side.
+    /// A "long" position can be opened with a "buy" or closed with a "sell",
+    /// making the mapping ambiguous. Use explicit "buy"/"sell" for trade sides.
     pub fn side_from_string(value: &Value) -> Result<String, TransformError> {
         let s = value
             .as_str()
@@ -189,7 +222,7 @@ impl Transforms {
             "buy" | "bid" | "b" => Ok("buy".to_string()),
             "sell" | "ask" | "offer" | "s" | "a" => Ok("sell".to_string()),
             _ => Err(TransformError::new(format!(
-                "Cannot normalize side value: '{}'",
+                "Cannot normalize side value '{}'. Expected one of: buy, bid, b, sell, ask, offer, s, a (case-insensitive)",
                 s
             ))),
         }

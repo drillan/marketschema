@@ -1,6 +1,7 @@
 //! Unit tests for the Transforms module.
 //!
-//! Tests cover all 9 transform functions with both success and error cases.
+//! Tests cover all 9 transformation types (each with a direct function and a TransformFn wrapper),
+//! with both success and error cases.
 
 use marketschema_adapters::Transforms;
 use serde_json::json;
@@ -198,7 +199,7 @@ mod iso_timestamp {
     #[test]
     fn preserves_milliseconds() {
         let result = Transforms::iso_timestamp(&json!("2024-01-01T00:00:00.123Z"));
-        assert!(result.unwrap().contains("123"));
+        assert_eq!(result.unwrap(), "2024-01-01T00:00:00.123Z");
     }
 
     #[test]
@@ -367,6 +368,41 @@ mod jst_to_utc {
     fn errors_on_non_string() {
         let result = Transforms::jst_to_utc(&json!(12345));
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn errors_on_malformed_timezone_with_plus() {
+        // Contains '+' but is not valid RFC3339 - should error, not fall back to naive parsing
+        let result = Transforms::jst_to_utc(&json!("2024-01-01T09:00:00+9:00"));
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(err.to_string().contains("timezone"));
+    }
+
+    #[test]
+    fn accepts_space_separated_z_suffix_as_utc() {
+        // chrono's RFC3339 parser accepts space-separated datetime with Z suffix
+        // This is correctly interpreted as UTC, not silently treated as JST
+        let result = Transforms::jst_to_utc(&json!("2024-01-01 09:00:00Z"));
+        assert_eq!(result.unwrap(), "2024-01-01T09:00:00Z");
+    }
+
+    #[test]
+    fn errors_on_invalid_z_in_middle() {
+        // Z appears but not as a valid timezone suffix
+        let result = Transforms::jst_to_utc(&json!("2024-01-01TZ09:00:00"));
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(err.to_string().contains("timezone"));
+    }
+
+    #[test]
+    fn errors_on_utc_string_marker() {
+        // Contains 'UTC' but is not valid RFC3339
+        let result = Transforms::jst_to_utc(&json!("2024-01-01T09:00:00 UTC"));
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(err.to_string().contains("timezone"));
     }
 
     #[test]
