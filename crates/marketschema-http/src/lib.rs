@@ -1,8 +1,9 @@
 //! Async HTTP client for marketschema adapters.
 //!
 //! This crate provides a robust HTTP client layer for building market data adapters.
-//! Features include connection pooling, configurable timeouts, and clean error handling.
-//! Planned features include automatic retries, rate limiting, and response caching.
+//! Features include connection pooling, configurable timeouts, automatic retries
+//! with exponential backoff, and clean error handling.
+//! Planned features include rate limiting and response caching.
 //!
 //! # Example
 //!

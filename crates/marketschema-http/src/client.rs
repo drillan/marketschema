@@ -148,6 +148,11 @@ impl AsyncHttpClient {
     ///
     /// If `retry_config` is set, this method will retry failed requests
     /// according to the configuration. Otherwise, it executes once.
+    ///
+    /// Retries are triggered for:
+    /// - HTTP status codes in the `retry_statuses` set (e.g., 429, 500, 502, 503, 504)
+    /// - Timeout errors (transient network issues)
+    /// - Connection errors (transient network issues)
     async fn execute_with_retry(
         &self,
         url: &str,
@@ -156,18 +161,56 @@ impl AsyncHttpClient {
         let mut attempt = 0u32;
 
         loop {
-            let response = self
-                .inner
-                .get(url)
-                .query(params)
-                .send()
-                .await
-                .map_err(|e| Self::convert_reqwest_error(e, url))?;
+            let send_result = self.inner.get(url).query(params).send().await;
+
+            // Handle connection/timeout errors separately to enable retry
+            let response = match send_result {
+                Ok(resp) => resp,
+                Err(e) => {
+                    let err = Self::convert_reqwest_error(e, url);
+
+                    // Check if we should retry transient network errors
+                    if let Some(ref config) = self.retry_config {
+                        let is_transient = matches!(
+                            &err,
+                            HttpError::Timeout { .. } | HttpError::Connection { .. }
+                        );
+
+                        if is_transient && attempt < config.max_retries() {
+                            let delay = config.get_delay(attempt);
+
+                            tracing::debug!(
+                                url = %url,
+                                error = ?err,
+                                attempt = %attempt,
+                                delay_ms = %delay.as_millis(),
+                                "Retrying request after transient network error"
+                            );
+
+                            tokio::time::sleep(delay).await;
+                            attempt += 1;
+                            continue;
+                        }
+
+                        // Log exhaustion of retries for transient errors
+                        if is_transient {
+                            tracing::warn!(
+                                url = %url,
+                                error = ?err,
+                                attempts = %(attempt + 1),
+                                "Request failed after exhausting all retry attempts (network error)"
+                            );
+                        }
+                    }
+
+                    return Err(err);
+                }
+            };
 
             match Self::check_status(response, url).await {
                 Ok(resp) => return Ok(resp),
                 Err(err) => {
-                    // Check if we should retry
+                    // Check if we should retry based on HTTP status code
                     if let Some(ref config) = self.retry_config {
                         if let Some(status_code) = err.status_code() {
                             if config.should_retry(status_code, attempt) {
@@ -189,13 +232,23 @@ impl AsyncHttpClient {
                                     status_code = %status_code,
                                     attempt = %attempt,
                                     delay_ms = %delay.as_millis(),
-                                    "Retrying request after transient error"
+                                    "Retrying request after transient HTTP error"
                                 );
 
                                 tokio::time::sleep(delay).await;
                                 attempt += 1;
                                 continue;
                             }
+                        }
+
+                        // Log exhaustion of retries for HTTP errors
+                        if err.status_code().is_some() {
+                            tracing::warn!(
+                                url = %url,
+                                error = ?err,
+                                attempts = %(attempt + 1),
+                                "Request failed after exhausting all retry attempts"
+                            );
                         }
                     }
 
@@ -569,7 +622,7 @@ impl AsyncHttpClientBuilder {
     /// use marketschema_http::{AsyncHttpClientBuilder, RetryConfig};
     ///
     /// let client = AsyncHttpClientBuilder::new()
-    ///     .retry(RetryConfig::new().max_retries(5))
+    ///     .retry(RetryConfig::new().with_max_retries(5))
     ///     .build()
     ///     .unwrap();
     /// ```

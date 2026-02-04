@@ -19,21 +19,21 @@ use wiremock::{Mock, MockServer, Respond, ResponseTemplate};
 fn test_retry_config_new_has_default_max_retries() {
     // FR-R020: max_retries defaults to 3
     let config = RetryConfig::new();
-    assert_eq!(config.max_retries, 3);
+    assert_eq!(config.max_retries(), 3);
 }
 
 #[test]
 fn test_retry_config_new_has_default_backoff_factor() {
     // FR-R021: backoff_factor defaults to 0.5
     let config = RetryConfig::new();
-    assert!((config.backoff_factor - 0.5).abs() < f64::EPSILON);
+    assert!((config.backoff_factor() - 0.5).abs() < f64::EPSILON);
 }
 
 #[test]
 fn test_retry_config_new_has_default_jitter() {
     // FR-R022: jitter defaults to 0.1
     let config = RetryConfig::new();
-    assert!((config.jitter - 0.1).abs() < f64::EPSILON);
+    assert!((config.jitter() - 0.1).abs() < f64::EPSILON);
 }
 
 #[test]
@@ -41,7 +41,7 @@ fn test_retry_config_new_has_default_retry_statuses() {
     // FR-R019: retry_statuses defaults to [429, 500, 502, 503, 504]
     let config = RetryConfig::new();
     let expected: HashSet<u16> = [429, 500, 502, 503, 504].into_iter().collect();
-    assert_eq!(config.retry_statuses, expected);
+    assert_eq!(*config.retry_statuses(), expected);
 }
 
 #[test]
@@ -50,10 +50,10 @@ fn test_retry_config_default_trait() {
     let from_new = RetryConfig::new();
     let from_default = RetryConfig::default();
 
-    assert_eq!(from_new.max_retries, from_default.max_retries);
-    assert!((from_new.backoff_factor - from_default.backoff_factor).abs() < f64::EPSILON);
-    assert!((from_new.jitter - from_default.jitter).abs() < f64::EPSILON);
-    assert_eq!(from_new.retry_statuses, from_default.retry_statuses);
+    assert_eq!(from_new.max_retries(), from_default.max_retries());
+    assert!((from_new.backoff_factor() - from_default.backoff_factor()).abs() < f64::EPSILON);
+    assert!((from_new.jitter() - from_default.jitter()).abs() < f64::EPSILON);
+    assert_eq!(from_new.retry_statuses(), from_default.retry_statuses());
 }
 
 // =============================================================================
@@ -62,39 +62,39 @@ fn test_retry_config_default_trait() {
 
 #[test]
 fn test_retry_config_max_retries_builder() {
-    let config = RetryConfig::new().max_retries(5);
-    assert_eq!(config.max_retries, 5);
+    let config = RetryConfig::new().with_max_retries(5);
+    assert_eq!(config.max_retries(), 5);
 }
 
 #[test]
 fn test_retry_config_backoff_factor_builder() {
-    let config = RetryConfig::new().backoff_factor(1.0);
-    assert!((config.backoff_factor - 1.0).abs() < f64::EPSILON);
+    let config = RetryConfig::new().with_backoff_factor(1.0);
+    assert!((config.backoff_factor() - 1.0).abs() < f64::EPSILON);
 }
 
 #[test]
 fn test_retry_config_jitter_builder() {
-    let config = RetryConfig::new().jitter(0.2);
-    assert!((config.jitter - 0.2).abs() < f64::EPSILON);
+    let config = RetryConfig::new().with_jitter(0.2);
+    assert!((config.jitter() - 0.2).abs() < f64::EPSILON);
 }
 
 #[test]
 fn test_retry_config_retry_statuses_builder() {
     let custom_statuses: HashSet<u16> = [500, 503].into_iter().collect();
-    let config = RetryConfig::new().retry_statuses(custom_statuses.clone());
-    assert_eq!(config.retry_statuses, custom_statuses);
+    let config = RetryConfig::new().with_retry_statuses(custom_statuses.clone());
+    assert_eq!(*config.retry_statuses(), custom_statuses);
 }
 
 #[test]
 fn test_retry_config_builder_chaining() {
     let config = RetryConfig::new()
-        .max_retries(10)
-        .backoff_factor(2.0)
-        .jitter(0.3);
+        .with_max_retries(10)
+        .with_backoff_factor(2.0)
+        .with_jitter(0.3);
 
-    assert_eq!(config.max_retries, 10);
-    assert!((config.backoff_factor - 2.0).abs() < f64::EPSILON);
-    assert!((config.jitter - 0.3).abs() < f64::EPSILON);
+    assert_eq!(config.max_retries(), 10);
+    assert!((config.backoff_factor() - 2.0).abs() < f64::EPSILON);
+    assert!((config.jitter() - 0.3).abs() < f64::EPSILON);
 }
 
 // =============================================================================
@@ -156,7 +156,7 @@ fn test_should_retry_for_all_default_retryable_statuses() {
 fn test_get_delay_first_attempt() {
     // With backoff_factor=0.5 and jitter=0:
     // delay = 0.5 * 2^0 = 0.5 seconds
-    let config = RetryConfig::new().jitter(0.0);
+    let config = RetryConfig::new().with_jitter(0.0);
     let delay = config.get_delay(0);
     assert_eq!(delay, Duration::from_millis(500));
 }
@@ -165,7 +165,7 @@ fn test_get_delay_first_attempt() {
 fn test_get_delay_second_attempt() {
     // With backoff_factor=0.5 and jitter=0:
     // delay = 0.5 * 2^1 = 1.0 seconds
-    let config = RetryConfig::new().jitter(0.0);
+    let config = RetryConfig::new().with_jitter(0.0);
     let delay = config.get_delay(1);
     assert_eq!(delay, Duration::from_secs(1));
 }
@@ -174,7 +174,7 @@ fn test_get_delay_second_attempt() {
 fn test_get_delay_third_attempt() {
     // With backoff_factor=0.5 and jitter=0:
     // delay = 0.5 * 2^2 = 2.0 seconds
-    let config = RetryConfig::new().jitter(0.0);
+    let config = RetryConfig::new().with_jitter(0.0);
     let delay = config.get_delay(2);
     assert_eq!(delay, Duration::from_secs(2));
 }
@@ -185,7 +185,7 @@ fn test_get_delay_with_custom_backoff_factor() {
     // delay = 1.0 * 2^0 = 1.0 seconds
     // delay = 1.0 * 2^1 = 2.0 seconds
     // delay = 1.0 * 2^2 = 4.0 seconds
-    let config = RetryConfig::new().backoff_factor(1.0).jitter(0.0);
+    let config = RetryConfig::new().with_backoff_factor(1.0).with_jitter(0.0);
 
     assert_eq!(config.get_delay(0), Duration::from_secs(1));
     assert_eq!(config.get_delay(1), Duration::from_secs(2));
@@ -264,7 +264,7 @@ async fn test_retry_succeeds_after_transient_503_errors() {
 
     // When: Client with retry config makes request
     let client = AsyncHttpClientBuilder::new()
-        .retry(RetryConfig::new().max_retries(3).jitter(0.0))
+        .retry(RetryConfig::new().with_max_retries(3).with_jitter(0.0))
         .build()
         .unwrap();
 
@@ -298,9 +298,9 @@ async fn test_retry_respects_backoff_timing() {
     let client = AsyncHttpClientBuilder::new()
         .retry(
             RetryConfig::new()
-                .max_retries(3)
-                .backoff_factor(0.1) // Short delays for testing
-                .jitter(0.0),
+                .with_max_retries(3)
+                .with_backoff_factor(0.1) // Short delays for testing
+                .with_jitter(0.0),
         )
         .build()
         .unwrap();
@@ -454,9 +454,9 @@ async fn test_returns_error_when_max_retries_exceeded() {
     let client = AsyncHttpClientBuilder::new()
         .retry(
             RetryConfig::new()
-                .max_retries(3)
-                .backoff_factor(0.01) // Very short delays for testing
-                .jitter(0.0),
+                .with_max_retries(3)
+                .with_backoff_factor(0.01) // Very short delays for testing
+                .with_jitter(0.0),
         )
         .build()
         .unwrap();
@@ -490,7 +490,7 @@ async fn test_retry_on_429_with_retry_after_header() {
         .await;
 
     let client = AsyncHttpClientBuilder::new()
-        .retry(RetryConfig::new().jitter(0.0))
+        .retry(RetryConfig::new().with_jitter(0.0))
         .build()
         .unwrap();
 
@@ -508,11 +508,11 @@ async fn test_retry_on_429_with_retry_after_header() {
 
 #[tokio::test]
 async fn test_retry_config_clone() {
-    let config = RetryConfig::new().max_retries(5).backoff_factor(1.0);
+    let config = RetryConfig::new().with_max_retries(5).with_backoff_factor(1.0);
     let cloned = config.clone();
 
-    assert_eq!(cloned.max_retries, 5);
-    assert!((cloned.backoff_factor - 1.0).abs() < f64::EPSILON);
+    assert_eq!(cloned.max_retries(), 5);
+    assert!((cloned.backoff_factor() - 1.0).abs() < f64::EPSILON);
 }
 
 #[tokio::test]
@@ -534,4 +534,158 @@ async fn test_client_without_retry_config_does_not_retry() {
         .await;
 
     assert!(result.is_err());
+}
+
+// =============================================================================
+// T056: Test max_retries = 0 disables retry
+// =============================================================================
+
+#[test]
+fn test_max_retries_zero_disables_retry() {
+    // max_retries(0) should disable retries completely
+    let config = RetryConfig::new().with_max_retries(0);
+
+    // Even for retryable status codes, should_retry should return false
+    assert!(!config.should_retry(503, 0));
+    assert!(!config.should_retry(429, 0));
+    assert!(!config.should_retry(500, 0));
+}
+
+#[tokio::test]
+async fn test_max_retries_zero_no_retry_integration() {
+    let mock_server = MockServer::start().await;
+
+    // Server returns 503, which is normally retryable
+    Mock::given(method("GET"))
+        .and(path("/api/noretry_zero"))
+        .respond_with(ResponseTemplate::new(503).set_body_string("Service Unavailable"))
+        .expect(1) // Only one request - no retry with max_retries=0
+        .mount(&mock_server)
+        .await;
+
+    let client = AsyncHttpClientBuilder::new()
+        .retry(RetryConfig::new().with_max_retries(0))
+        .build()
+        .unwrap();
+
+    let result = client
+        .get_json(&format!("{}/api/noretry_zero", mock_server.uri()))
+        .await;
+
+    assert!(result.is_err());
+    match result.unwrap_err() {
+        HttpError::Status { status_code, .. } => assert_eq!(status_code, 503),
+        other => panic!("Expected Status error, got {:?}", other),
+    }
+}
+
+// =============================================================================
+// T057: Test Retry-After vs backoff delay selection
+// =============================================================================
+
+#[tokio::test]
+async fn test_retry_after_header_longer_than_backoff_is_used() {
+    // Test case: Retry-After header (2s) > backoff delay (0.5s for attempt 0)
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/retry_after_longer"))
+        .respond_with(SequentialResponder::new(vec![
+            ResponseTemplate::new(429)
+                .insert_header("Retry-After", "2") // 2 seconds
+                .set_body_string("Too Many Requests"),
+            ResponseTemplate::new(200).set_body_json(serde_json::json!({"status": "ok"})),
+        ]))
+        .expect(2)
+        .mount(&mock_server)
+        .await;
+
+    let client = AsyncHttpClientBuilder::new()
+        .retry(
+            RetryConfig::new()
+                .with_backoff_factor(0.5) // 0.5 * 2^0 = 0.5s < 2s
+                .with_jitter(0.0),
+        )
+        .build()
+        .unwrap();
+
+    let start = std::time::Instant::now();
+    let result = client
+        .get_json(&format!("{}/api/retry_after_longer", mock_server.uri()))
+        .await;
+    let elapsed = start.elapsed();
+
+    assert!(result.is_ok());
+    // Should wait at least 2 seconds (Retry-After header)
+    assert!(
+        elapsed >= Duration::from_millis(1900),
+        "Expected at least 1900ms delay (Retry-After=2s), got {:?}",
+        elapsed
+    );
+}
+
+#[tokio::test]
+async fn test_backoff_delay_longer_than_retry_after_is_used() {
+    // Test case: backoff delay (2s for attempt 0 with factor 2.0) > Retry-After (1s)
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/backoff_longer"))
+        .respond_with(SequentialResponder::new(vec![
+            ResponseTemplate::new(429)
+                .insert_header("Retry-After", "1") // 1 second
+                .set_body_string("Too Many Requests"),
+            ResponseTemplate::new(200).set_body_json(serde_json::json!({"status": "ok"})),
+        ]))
+        .expect(2)
+        .mount(&mock_server)
+        .await;
+
+    let client = AsyncHttpClientBuilder::new()
+        .retry(
+            RetryConfig::new()
+                .with_backoff_factor(2.0) // 2.0 * 2^0 = 2.0s > 1s
+                .with_jitter(0.0),
+        )
+        .build()
+        .unwrap();
+
+    let start = std::time::Instant::now();
+    let result = client
+        .get_json(&format!("{}/api/backoff_longer", mock_server.uri()))
+        .await;
+    let elapsed = start.elapsed();
+
+    assert!(result.is_ok());
+    // Should wait at least 2 seconds (backoff delay)
+    assert!(
+        elapsed >= Duration::from_millis(1900),
+        "Expected at least 1900ms delay (backoff=2s), got {:?}",
+        elapsed
+    );
+}
+
+// =============================================================================
+// T058: Test negative backoff_factor and jitter validation
+// =============================================================================
+
+#[test]
+fn test_negative_backoff_factor_clamped_to_zero() {
+    let config = RetryConfig::new().with_backoff_factor(-1.0);
+    assert!(config.backoff_factor() >= 0.0);
+    assert_eq!(config.get_delay(0), Duration::from_secs(0));
+}
+
+#[test]
+fn test_negative_jitter_clamped_to_zero() {
+    let config = RetryConfig::new().with_jitter(-0.5);
+    assert!(config.jitter() >= 0.0);
+    assert!((config.jitter() - 0.0).abs() < f64::EPSILON);
+}
+
+#[test]
+fn test_jitter_above_one_clamped_to_one() {
+    let config = RetryConfig::new().with_jitter(1.5);
+    assert!(config.jitter() <= 1.0);
+    assert!((config.jitter() - 1.0).abs() < f64::EPSILON);
 }

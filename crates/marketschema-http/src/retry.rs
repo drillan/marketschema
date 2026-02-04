@@ -10,9 +10,9 @@
 //! use std::collections::HashSet;
 //!
 //! let config = RetryConfig::new()
-//!     .max_retries(5)
-//!     .backoff_factor(1.0)
-//!     .jitter(0.2);
+//!     .with_max_retries(5)
+//!     .with_backoff_factor(1.0)
+//!     .with_jitter(0.2);
 //! ```
 
 use std::collections::HashSet;
@@ -44,20 +44,20 @@ use crate::{
 /// use marketschema_http::{AsyncHttpClientBuilder, RetryConfig};
 ///
 /// let client = AsyncHttpClientBuilder::new()
-///     .retry(RetryConfig::new().max_retries(5))
+///     .retry(RetryConfig::new().with_max_retries(5))
 ///     .build()
 ///     .unwrap();
 /// ```
 #[derive(Clone, Debug)]
 pub struct RetryConfig {
     /// Maximum number of retry attempts.
-    pub max_retries: u32,
+    max_retries: u32,
     /// Multiplier for exponential backoff (delay = backoff_factor * 2^attempt).
-    pub backoff_factor: f64,
+    backoff_factor: f64,
     /// HTTP status codes that trigger retry.
-    pub retry_statuses: HashSet<u16>,
+    retry_statuses: HashSet<u16>,
     /// Random jitter factor (0.0 to 1.0) applied to delay.
-    pub jitter: f64,
+    jitter: f64,
 }
 
 impl RetryConfig {
@@ -69,11 +69,35 @@ impl RetryConfig {
     /// use marketschema_http::RetryConfig;
     ///
     /// let config = RetryConfig::new();
-    /// assert_eq!(config.max_retries, 3);
+    /// assert_eq!(config.max_retries(), 3);
     /// ```
     #[must_use]
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// Get the maximum number of retry attempts.
+    #[must_use]
+    pub fn max_retries(&self) -> u32 {
+        self.max_retries
+    }
+
+    /// Get the backoff factor for exponential backoff.
+    #[must_use]
+    pub fn backoff_factor(&self) -> f64 {
+        self.backoff_factor
+    }
+
+    /// Get the HTTP status codes that trigger retry.
+    #[must_use]
+    pub fn retry_statuses(&self) -> &HashSet<u16> {
+        &self.retry_statuses
+    }
+
+    /// Get the jitter factor for randomizing retry delays.
+    #[must_use]
+    pub fn jitter(&self) -> f64 {
+        self.jitter
     }
 
     /// Set the maximum number of retry attempts.
@@ -87,10 +111,10 @@ impl RetryConfig {
     /// ```rust
     /// use marketschema_http::RetryConfig;
     ///
-    /// let config = RetryConfig::new().max_retries(5);
+    /// let config = RetryConfig::new().with_max_retries(5);
     /// ```
     #[must_use]
-    pub fn max_retries(mut self, max: u32) -> Self {
+    pub fn with_max_retries(mut self, max: u32) -> Self {
         self.max_retries = max;
         self
     }
@@ -101,7 +125,8 @@ impl RetryConfig {
     ///
     /// # Arguments
     ///
-    /// * `factor` - The base multiplier for backoff delay.
+    /// * `factor` - The base multiplier for backoff delay. Must be non-negative;
+    ///   negative values will be clamped to 0.0.
     ///
     /// # Example
     ///
@@ -109,11 +134,12 @@ impl RetryConfig {
     /// use marketschema_http::RetryConfig;
     ///
     /// // With factor 1.0: delays will be 1s, 2s, 4s, 8s...
-    /// let config = RetryConfig::new().backoff_factor(1.0);
+    /// let config = RetryConfig::new().with_backoff_factor(1.0);
     /// ```
     #[must_use]
-    pub fn backoff_factor(mut self, factor: f64) -> Self {
-        self.backoff_factor = factor;
+    pub fn with_backoff_factor(mut self, factor: f64) -> Self {
+        // Clamp negative values to 0.0 (CLAUDE.md: avoid silent failures, but document behavior)
+        self.backoff_factor = factor.max(0.0);
         self
     }
 
@@ -130,10 +156,10 @@ impl RetryConfig {
     /// use std::collections::HashSet;
     ///
     /// let statuses: HashSet<u16> = [500, 503].into_iter().collect();
-    /// let config = RetryConfig::new().retry_statuses(statuses);
+    /// let config = RetryConfig::new().with_retry_statuses(statuses);
     /// ```
     #[must_use]
-    pub fn retry_statuses(mut self, statuses: HashSet<u16>) -> Self {
+    pub fn with_retry_statuses(mut self, statuses: HashSet<u16>) -> Self {
         self.retry_statuses = statuses;
         self
     }
@@ -146,7 +172,8 @@ impl RetryConfig {
     /// # Arguments
     ///
     /// * `jitter` - Factor between 0.0 and 1.0. Delay will be randomized
-    ///   within ±jitter of the base delay.
+    ///   within ±jitter of the base delay. Values outside this range will be
+    ///   clamped to [0.0, 1.0].
     ///
     /// # Example
     ///
@@ -154,11 +181,12 @@ impl RetryConfig {
     /// use marketschema_http::RetryConfig;
     ///
     /// // 20% jitter: 1s delay becomes 0.8s-1.2s
-    /// let config = RetryConfig::new().jitter(0.2);
+    /// let config = RetryConfig::new().with_jitter(0.2);
     /// ```
     #[must_use]
-    pub fn jitter(mut self, jitter: f64) -> Self {
-        self.jitter = jitter;
+    pub fn with_jitter(mut self, jitter: f64) -> Self {
+        // Clamp to valid range [0.0, 1.0] (CLAUDE.md: avoid silent failures, but document behavior)
+        self.jitter = jitter.clamp(0.0, 1.0);
         self
     }
 
@@ -209,7 +237,7 @@ impl RetryConfig {
     /// use marketschema_http::RetryConfig;
     /// use std::time::Duration;
     ///
-    /// let config = RetryConfig::new().jitter(0.0);
+    /// let config = RetryConfig::new().with_jitter(0.0);
     /// // backoff_factor=0.5: 0.5 * 2^0 = 0.5s
     /// assert_eq!(config.get_delay(0), Duration::from_millis(500));
     /// // backoff_factor=0.5: 0.5 * 2^1 = 1.0s
