@@ -2,8 +2,8 @@
 
 **Feature**: 004-adapter-rust
 **Parent Spec**: [004-adapter-rust](../spec.md)
-**Date**: 2026-02-03
-**Status**: Planned
+**Date**: 2026-02-04
+**Status**: Approved
 
 ## Transforms Module
 
@@ -51,8 +51,8 @@ impl Transforms {
     /// Convert Unix milliseconds to ISO 8601.
     pub fn unix_timestamp_ms(value: &serde_json::Value) -> Result<String, TransformError> {
         let ms = Self::to_float(value)? as i64;
-        let secs = ms / 1000;
-        let nsecs = ((ms % 1000) * 1_000_000) as u32;
+        let secs = ms / MS_PER_SECOND;
+        let nsecs = ((ms % MS_PER_SECOND) * NS_PER_MS) as u32;
 
         Utc.timestamp_opt(secs, nsecs)
             .single()
@@ -81,7 +81,7 @@ impl Transforms {
         }
 
         // Parse as naive datetime and assume JST (+09:00)
-        let jst = FixedOffset::east_opt(9 * 3600).unwrap();
+        let jst = FixedOffset::east_opt(JST_UTC_OFFSET_HOURS * SECONDS_PER_HOUR as i32).unwrap();
         let naive = chrono::NaiveDateTime::parse_from_str(s, "%Y-%m-%dT%H:%M:%S")
             .map_err(|_| TransformError::new(format!("Cannot parse JST timestamp: {:?}", s)))?;
 
@@ -127,6 +127,9 @@ impl Transforms {
 /// Milliseconds per second.
 pub const MS_PER_SECOND: i64 = 1000;
 
+/// Nanoseconds per millisecond.
+pub const NS_PER_MS: i64 = 1_000_000;
+
 /// Seconds per hour.
 pub const SECONDS_PER_HOUR: i64 = 3600;
 
@@ -147,6 +150,20 @@ impl Transforms {
         })
     }
 
+    /// Returns a transform function that converts to int.
+    pub fn to_int_fn() -> TransformFn {
+        Arc::new(|value| {
+            Self::to_int(value).map(|i| serde_json::json!(i))
+        })
+    }
+
+    /// Returns a transform function that validates ISO timestamp.
+    pub fn iso_timestamp_fn() -> TransformFn {
+        Arc::new(|value| {
+            Self::iso_timestamp(value).map(|s| serde_json::json!(s))
+        })
+    }
+
     /// Returns a transform function that converts Unix ms to ISO 8601.
     pub fn unix_timestamp_ms_fn() -> TransformFn {
         Arc::new(|value| {
@@ -154,7 +171,40 @@ impl Transforms {
         })
     }
 
-    // ... similar for other transforms
+    /// Returns a transform function that converts Unix sec to ISO 8601.
+    pub fn unix_timestamp_sec_fn() -> TransformFn {
+        Arc::new(|value| {
+            Self::unix_timestamp_sec(value).map(|s| serde_json::json!(s))
+        })
+    }
+
+    /// Returns a transform function that converts JST to UTC.
+    pub fn jst_to_utc_fn() -> TransformFn {
+        Arc::new(|value| {
+            Self::jst_to_utc(value).map(|s| serde_json::json!(s))
+        })
+    }
+
+    /// Returns a transform function that normalizes side string.
+    pub fn side_from_string_fn() -> TransformFn {
+        Arc::new(|value| {
+            Self::side_from_string(value).map(|s| serde_json::json!(s))
+        })
+    }
+
+    /// Returns a transform function that converts to uppercase.
+    pub fn uppercase_fn() -> TransformFn {
+        Arc::new(|value| {
+            Self::uppercase(value).map(|s| serde_json::json!(s))
+        })
+    }
+
+    /// Returns a transform function that converts to lowercase.
+    pub fn lowercase_fn() -> TransformFn {
+        Arc::new(|value| {
+            Self::lowercase(value).map(|s| serde_json::json!(s))
+        })
+    }
 }
 ```
 

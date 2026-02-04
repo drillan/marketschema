@@ -78,6 +78,8 @@ TDD サイクル（Red → Green → Refactor）に従う。コアライブラ�
 - N/A（インメモリキャッシュのみ） (003-http-client)
 - Rust (latest stable, MSRV は別途決定) + reqwest (HTTP), tokio (async runtime), thiserror (errors), serde/serde_json (serialization) (003-http-client-rust)
 - Rust (latest stable) + serde, serde_json, chrono, regress (002-data-model-rust)
+- Rust 2024 edition (latest stable, MSRV 1.71.1 for moka compatibility) + async-trait 0.1, chrono 0.4, once_cell 1.19, serde 1.0, serde_json 1.0, thiserror 2.0, tokio 1.0 (004-adapter-rust)
+- N/A（インメモリ処理のみ） (004-adapter-rust)
 
 ## Recent Changes
 - 002-data-model: Added Python 3.13, Rust (latest stable)

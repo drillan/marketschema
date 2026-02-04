@@ -2,8 +2,8 @@
 
 **Feature**: 004-adapter-rust
 **Parent Spec**: [004-adapter-rust](../spec.md)
-**Date**: 2026-02-03
-**Status**: Planned
+**Date**: 2026-02-04
+**Status**: Approved
 
 ## BaseAdapter Trait
 
@@ -14,7 +14,9 @@ use crate::transforms::Transforms;
 use marketschema_models::{Quote, OHLCV, Trade, OrderBook, Instrument};
 
 /// Base trait for data source adapters.
-#[async_trait]
+///
+/// Note: `#[async_trait]` is reserved for future async methods (e.g., `fetch_data`).
+/// Current methods are synchronous but the trait is designed for async extension.
 pub trait BaseAdapter: Send + Sync {
     /// Returns the data source identifier.
     fn source_name(&self) -> &'static str;
@@ -100,9 +102,53 @@ impl ModelMapping {
     }
 
     /// Apply the mapping to source data.
+    ///
+    /// # Algorithm
+    ///
+    /// 1. Parse `source_field` as dot notation and access nested value using JSON Pointer
+    /// 2. If value not found:
+    ///    - If `default` is set, return `default`
+    ///    - If `required` is true, return `Err(MappingError)`
+    ///    - Otherwise, return `Value::Null`
+    /// 3. If `transform` is set, apply it (wrap TransformError in MappingError)
+    /// 4. Return the transformed value
     pub fn apply(&self, source_data: &serde_json::Value) -> Result<serde_json::Value, MappingError> {
-        // Implementation: get nested value, apply transform, handle defaults
-        ...
+        // Convert dot notation to JSON Pointer
+        let pointer = if self.source_field.is_empty() {
+            String::new()
+        } else {
+            format!("/{}", self.source_field.replace('.', "/"))
+        };
+
+        // Get nested value
+        let value = source_data.pointer(&pointer);
+
+        // Handle missing value
+        let value = match value {
+            Some(v) if !v.is_null() => v.clone(),
+            _ => {
+                if let Some(ref default) = self.default {
+                    return Ok(default.clone());
+                }
+                if self.required {
+                    return Err(MappingError::new(format!(
+                        "Required field '{}' not found in source",
+                        self.source_field
+                    )));
+                }
+                return Ok(serde_json::Value::Null);
+            }
+        };
+
+        // Apply transform if present
+        if let Some(ref transform) = self.transform {
+            transform(&value).map_err(|e| MappingError::new(format!(
+                "Transform failed for field '{}': {}",
+                self.target_field, e
+            )))
+        } else {
+            Ok(value)
+        }
     }
 }
 ```
@@ -239,11 +285,11 @@ impl BaseAdapter for MyApiAdapter {
     fn get_quote_mapping(&self) -> Vec<ModelMapping> {
         vec![
             ModelMapping::new("bid", "bid_price")
-                .with_transform(Transforms::to_float()),
+                .with_transform(Transforms::to_float_fn()),
             ModelMapping::new("ask", "ask_price")
-                .with_transform(Transforms::to_float()),
+                .with_transform(Transforms::to_float_fn()),
             ModelMapping::new("timestamp", "time")
-                .with_transform(Transforms::unix_timestamp_ms()),
+                .with_transform(Transforms::unix_timestamp_ms_fn()),
         ]
     }
 }

@@ -192,7 +192,7 @@ Rust アダプター開発者として、複数のアダプターを `AdapterReg
 - `chrono = { version = "0.4", features = ["serde"] }` を使用してタイムスタンプ処理を行う
 - `once_cell = "1.19"` を使用してグローバルシングルトンを実装する
 - `serde = { version = "1.0", features = ["derive"] }` と `serde_json = "1.0"` を使用して JSON 処理を行う
-- `thiserror = "1.0"` を使用してエラー型を derive する
+- `thiserror = "2.0"` を使用してエラー型を derive する
 - `reqwest = { version = "0.12", features = ["json"] }` を使用して HTTP クライアントを提供する（将来）
 - `tokio = { version = "1", features = ["rt-multi-thread", "macros"] }` を使用して非同期ランタイムを提供する
 - Python 実装の成熟後に本仕様の実装を開始する
@@ -235,7 +235,7 @@ chrono = { version = "0.4", features = ["serde"] }
 once_cell = "1.19"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-thiserror = "1.0"
+thiserror = "2.0"
 
 # For HTTP client (future)
 reqwest = { version = "0.12", features = ["json"] }
