@@ -1,5 +1,8 @@
 //! Unit tests for the ModelMapping module.
 //!
+//! Test category identifiers (T027-T030) reference the adapter specification
+//! test requirements defined in docs/specs/004-adapter-rust/spec.md.
+//!
 //! Tests cover:
 //! - T027: Constructor tests
 //! - T028: Builder pattern tests
@@ -179,12 +182,11 @@ mod dot_notation {
 
     #[test]
     fn handles_empty_source_field_path() {
-        // Empty path should return the entire source object
-        // Note: This edge case behavior depends on implementation
+        // Empty path does NOT return the entire source object.
+        // Instead, split('.') produces [""], which tries to get key "" (empty string),
+        // causing a lookup failure.
         let mapping = ModelMapping::new("value", "");
         let source = json!({"a": 1});
-        // When source_field is empty, split('.') returns [""], which tries to get key ""
-        // This should fail for required field
         let result = mapping.apply(&source);
         assert!(result.is_err());
     }
@@ -431,6 +433,40 @@ mod apply_method {
         let result = mapping.apply(&source).unwrap();
         assert_eq!(result, json!([]));
     }
+
+    // --- Non-object source tests ---
+
+    #[test]
+    fn apply_returns_error_when_source_is_array() {
+        let mapping = ModelMapping::new("value", "value");
+        let source = json!([1, 2, 3]);
+        let result = mapping.apply(&source);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn apply_returns_error_when_source_is_primitive_string() {
+        let mapping = ModelMapping::new("value", "value");
+        let source = json!("just a string");
+        let result = mapping.apply(&source);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn apply_returns_error_when_source_is_primitive_number() {
+        let mapping = ModelMapping::new("value", "value");
+        let source = json!(42);
+        let result = mapping.apply(&source);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn apply_returns_error_when_source_is_null() {
+        let mapping = ModelMapping::new("value", "value");
+        let source = Value::Null;
+        let result = mapping.apply(&source);
+        assert!(result.is_err());
+    }
 }
 
 // =============================================================================
@@ -453,6 +489,11 @@ mod traits {
         assert_eq!(cloned.source_field, mapping.source_field);
         assert_eq!(cloned.default, mapping.default);
         assert_eq!(cloned.required, mapping.required);
+
+        // Verify cloned transform actually works
+        let source = json!({"b": "123.45"});
+        let result = cloned.apply(&source).unwrap();
+        assert_eq!(result, json!(123.45));
     }
 
     #[test]
