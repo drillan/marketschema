@@ -1,8 +1,5 @@
 # Quickstart: Rust Data Model
 
-**Feature Branch**: `002-data-model-rust`
-**Date**: 2026-02-03
-
 ## Prerequisites
 
 - Rust (latest stable)
@@ -15,7 +12,7 @@
 
 ```toml
 [dependencies]
-marketschema = { git = "https://github.com/drillan/marketschema", branch = "002-data-model-rust" }
+marketschema = { git = "https://github.com/drillan/marketschema" }
 ```
 
 ### From Source
@@ -64,11 +61,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 ### Builder Pattern
 
 ```rust
-use marketschema::types::quote::{Quote, QuoteSymbol};
+use marketschema::Quote;
+use marketschema::types::quote::QuoteSymbol;
 use chrono::Utc;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let quote = Quote::builder()
+    let quote: Quote = Quote::builder()
         .symbol("7203.T".parse::<QuoteSymbol>()?)
         .timestamp(Utc::now())
         .bid(2850.0)
@@ -159,12 +157,11 @@ make generate-rust
 ### Manual Generation
 
 ```bash
-# Bundle a single schema
-cd schemas
-npx json-refs resolve quote.json | \
+# Bundle a single schema (run from project root)
+npx json-refs resolve schemas/quote.json | \
     jq 'walk(if type == "object" and has("unevaluatedProperties")
         then .additionalProperties = .unevaluatedProperties | del(.unevaluatedProperties)
-        else . end)' > ../../../rust/bundled/quote.json
+        else . end)' > rust/bundled/quote.json
 
 # Generate Rust code
 cargo typify rust/bundled/quote.json --output rust/src/types/quote.rs

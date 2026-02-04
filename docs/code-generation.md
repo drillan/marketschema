@@ -97,12 +97,48 @@ cargo typify bundled_quote.json --output src/types/quote.rs
 
 typify requires schemas to be self-contained. The `json-refs` tool resolves all `$ref` references and inlines them into a single file.
 
+### unevaluatedProperties Conversion
+
+typify does not support JSON Schema Draft 2020-12's `unevaluatedProperties` keyword ([typify#579](https://github.com/oxidecomputer/typify/issues/579)). To ensure `#[serde(deny_unknown_fields)]` is generated, the bundling script converts `unevaluatedProperties` to `additionalProperties`:
+
+```bash
+npx json-refs resolve "$schema" | \
+    jq 'walk(if type == "object" and has("unevaluatedProperties")
+        then .additionalProperties = .unevaluatedProperties | del(.unevaluatedProperties)
+        else . end)' > "$OUTPUT"
+```
+
+> **Note**: The `walk` function is a built-in since jq 1.6.
+
+**How it works**:
+
+1. `json-refs resolve` resolves all `$ref` references
+2. `jq walk(...)` recursively traverses the JSON tree
+3. For each object with `unevaluatedProperties`, copies the value to `additionalProperties` and removes the original
+
+After bundling, the schemas are semantically equivalent because all `$ref` references have been inlined.
+
+See [ADR-001](adr/codegen/001-unevaluated-properties-workaround.md) for the full decision record.
+
 ### Generated Code Features
 
 - `#[derive(Serialize, Deserialize, Clone, Debug)]` on all types
 - Builder pattern for struct construction
 - String newtypes for validated fields (e.g., Symbol, Currency)
 - Optional fields use `Option<T>`
+
+### Known Limitations
+
+typify has limited support for some JSON Schema Draft 2020-12 features:
+
+| Feature | Support | Workaround |
+|---------|---------|------------|
+| `unevaluatedProperties` | Not supported | Convert to `additionalProperties` during bundling (see above) |
+| `anyOf` | Limited | May generate enum variants; complex unions may fail |
+| `if/then/else` | Not supported | Use `oneOf` or `anyOf` instead |
+| `$dynamicRef` | Not supported | Use static `$ref` |
+
+For the latest status, see [typify#579: The Big Plan for 2020-12 support](https://github.com/oxidecomputer/typify/issues/579).
 
 ## Validation
 
