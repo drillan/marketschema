@@ -8,7 +8,7 @@ conditions:
     pattern: \.rs$
   - field: new_text
     operator: regex_match
-    pattern: \.ok\(\)\??|Err\(_\)|unwrap_or_default\(\)|unwrap_or\(|\.unwrap_or_else\(\|_\|
+    pattern: \.ok\(\)\??|Err\(_\)|unwrap_or_default\(\)|unwrap_or\(|\.unwrap_or_else\(\|_\||let\s+_\s*=\s*\w+.*\.(set|send|await|try_|insert|push)
 ---
 
 ## CLAUDE.md 違反: 暗黙的フォールバック検出
@@ -26,6 +26,9 @@ conditions:
 | `unwrap_or_default()` | エラー時にデフォルト値で処理（エラー情報消失）|
 | `unwrap_or(...)` | エラー時に固定値で処理（エラー情報消失）|
 | `unwrap_or_else(\|_\| ...)` | エラー情報を使用せずにフォールバック |
+| `let _ = x.set(...)` | `OnceLock::set()` 等の `Result` を無視 |
+| `let _ = x.send(...)` | チャンネル送信の `Result` を無視 |
+| `let _ = x.await` | async操作の結果を完全に無視 |
 
 ### 正しい対処法
 
@@ -57,6 +60,19 @@ match result {
         tracing::warn!(error = %e, "Operation failed");
         return default;
     }
+}
+```
+
+```rust
+// NG: OnceLock::set() の結果を無視
+let _ = once_lock.set(value);
+
+// OK: 失敗時にパニック（テストコード）
+once_lock.set(value).expect("OnceLock should be empty");
+
+// OK: 失敗時に適切に処理
+if once_lock.set(value).is_err() {
+    tracing::warn!("OnceLock was already initialized");
 }
 ```
 

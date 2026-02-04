@@ -10,7 +10,7 @@
 //! - Error recovery and graceful degradation scenarios
 //! - Thread safety under concurrent workloads
 //!
-//! See: specs/003-http-client-rust/spec.md (Phase 9: T110)
+//! See: specs/003-http-client-rust/tasks.md (Phase 9: T110)
 
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::{Arc, OnceLock};
@@ -25,6 +25,46 @@ use marketschema_http::{
     AsyncHttpClient, AsyncHttpClientBuilder, BaseAdapter, HttpError, RateLimiter, ResponseCache,
     RetryConfig,
 };
+
+// =============================================================================
+// Test Configuration Constants
+// =============================================================================
+
+/// Maximum retry attempts for transient failures
+const TEST_MAX_RETRIES: u32 = 3;
+
+/// Backoff multiplier between retries (lower for faster tests)
+const TEST_BACKOFF_FACTOR: f64 = 0.1;
+
+/// Jitter factor to prevent thundering herd
+const TEST_JITTER_FACTOR: f64 = 0.1;
+
+/// Default rate limit: requests per second
+const TEST_RATE_LIMIT_PER_SEC: f64 = 50.0;
+
+/// Default rate limit: burst capacity
+const TEST_RATE_LIMIT_BURST: usize = 10;
+
+/// Strict rate limit for throttling tests: requests per second
+const TEST_STRICT_RATE_LIMIT_PER_SEC: f64 = 5.0;
+
+/// Strict rate limit for throttling tests: burst capacity
+const TEST_STRICT_RATE_LIMIT_BURST: usize = 3;
+
+/// Cache capacity for tests
+const TEST_CACHE_CAPACITY: u64 = 100;
+
+/// Cache TTL in seconds for most tests
+const TEST_CACHE_TTL_SECS: u64 = 30;
+
+/// HTTP client timeout in seconds
+const TEST_TIMEOUT_SECS: u64 = 10;
+
+/// Number of transient failures before success (for retry tests)
+const TRANSIENT_FAILURE_COUNT: u32 = 2;
+
+/// Test timestamp: 2024-01-23 12:26:40 UTC
+const TEST_TIMESTAMP_MS: u64 = 1706000000000;
 
 // =============================================================================
 // Real-world scenario: Market Data Adapter
@@ -65,15 +105,19 @@ impl MarketDataAdapter {
     fn new(base_url: &str) -> Self {
         // Configure for production-like settings
         let retry_config = RetryConfig::new()
-            .with_max_retries(3)
-            .with_backoff_factor(0.1) // Faster for tests
-            .with_jitter(0.1);
+            .with_max_retries(TEST_MAX_RETRIES)
+            .with_backoff_factor(TEST_BACKOFF_FACTOR)
+            .with_jitter(TEST_JITTER_FACTOR);
 
-        // 50 requests per second with burst of 10
-        let rate_limiter = Arc::new(RateLimiter::new(50.0, 10));
+        let rate_limiter = Arc::new(RateLimiter::new(
+            TEST_RATE_LIMIT_PER_SEC,
+            TEST_RATE_LIMIT_BURST,
+        ));
 
-        // Cache with 100 entries and 30 second TTL
-        let cache = Arc::new(ResponseCache::new(100, Duration::from_secs(30)));
+        let cache = Arc::new(ResponseCache::new(
+            TEST_CACHE_CAPACITY,
+            Duration::from_secs(TEST_CACHE_TTL_SECS),
+        ));
 
         Self {
             http_client: OnceLock::new(),
@@ -87,14 +131,16 @@ impl MarketDataAdapter {
     /// Create adapter with custom client configuration (for testing)
     fn with_client(base_url: &str, client: Arc<AsyncHttpClient>) -> Self {
         let http_client = OnceLock::new();
-        let _ = http_client.set(client);
+        http_client
+            .set(client)
+            .unwrap_or_else(|_| panic!("OnceLock should be empty when newly created"));
 
         Self {
             http_client,
             base_url: base_url.to_string(),
             retry_config: RetryConfig::new(),
-            rate_limiter: Arc::new(RateLimiter::new(100.0, 20)),
-            cache: Arc::new(ResponseCache::new(100, Duration::from_secs(30))),
+            rate_limiter: Arc::new(RateLimiter::new(TEST_RATE_LIMIT_PER_SEC * 2.0, TEST_RATE_LIMIT_BURST * 2)),
+            cache: Arc::new(ResponseCache::new(TEST_CACHE_CAPACITY, Duration::from_secs(TEST_CACHE_TTL_SECS))),
         }
     }
 
@@ -140,12 +186,18 @@ impl BaseAdapter for MarketDataAdapter {
             .get_or_init(|| {
                 Arc::new(
                     AsyncHttpClientBuilder::new()
-                        .timeout(Duration::from_secs(10))
+                        .timeout(Duration::from_secs(TEST_TIMEOUT_SECS))
                         .retry(self.retry_config.clone())
                         .rate_limit(self.rate_limiter.clone())
                         .cache(self.cache.clone())
                         .build()
-                        .expect("Failed to build HTTP client"),
+                        .unwrap_or_else(|e| {
+                            panic!(
+                                "Failed to build HTTP client: {}. \
+                                This may indicate invalid configuration.",
+                                e
+                            )
+                        }),
                 )
             })
             .clone()
@@ -168,7 +220,7 @@ mod normal_operation_tests {
             "symbol": "BTCUSD",
             "bid": 49999.50,
             "ask": 50000.50,
-            "timestamp": 1706000000000_u64
+            "timestamp": TEST_TIMESTAMP_MS
         });
 
         Mock::given(method("GET"))
@@ -191,7 +243,7 @@ mod normal_operation_tests {
         let mock_server = MockServer::start().await;
 
         let candles_data = json!([
-            {"open": 50000.0, "high": 50100.0, "low": 49900.0, "close": 50050.0, "volume": 100.5, "timestamp": 1706000000000_u64},
+            {"open": 50000.0, "high": 50100.0, "low": 49900.0, "close": 50050.0, "volume": 100.5, "timestamp": TEST_TIMESTAMP_MS},
             {"open": 50050.0, "high": 50200.0, "low": 50000.0, "close": 50150.0, "volume": 150.2, "timestamp": 1706003600000_u64}
         ]);
 
@@ -234,14 +286,14 @@ mod retry_scenario_tests {
                 let count = request_count.clone();
                 move |_: &wiremock::Request| {
                     let attempt = count.fetch_add(1, Ordering::SeqCst);
-                    if attempt < 2 {
+                    if attempt < TRANSIENT_FAILURE_COUNT {
                         ResponseTemplate::new(503).set_body_string("Service Unavailable")
                     } else {
                         ResponseTemplate::new(200).set_body_json(json!({
                             "symbol": "ETHUSD",
                             "bid": 2999.0,
                             "ask": 3001.0,
-                            "timestamp": 1706000000000_u64
+                            "timestamp": TEST_TIMESTAMP_MS
                         }))
                     }
                 }
@@ -284,7 +336,7 @@ mod retry_scenario_tests {
                             "symbol": "XRPUSD",
                             "bid": 0.50,
                             "ask": 0.51,
-                            "timestamp": 1706000000000_u64
+                            "timestamp": TEST_TIMESTAMP_MS
                         }))
                     }
                 }
@@ -361,7 +413,7 @@ mod caching_scenario_tests {
                         "symbol": "SOLUSD",
                         "bid": 100.0,
                         "ask": 100.5,
-                        "timestamp": 1706000000000_u64
+                        "timestamp": TEST_TIMESTAMP_MS
                     }))
                 }
             })
@@ -395,7 +447,7 @@ mod caching_scenario_tests {
         Mock::given(method("GET"))
             .and(path("/api/v1/ticker/BTCUSD"))
             .respond_with(ResponseTemplate::new(200).set_body_json(json!({
-                "symbol": "BTCUSD", "bid": 50000.0, "ask": 50001.0, "timestamp": 1706000000000_u64
+                "symbol": "BTCUSD", "bid": 50000.0, "ask": 50001.0, "timestamp": TEST_TIMESTAMP_MS
             })))
             .mount(&mock_server)
             .await;
@@ -403,7 +455,7 @@ mod caching_scenario_tests {
         Mock::given(method("GET"))
             .and(path("/api/v1/ticker/ETHUSD"))
             .respond_with(ResponseTemplate::new(200).set_body_json(json!({
-                "symbol": "ETHUSD", "bid": 3000.0, "ask": 3001.0, "timestamp": 1706000000000_u64
+                "symbol": "ETHUSD", "bid": 3000.0, "ask": 3001.0, "timestamp": TEST_TIMESTAMP_MS
             })))
             .mount(&mock_server)
             .await;
@@ -435,14 +487,17 @@ mod rate_limiting_scenario_tests {
         Mock::given(method("GET"))
             .and(path("/api/v1/ticker/DOTUSD"))
             .respond_with(ResponseTemplate::new(200).set_body_json(json!({
-                "symbol": "DOTUSD", "bid": 5.0, "ask": 5.1, "timestamp": 1706000000000_u64
+                "symbol": "DOTUSD", "bid": 5.0, "ask": 5.1, "timestamp": TEST_TIMESTAMP_MS
             })))
             .mount(&mock_server)
             .await;
 
-        // Create adapter with strict rate limit: 5 req/sec, burst of 3
-        let rate_limiter = Arc::new(RateLimiter::new(5.0, 3));
-        let cache = Arc::new(ResponseCache::new(100, Duration::from_secs(1)));
+        // Create adapter with strict rate limit for throttling tests
+        let rate_limiter = Arc::new(RateLimiter::new(
+            TEST_STRICT_RATE_LIMIT_PER_SEC,
+            TEST_STRICT_RATE_LIMIT_BURST,
+        ));
+        let cache = Arc::new(ResponseCache::new(TEST_CACHE_CAPACITY, Duration::from_secs(1)));
 
         let client = Arc::new(
             AsyncHttpClientBuilder::new()
@@ -463,7 +518,14 @@ mod rate_limiting_scenario_tests {
         // Need unique URLs to avoid cache hits
         for i in 0..6 {
             let url = format!("{}/api/v1/ticker/DOTUSD?req={}", mock_server.uri(), i);
-            let _ = adapter.http_client().get_json(&url).await;
+            let result = adapter.http_client().get_json(&url).await;
+            // Verify no unexpected connection errors - HTTP errors are acceptable for rate limit testing
+            if let Err(HttpError::Connection { .. }) = &result {
+                panic!(
+                    "Unexpected connection error in rate limit test: {:?}",
+                    result
+                );
+            }
         }
 
         let elapsed = start.elapsed();
@@ -497,7 +559,7 @@ mod concurrent_access_tests {
             Mock::given(method("GET"))
                 .and(path(format!("/api/v1/ticker/{}", symbol)))
                 .respond_with(ResponseTemplate::new(200).set_body_json(json!({
-                    "symbol": symbol, "bid": 100.0, "ask": 100.5, "timestamp": 1706000000000_u64
+                    "symbol": symbol, "bid": 100.0, "ask": 100.5, "timestamp": TEST_TIMESTAMP_MS
                 })))
                 .mount(&mock_server)
                 .await;
@@ -516,7 +578,11 @@ mod concurrent_access_tests {
         // Collect all results
         let mut results = Vec::new();
         while let Some(result) = join_set.join_next().await {
-            results.push(result.unwrap().unwrap());
+            let task_result = result.expect("Spawned task should not panic");
+            let ticker = task_result.unwrap_or_else(|e| {
+                panic!("HTTP request failed in concurrent test: {:?}", e)
+            });
+            results.push(ticker);
         }
 
         assert_eq!(results.len(), 5);
@@ -676,7 +742,7 @@ mod complete_workflow_tests {
                             "symbol": "AVAXUSD",
                             "bid": 20.0 + (attempt as f64 * 0.1),
                             "ask": 20.1 + (attempt as f64 * 0.1),
-                            "timestamp": 1706000000000_u64 + (attempt as u64 * 1000)
+                            "timestamp": TEST_TIMESTAMP_MS + (attempt as u64 * 1000)
                         }))
                     }
                 }
