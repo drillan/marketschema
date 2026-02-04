@@ -35,7 +35,7 @@ mod transforms;
 pub use adapter::BaseAdapter;
 pub use error::{AdapterError, MappingError, TransformError};
 pub use mapping::{ModelMapping, TransformFn};
-pub use registry::AdapterRegistry;
+pub use registry::{AdapterFactory, AdapterRegistry};
 pub use transforms::{
     JST_UTC_OFFSET_HOURS, MS_PER_SECOND, NS_PER_MS, SECONDS_PER_HOUR, Transforms,
 };
