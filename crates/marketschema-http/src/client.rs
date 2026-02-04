@@ -315,6 +315,14 @@ impl AsyncHttpClient {
 
         let status_code = status.as_u16();
 
+        // Parse Retry-After header before consuming response body
+        // FR-R014: HTTP 429 ステータス時は HttpError::RateLimit を返す（retry_after はヘッダーから取得）
+        let retry_after = if status_code == HTTP_STATUS_TOO_MANY_REQUESTS {
+            Self::parse_retry_after_header(&response)
+        } else {
+            None
+        };
+
         // Explicitly handle body read errors instead of using .ok()
         // (CLAUDE.md: 暗黙的フォールバック禁止)
         let response_body = match response.text().await {
@@ -339,7 +347,7 @@ impl AsyncHttpClient {
                 url: Some(url.to_string()),
                 status_code,
                 response_body,
-                retry_after: None, // TODO: Parse Retry-After header in US2
+                retry_after,
                 source: None,
             });
         }
@@ -351,6 +359,48 @@ impl AsyncHttpClient {
             response_body,
             source: None,
         })
+    }
+
+    /// Parse the Retry-After header from a response.
+    ///
+    /// The Retry-After header can be either:
+    /// - An integer representing delay in seconds (e.g., "60")
+    /// - An HTTP-date (e.g., "Wed, 21 Oct 2026 07:28:00 GMT")
+    ///
+    /// This implementation only parses the integer format.
+    /// HTTP-date format is complex and rarely used; we return None for it.
+    fn parse_retry_after_header(response: &Response) -> Option<Duration> {
+        let header_value = response.headers().get("retry-after")?;
+
+        // Explicitly handle non-ASCII header values instead of using .ok()?
+        // (CLAUDE.md: 暗黙的フォールバック禁止)
+        let header_str = match header_value.to_str() {
+            Ok(s) => s,
+            Err(e) => {
+                tracing::warn!(
+                    error = %e,
+                    header_value = ?header_value,
+                    "Retry-After header contains non-ASCII characters, ignoring"
+                );
+                return None;
+            }
+        };
+
+        // Try to parse as seconds (integer format)
+        // RFC 7231: Retry-After can be either delta-seconds or HTTP-date
+        // We only support delta-seconds; HTTP-date format is complex and rarely used
+        match header_str.trim().parse::<u64>() {
+            Ok(seconds) => Some(Duration::from_secs(seconds)),
+            Err(parse_err) => {
+                // Could be HTTP-date format, negative value, overflow, or other invalid input
+                tracing::warn!(
+                    retry_after = %header_str,
+                    error = %parse_err,
+                    "Retry-After header is not a valid positive integer, ignoring (may be HTTP-date format)"
+                );
+                None
+            }
+        }
     }
 }
 
