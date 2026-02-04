@@ -8,6 +8,21 @@
 
 プロジェクトの詳細な原則は `.specify/memory/constitution.md` を参照してください。
 
+## Python使用ルール
+
+- システムの`python3`コマンドを直接使用しないこと
+- このプロジェクトでは`--directory`オプションを付けてuvを使用する:
+  ```bash
+  # プロジェクトルートにいる場合（推奨）
+  uv --directory ./python run python
+  uv --directory ./python run pytest
+
+  # カレントディレクトリが異なる場合
+  uv --directory $PROJECT_ROOT/python run python
+  uv --directory $PROJECT_ROOT/python run pytest
+  ```
+- 可能な限りプロジェクトルートで作業し、相対パス（`./python`）を使用すること
+
 ## Coding Rules
 
 ### 命名規則
@@ -68,10 +83,10 @@
 コミット前に以下のチェックがすべて通ることを確認すること：
 
 ```bash
-uv run ruff check .      # リンター
-uv run ruff format --check .  # フォーマッター
-uv run mypy src          # 型チェック
-uv run pytest            # テスト
+uv --directory ./python run ruff check .      # リンター
+uv --directory ./python run ruff format --check .  # フォーマッター
+uv --directory ./python run mypy src          # 型チェック
+uv --directory ./python run pytest            # テスト
 ```
 
 ### 判断の優先順位

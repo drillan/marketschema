@@ -1,4 +1,5 @@
-# アダプター開発ガイド
+(python-adapter-development-guide)=
+# Python アダプター開発ガイド
 
 外部データソースから marketschema モデルへのデータ変換アダプターを開発する方法を解説する。
 
@@ -564,6 +565,7 @@ __all__ = ["{Source}Adapter"]
 
 ---
 
+(rust-adapter-development-guide)=
 # Rust アダプター開発ガイド
 
 外部データソースから marketschema モデルへのデータ変換アダプターを Rust で開発する方法を解説する。
@@ -896,6 +898,6 @@ if let Err(TransformError { message }) = Transforms::to_float(&value) {
 
 ## 参照
 
-- [HTTP クライアント使用ガイド（Rust）](http-client.md#rust-http-クライアント使用ガイド) - Rust HTTP クライアントの詳細
-- [モデル実装ガイド（Rust）](models.md#rust-モデル実装ガイド) - Rust モデルの使い方
-- [004-adapter-rust spec](../specs/004-adapter-rust/spec.md) - 詳細仕様
+- [HTTP クライアント使用ガイド（Rust）](rust-http-client-guide) - Rust HTTP クライアントの詳細
+- [モデル実装ガイド（Rust）](rust-models-guide) - Rust モデルの使い方
+- [004-adapter-rust spec](https://github.com/drillan/marketschema/tree/main/specs/004-adapter-rust/spec.md) - 詳細仕様

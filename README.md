@@ -1,45 +1,46 @@
 # marketschema
 
-Unified market data schema for financial applications.
+金融マーケットデータのための統一スキーマ。
 
-## Overview
+## 概要
 
-marketschema provides standardized data models for financial market data:
-- **Quote** - Best bid/offer (BBO) prices
-- **OHLCV** - Candlestick/bar data
-- **Trade** - Individual trades (time & sales)
-- **OrderBook** - Multi-level order book
-- **Instrument** - Security/asset information
+marketschema は金融マーケットデータを統一的に扱うための標準データモデルを提供する:
 
-## Features
+- **Quote** - 最良気配値（BBO）
+- **OHLCV** - ローソク足データ
+- **Trade** - 約定データ（Time & Sales）
+- **OrderBook** - 板情報
+- **Instrument** - 銘柄情報
 
-- JSON Schema definitions (Draft 2020-12)
-- Python pydantic v2 models (auto-generated)
-- Rust structs (auto-generated)
-- Adapter framework for data source integration
+## 特徴
 
-## Installation
+- **Schema First** - JSON Schema を単一の真実の源として Python/Rust コードを自動生成
+- **アダプターフレームワーク** - 外部データソースから標準モデルへの変換
+- **非同期 HTTP クライアント** - リトライ、レートリミット、キャッシュ対応
+- **マルチ言語対応** - Python (pydantic v2) / Rust (serde)
+
+## インストール
 
 ```bash
-# Clone the repository
-git clone https://github.com/example/marketschema.git
+# リポジトリをクローン
+git clone https://github.com/drillan/marketschema.git
 cd marketschema
 
-# Install Python dependencies
+# Python 依存関係をインストール
 cd python && uv sync --group dev && cd ..
 
-# Install JSON Schema validation tools
+# JSON Schema 検証ツールをインストール
 npm install
 ```
 
-## Quick Start
+## クイックスタート
 
 ### Python
 
 ```python
 from marketschema import Quote, Trade, OHLCV, Side
 
-# Create a quote
+# Quote の作成
 quote = Quote(
     symbol="AAPL",
     timestamp="2026-02-02T14:30:00Z",
@@ -47,7 +48,7 @@ quote = Quote(
     ask=175.50,
 )
 
-# Create a trade
+# Trade の作成
 trade = Trade(
     symbol="AAPL",
     timestamp="2026-02-02T14:30:00.123Z",
@@ -57,10 +58,19 @@ trade = Trade(
 )
 ```
 
-### Using Adapters
+### HTTP クライアント
 
 ```python
-from marketschema import BaseAdapter, ModelMapping, register, AdapterRegistry
+from marketschema import AsyncHttpClient
+
+async with AsyncHttpClient() as client:
+    data = await client.get_json("https://api.example.com/ticker")
+```
+
+### アダプター
+
+```python
+from marketschema import BaseAdapter, ModelMapping, register
 
 @register
 class MyExchangeAdapter(BaseAdapter):
@@ -73,9 +83,6 @@ class MyExchangeAdapter(BaseAdapter):
             ModelMapping("bid", "best_bid", transform=self.transforms.to_float),
             ModelMapping("ask", "best_ask", transform=self.transforms.to_float),
         ]
-
-# Get adapter from registry
-adapter = AdapterRegistry.get("my_exchange")
 ```
 
 ### Rust
@@ -87,65 +94,34 @@ let json = r#"{"symbol": "AAPL", "timestamp": "2026-02-02T14:30:00Z", "bid": 175
 let quote: Quote = serde_json::from_str(json)?;
 ```
 
-## Code Generation
+## ドキュメント
 
-### Python Models
+詳細なドキュメントは [docs/](docs/) を参照:
 
-```bash
-# Generate pydantic models from JSON Schema
-./scripts/generate_models.sh
-# or
-make generate-models
-```
+- [アーキテクチャ](docs/architecture.md) - Schema First 設計と3層アーキテクチャ
+- [コード生成](docs/code-generation.md) - Python/Rust コードの生成方法
+- [Python モデル実装ガイド](docs/guides/models.md)
+- [Python HTTP クライアント使用ガイド](docs/guides/http-client.md)
+- [Python アダプター開発ガイド](docs/guides/adapter-development.md)
 
-### Rust Structs
-
-```bash
-# Bundle schemas and generate Rust code
-./scripts/bundle_schemas.sh
-./scripts/generate_rust.sh
-# or
-make generate-rust
-```
-
-## Development
+## コード生成
 
 ```bash
-# Run linter
-make lint
-
-# Run type checker
-make typecheck
-
-# Run tests
-make test
-
-# Run all checks
-make all
+make generate-models  # Python pydantic モデル生成
+make generate-rust    # Rust serde 構造体生成
 ```
 
-## Project Structure
+詳細は [コード生成ガイド](docs/code-generation.md) を参照。
 
-```
-marketschema/
-├── schemas/                  # JSON Schema files (Single Source of Truth)
-├── python/
-│   ├── src/marketschema/
-│   │   ├── schemas/          # Symlink to ../../../schemas
-│   │   ├── models/           # Generated pydantic models
-│   │   ├── adapters/         # Adapter framework
-│   │   └── http/             # HTTP client framework
-│   ├── tests/
-│   └── pyproject.toml
-├── rust/
-│   ├── src/types/            # Generated Rust structs
-│   ├── bundled/              # Bundled schemas for typify
-│   └── tests/
-├── specs/                    # Feature specifications
-├── docs/                     # Documentation
-└── scripts/                  # Code generation scripts
+## 開発
+
+```bash
+make lint       # リンター
+make typecheck  # 型チェック
+make test       # テスト
+make all        # 全チェック実行
 ```
 
-## License
+## ライセンス
 
 MIT

@@ -16,6 +16,7 @@ language = "ja"
 
 extensions = [
     "myst_parser",
+    "sphinxcontrib.mermaid",
 ]
 
 # MyST configuration

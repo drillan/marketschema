@@ -6,7 +6,7 @@ This document explains how to generate code from the JSON Schema definitions.
 
 ## Python (pydantic v2)
 
-仕様詳細: [specs/002-data-model-python/spec.md](../specs/002-data-model-python/spec.md)
+仕様詳細: [specs/002-data-model-python/spec.md](https://github.com/drillan/marketschema/tree/main/specs/002-data-model-python/spec.md)
 
 ### Prerequisites
 
@@ -58,7 +58,7 @@ Options are defined in `pyproject.toml` under `[tool.datamodel-codegen]`.
 
 ## Rust (serde)
 
-仕様詳細: [specs/002-data-model-rust/spec.md](../specs/002-data-model-rust/spec.md)
+仕様詳細: [specs/002-data-model-rust/spec.md](https://github.com/drillan/marketschema/tree/main/specs/002-data-model-rust/spec.md)
 
 ### Prerequisites
 
