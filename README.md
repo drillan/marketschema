@@ -37,6 +37,9 @@ uv pip install "marketschema @ git+https://github.com/drillan/marketschema.git#s
 git clone https://github.com/drillan/marketschema.git
 cd marketschema/python
 uv sync --group dev
+
+# Rust開発・スキーマバンドリングの場合は追加で:
+cd .. && npm install
 ```
 
 ## クイックスタート
