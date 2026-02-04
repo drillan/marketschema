@@ -37,7 +37,7 @@
 
 - This is a language-specific implementation spec that extends [004-adapter](../../004-adapter/spec.md)
 - Python-specific details (type hints, async/await, decorators) are appropriate and expected
-- Existing implementation in `src/marketschema/adapters/` validates this specification
+- Existing implementation in `python/src/marketschema/adapters/` validates this specification
 - Contracts are well-defined in `contracts/` directory with full Python type signatures
 - Ready for `/speckit.clarify` or `/speckit.plan`
 

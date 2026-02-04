@@ -1,6 +1,5 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://marketschema.example.com/schemas/definitions",
   "title": "Common Type Definitions",
   "description": "マーケットデータスキーマの共通型定義",
   "$defs": {
@@ -24,12 +23,24 @@
     },
     "Side": {
       "type": "string",
-      "enum": ["buy", "sell"],
+      "enum": [
+        "buy",
+        "sell"
+      ],
       "description": "売買方向"
     },
     "AssetClass": {
       "type": "string",
-      "enum": ["equity", "fund", "bond", "future", "option", "fx", "crypto", "cfd"],
+      "enum": [
+        "equity",
+        "fund",
+        "bond",
+        "future",
+        "option",
+        "fx",
+        "crypto",
+        "cfd"
+      ],
       "description": "資産クラス"
     },
     "Currency": {
@@ -54,22 +65,39 @@
     },
     "OptionType": {
       "type": "string",
-      "enum": ["call", "put"],
+      "enum": [
+        "call",
+        "put"
+      ],
       "description": "オプションタイプ（コール/プット）"
     },
     "UnderlyingType": {
       "type": "string",
-      "enum": ["stock", "index", "etf", "commodity", "currency", "crypto"],
+      "enum": [
+        "stock",
+        "index",
+        "etf",
+        "commodity",
+        "currency",
+        "crypto"
+      ],
       "description": "原資産タイプ"
     },
     "ExerciseStyle": {
       "type": "string",
-      "enum": ["american", "european", "bermudan"],
+      "enum": [
+        "american",
+        "european",
+        "bermudan"
+      ],
       "description": "オプション行使スタイル"
     },
     "SettlementMethod": {
       "type": "string",
-      "enum": ["cash", "physical"],
+      "enum": [
+        "cash",
+        "physical"
+      ],
       "description": "決済方法"
     },
     "PriceLevel": {
@@ -85,7 +113,10 @@
           "description": "数量"
         }
       },
-      "required": ["price", "size"],
+      "required": [
+        "price",
+        "size"
+      ],
       "unevaluatedProperties": false
     }
   }

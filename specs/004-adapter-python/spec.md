@@ -13,7 +13,7 @@
 
 - 親仕様 [004-adapter](../004-adapter/spec.md) に基づき、Python 言語固有の実装仕様を定義。
 - 既存の contracts/adapter-interface.md および contracts/transforms.md を API 契約として継承。
-- 既存実装が `src/marketschema/adapters/` に存在するため、実装仕様はこれを正式化する。
+- 既存実装が `python/src/marketschema/adapters/` に存在するため、実装仕様はこれを正式化する。
 
 ## Overview
 
@@ -178,9 +178,9 @@ Python アダプター開発者として、`@register` デコレータで複数�
 - **SC-P002**: すべての Transforms 関数に対して正常系・異常系のユニットテストが存在し、通過する
 - **SC-P003**: ModelMapping の `apply()` メソッドに対して、ドット記法・デフォルト値・transform・required フラグのユニットテストが通過する
 - **SC-P004**: AdapterRegistry を使用した動的アダプター取得・重複登録エラー・未登録エラーのテストが通過する
-- **SC-P005**: `mypy src/marketschema/adapters/` で型チェックエラーがゼロである
-- **SC-P006**: `ruff check src/marketschema/adapters/` で lint エラーがゼロである
-- **SC-P007**: `ruff format --check src/marketschema/adapters/` でフォーマットエラーがゼロである
+- **SC-P005**: `mypy python/src/marketschema/adapters/` で型チェックエラーがゼロである
+- **SC-P006**: `ruff check python/src/marketschema/adapters/` で lint エラーがゼロである
+- **SC-P007**: `ruff format --check python/src/marketschema/adapters/` でフォーマットエラーがゼロである
 
 ## Assumptions
 
@@ -205,7 +205,7 @@ Python アダプター開発者として、`@register` デコレータで複数�
 ## Module Structure
 
 ```
-src/marketschema/adapters/
+python/src/marketschema/adapters/
 ├── __init__.py          # Public exports
 ├── base.py              # BaseAdapter implementation
 ├── mapping.py           # ModelMapping implementation

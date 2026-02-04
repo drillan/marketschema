@@ -35,7 +35,6 @@ pub mod error {
 #[doc = r""]
 #[doc = r" ```json"]
 #[doc = "{"]
-#[doc = "  \"$id\": \"https://marketschema.example.com/schemas/ohlcv\","]
 #[doc = "  \"title\": \"OHLCV\","]
 #[doc = "  \"description\": \"ローソク足データを表現する（始値、高値、安値、終値、出来高）\","]
 #[doc = "  \"type\": \"object\","]

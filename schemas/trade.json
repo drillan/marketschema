@@ -1,6 +1,5 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://marketschema.example.com/schemas/trade",
   "title": "Trade",
   "description": "個別約定（歩み値 / Time & Sales）を表現する",
   "type": "object",
@@ -26,6 +25,12 @@
       "description": "売買方向（buy/sell）"
     }
   },
-  "required": ["symbol", "timestamp", "price", "size", "side"],
+  "required": [
+    "symbol",
+    "timestamp",
+    "price",
+    "size",
+    "side"
+  ],
   "unevaluatedProperties": false
 }

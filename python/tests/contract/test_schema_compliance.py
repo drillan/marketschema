@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-SCHEMAS_DIR = Path(__file__).parent.parent.parent / "src" / "marketschema" / "schemas"
+SCHEMAS_DIR = Path(__file__).parent.parent.parent.parent / "schemas"
 
 EXPECTED_SCHEMAS = [
     "definitions.json",
@@ -48,15 +48,9 @@ class TestSchemaCompliance:
         assert "$schema" in schema
         assert "draft/2020-12" in schema["$schema"]
 
-    @pytest.mark.parametrize("schema_name", EXPECTED_SCHEMAS)
-    def test_schema_has_id(self, schema_name: str) -> None:
-        """Each schema should have a $id."""
-        schema_path = SCHEMAS_DIR / schema_name
-        with open(schema_path, encoding="utf-8") as f:
-            schema = json.load(f)
-
-        assert "$id" in schema
-        assert schema["$id"].startswith("https://marketschema.example.com/schemas/")
+    # NOTE: $id is intentionally omitted from schemas/ to allow relative $ref
+    # resolution without conflicts. The specs/002-data-model/contracts/ directory
+    # contains the formal schemas with absolute URI $id for specification purposes.
 
     @pytest.mark.parametrize("schema_name", EXPECTED_SCHEMAS)
     def test_schema_has_title(self, schema_name: str) -> None:

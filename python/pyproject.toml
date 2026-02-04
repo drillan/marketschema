@@ -2,7 +2,7 @@
 name = "marketschema"
 version = "0.0.1"
 description = "Unified market data schema for financial applications"
-readme = "README.md"
+readme = "../README.md"
 authors = [
     { name = "driller", email = "eleshis@gmail.com" }
 ]

@@ -14,7 +14,7 @@
 
 **構造**:
 ```
-src/marketschema/
+python/src/marketschema/
 ├── http/
 │   ├── __init__.py
 │   ├── client.py          # AsyncHTTPClient
@@ -44,7 +44,7 @@ src/marketschema/
 
 **構造**:
 ```
-src/marketschema/
+python/src/marketschema/
 ├── http/
 │   ├── __init__.py
 │   ├── client.py
@@ -77,7 +77,7 @@ src/marketschema/
 
 **構造（Phase 1）**:
 ```
-src/marketschema/
+python/src/marketschema/
 ├── http/
 │   ├── __init__.py
 │   ├── client.py          # AsyncHttpClient
@@ -172,7 +172,7 @@ MarketSchemaError
 ### エラー処理コード例
 
 ```python
-# src/marketschema/http/client.py
+# python/src/marketschema/http/client.py
 
 async def get_json(self, url: str, **kwargs: Any) -> dict[str, Any]:
     try:
@@ -201,7 +201,7 @@ async def get_json(self, url: str, **kwargs: Any) -> dict[str, Any]:
 ### 変更前
 
 ```python
-# src/marketschema/adapters/base.py
+# python/src/marketschema/adapters/base.py
 
 class BaseAdapter:
     source_name: str = ""
@@ -215,7 +215,7 @@ class BaseAdapter:
 ### 変更後
 
 ```python
-# src/marketschema/adapters/base.py
+# python/src/marketschema/adapters/base.py
 
 from marketschema.http import AsyncHttpClient
 

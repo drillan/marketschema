@@ -1,6 +1,5 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://marketschema.example.com/schemas/ohlcv",
   "title": "OHLCV",
   "description": "ローソク足データを表現する（始値、高値、安値、終値、出来高）",
   "type": "object",
@@ -35,12 +34,24 @@
     },
     "quote_volume": {
       "oneOf": [
-        { "$ref": "definitions.json#/$defs/Size" },
-        { "type": "null" }
+        {
+          "$ref": "definitions.json#/$defs/Size"
+        },
+        {
+          "type": "null"
+        }
       ],
       "description": "売買代金（決済通貨建ての出来高）"
     }
   },
-  "required": ["symbol", "timestamp", "open", "high", "low", "close", "volume"],
+  "required": [
+    "symbol",
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
   "unevaluatedProperties": false
 }

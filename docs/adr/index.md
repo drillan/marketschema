@@ -53,6 +53,14 @@ types/format-conventions
 codegen/001-unevaluated-properties-workaround
 ```
 
+## プロジェクト構造
+
+```{toctree}
+:maxdepth: 1
+
+structure/001-multi-language-directory-layout
+```
+
 ## フィールド要件表
 
 ADRで定義されたフィールド情報をまとめた要件表:

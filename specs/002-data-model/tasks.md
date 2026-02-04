@@ -13,10 +13,10 @@
 
 ## Path Conventions
 
-- **Project structure**: `src/marketschema/` for source code, `tests/` for tests at repository root
-- **Schemas**: `src/marketschema/schemas/` for JSON Schema files
-- **Models**: `src/marketschema/models/` for generated pydantic models
-- **Adapters**: `src/marketschema/adapters/` for adapter infrastructure
+- **Project structure**: `python/src/marketschema/` for source code, `python/tests/` for tests at repository root
+- **Schemas**: `schemas/` for JSON Schema files
+- **Models**: `python/src/marketschema/models/` for generated pydantic models
+- **Adapters**: `python/src/marketschema/adapters/` for adapter infrastructure
 
 ---
 
@@ -24,14 +24,14 @@
 
 **Purpose**: Project initialization and basic structure
 
-- [x] T001 Create project structure per implementation plan (src/marketschema/, tests/, docs/)
+- [x] T001 Create project structure per implementation plan (python/src/marketschema/, tests/, docs/)
 - [x] T002 Initialize Python project with uv and pyproject.toml (pydantic v2, mypy dependencies)
 - [x] T003 [P] Configure ruff for linting and formatting in pyproject.toml
 - [x] T004 [P] Configure mypy for type checking in pyproject.toml
 - [x] T005 [P] Install ajv-cli for JSON Schema validation via npm
 - [x] T005b [P] Install json-refs for schema bundling via npm (required for Rust code generation)
-- [x] T006 Create src/marketschema/__init__.py with package exports
-- [x] T007 Create src/marketschema/py.typed marker file for PEP 561
+- [x] T006 Create python/src/marketschema/__init__.py with package exports
+- [x] T007 Create python/src/marketschema/py.typed marker file for PEP 561
 
 ---
 
@@ -41,9 +41,9 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [x] T008 Create src/marketschema/schemas/ directory structure
+- [x] T008 Create schemas/ directory structure
 - [x] T009 Verify JSON Schema contracts in specs/002-data-model/contracts/ are complete (10 files expected)
-- [x] T010 Create src/marketschema/exceptions.py with base exception classes (MarketSchemaError, ValidationError, TransformError, AdapterError)
+- [x] T010 Create python/src/marketschema/exceptions.py with base exception classes (MarketSchemaError, ValidationError, TransformError, AdapterError)
 - [x] T011 Create tests/ directory structure (tests/unit/, tests/integration/, tests/contract/)
 - [x] T012 Create tests/conftest.py with shared pytest fixtures
 
@@ -59,16 +59,16 @@
 
 ### Implementation for User Story 1
 
-- [x] T013 [P] [US1] Copy and verify definitions.json from contracts/ to src/marketschema/schemas/definitions.json
-- [x] T014 [P] [US1] Copy and verify quote.json from contracts/ to src/marketschema/schemas/quote.json
-- [x] T015 [P] [US1] Copy and verify ohlcv.json from contracts/ to src/marketschema/schemas/ohlcv.json
-- [x] T016 [P] [US1] Copy and verify trade.json from contracts/ to src/marketschema/schemas/trade.json
-- [x] T017 [P] [US1] Copy and verify orderbook.json from contracts/ to src/marketschema/schemas/orderbook.json
-- [x] T018 [P] [US1] Copy and verify instrument.json from contracts/ to src/marketschema/schemas/instrument.json
-- [x] T019 [P] [US1] Copy and verify derivative_info.json from contracts/ to src/marketschema/schemas/derivative_info.json
-- [x] T020 [P] [US1] Copy and verify expiry_info.json from contracts/ to src/marketschema/schemas/expiry_info.json
-- [x] T021 [P] [US1] Copy and verify option_info.json from contracts/ to src/marketschema/schemas/option_info.json
-- [x] T022 [P] [US1] Copy and verify volume_info.json from contracts/ to src/marketschema/schemas/volume_info.json
+- [x] T013 [P] [US1] Copy and verify definitions.json from contracts/ to schemas/definitions.json
+- [x] T014 [P] [US1] Copy and verify quote.json from contracts/ to schemas/quote.json
+- [x] T015 [P] [US1] Copy and verify ohlcv.json from contracts/ to schemas/ohlcv.json
+- [x] T016 [P] [US1] Copy and verify trade.json from contracts/ to schemas/trade.json
+- [x] T017 [P] [US1] Copy and verify orderbook.json from contracts/ to schemas/orderbook.json
+- [x] T018 [P] [US1] Copy and verify instrument.json from contracts/ to schemas/instrument.json
+- [x] T019 [P] [US1] Copy and verify derivative_info.json from contracts/ to schemas/derivative_info.json
+- [x] T020 [P] [US1] Copy and verify expiry_info.json from contracts/ to schemas/expiry_info.json
+- [x] T021 [P] [US1] Copy and verify option_info.json from contracts/ to schemas/option_info.json
+- [x] T022 [P] [US1] Copy and verify volume_info.json from contracts/ to schemas/volume_info.json
 - [x] T023 [US1] Create tests/fixtures/ directory with sample JSON data files (valid and invalid cases)
 - [x] T024 [US1] Create tests/contract/test_schema_compliance.py to verify all schemas are Draft 2020-12 compliant
 - [x] T025 [US1] Create tests/unit/test_schemas.py with ajv-cli validation tests for each schema
@@ -87,10 +87,10 @@
 
 - [x] T026 [US2] Configure datamodel-codegen options in pyproject.toml [tool.datamodel-codegen]
 - [x] T027 [US2] Create scripts/generate_models.sh to run datamodel-codegen with correct options
-- [x] T028 [US2] Run datamodel-codegen to generate pydantic models in src/marketschema/models/
-- [x] T029 [US2] Create src/marketschema/models/__init__.py with re-exports of all models (Quote, OHLCV, Trade, OrderBook, Instrument, etc.)
+- [x] T028 [US2] Run datamodel-codegen to generate pydantic models in python/src/marketschema/models/
+- [x] T029 [US2] Create python/src/marketschema/models/__init__.py with re-exports of all models (Quote, OHLCV, Trade, OrderBook, Instrument, etc.)
 - [x] T030 [US2] Verify generated models have ConfigDict(extra='forbid') for unevaluatedProperties: false
-- [x] T031 [US2] Run mypy on src/marketschema/models/ to verify type correctness
+- [x] T031 [US2] Run mypy on python/src/marketschema/models/ to verify type correctness
 - [x] T032 [US2] Create tests/unit/test_models.py with pydantic model instantiation and validation tests
 
 **Checkpoint**: User Story 2 complete - pydantic models generated, mypy passes, model instantiation works
@@ -127,11 +127,11 @@
 
 ### Implementation for User Story 4
 
-- [x] T042 [US4] Create src/marketschema/adapters/__init__.py with module exports
-- [x] T043 [US4] Create src/marketschema/adapters/mapping.py with ModelMapping dataclass (target_field, source_field, transform, default)
-- [x] T044 [US4] Create src/marketschema/adapters/transforms.py with common transform functions (to_float, to_int, iso_timestamp, unix_timestamp_ms, unix_timestamp_sec, side_from_string, jst_to_utc)
-- [x] T045 [US4] Create src/marketschema/adapters/base.py with BaseAdapter abstract class (source_name, get_*_mapping methods, _apply_mapping, _get_nested_value)
-- [x] T046 [US4] Update src/marketschema/__init__.py to export adapter classes
+- [x] T042 [US4] Create python/src/marketschema/adapters/__init__.py with module exports
+- [x] T043 [US4] Create python/src/marketschema/adapters/mapping.py with ModelMapping dataclass (target_field, source_field, transform, default)
+- [x] T044 [US4] Create python/src/marketschema/adapters/transforms.py with common transform functions (to_float, to_int, iso_timestamp, unix_timestamp_ms, unix_timestamp_sec, side_from_string, jst_to_utc)
+- [x] T045 [US4] Create python/src/marketschema/adapters/base.py with BaseAdapter abstract class (source_name, get_*_mapping methods, _apply_mapping, _get_nested_value)
+- [x] T046 [US4] Update python/src/marketschema/__init__.py to export adapter classes
 - [x] T047 [US4] Create tests/unit/test_transforms.py with tests for all transform functions
 - [x] T048 [US4] Create tests/integration/test_adapter_base.py with sample adapter implementation test
 
@@ -147,9 +147,9 @@
 
 ### Implementation for User Story 5
 
-- [x] T049 [US5] Create src/marketschema/adapters/registry.py with AdapterRegistry class (singleton pattern, register decorator, get method, list_adapters method)
-- [x] T050 [US5] Update src/marketschema/adapters/__init__.py to export registry and register decorator
-- [x] T051 [US5] Update src/marketschema/__init__.py to export AdapterRegistry
+- [x] T049 [US5] Create python/src/marketschema/adapters/registry.py with AdapterRegistry class (singleton pattern, register decorator, get method, list_adapters method)
+- [x] T050 [US5] Update python/src/marketschema/adapters/__init__.py to export registry and register decorator
+- [x] T051 [US5] Update python/src/marketschema/__init__.py to export AdapterRegistry
 - [x] T052 [US5] Create tests/unit/test_registry.py with registration and retrieval tests (including KeyError for unknown source)
 
 **Checkpoint**: User Story 5 complete - AdapterRegistry functional, @register decorator works
@@ -213,16 +213,16 @@
 
 ```bash
 # Launch all schema creation tasks together:
-Task: "Create definitions.json in src/marketschema/schemas/definitions.json"
-Task: "Create quote.json in src/marketschema/schemas/quote.json"
-Task: "Create ohlcv.json in src/marketschema/schemas/ohlcv.json"
-Task: "Create trade.json in src/marketschema/schemas/trade.json"
-Task: "Create orderbook.json in src/marketschema/schemas/orderbook.json"
-Task: "Create instrument.json in src/marketschema/schemas/instrument.json"
-Task: "Create derivative_info.json in src/marketschema/schemas/derivative_info.json"
-Task: "Create expiry_info.json in src/marketschema/schemas/expiry_info.json"
-Task: "Create option_info.json in src/marketschema/schemas/option_info.json"
-Task: "Create volume_info.json in src/marketschema/schemas/volume_info.json"
+Task: "Create definitions.json in schemas/definitions.json"
+Task: "Create quote.json in schemas/quote.json"
+Task: "Create ohlcv.json in schemas/ohlcv.json"
+Task: "Create trade.json in schemas/trade.json"
+Task: "Create orderbook.json in schemas/orderbook.json"
+Task: "Create instrument.json in schemas/instrument.json"
+Task: "Create derivative_info.json in schemas/derivative_info.json"
+Task: "Create expiry_info.json in schemas/expiry_info.json"
+Task: "Create option_info.json in schemas/option_info.json"
+Task: "Create volume_info.json in schemas/volume_info.json"
 ```
 
 ---

@@ -1,6 +1,5 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://marketschema.example.com/schemas/option_info",
   "title": "OptionInfo",
   "description": "オプション固有の情報を表現する",
   "type": "object",
@@ -15,12 +14,19 @@
     },
     "exercise_style": {
       "oneOf": [
-        { "$ref": "definitions.json#/$defs/ExerciseStyle" },
-        { "type": "null" }
+        {
+          "$ref": "definitions.json#/$defs/ExerciseStyle"
+        },
+        {
+          "type": "null"
+        }
       ],
       "description": "行使スタイル（american/european/bermudan）"
     }
   },
-  "required": ["strike_price", "option_type"],
+  "required": [
+    "strike_price",
+    "option_type"
+  ],
   "unevaluatedProperties": false
 }

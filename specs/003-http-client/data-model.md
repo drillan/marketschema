@@ -274,11 +274,11 @@ Exception Hierarchy:
 ## Constants
 
 ```python
-# src/marketschema/http/client.py
+# python/src/marketschema/http/client.py
 DEFAULT_TIMEOUT_SECONDS: float = 30.0
 DEFAULT_MAX_CONNECTIONS: int = 100
 
-# src/marketschema/http/middleware.py
+# python/src/marketschema/http/middleware.py
 DEFAULT_MAX_RETRIES: int = 3
 DEFAULT_BACKOFF_FACTOR: float = 0.5
 DEFAULT_JITTER: float = 0.1
@@ -286,7 +286,7 @@ RETRYABLE_STATUS_CODES: frozenset[int] = frozenset({429, 500, 502, 503, 504})
 NON_RETRYABLE_STATUS_CODES: frozenset[int] = frozenset({400, 401, 403, 404})
 HTTP_STATUS_RATE_LIMIT: int = 429
 
-# src/marketschema/http/cache.py
+# python/src/marketschema/http/cache.py
 DEFAULT_CACHE_MAX_SIZE: int = 1000
 DEFAULT_CACHE_TTL_SECONDS: int = 300  # 5 minutes
 ```
@@ -303,7 +303,7 @@ JsonResponse = dict[str, Any]
 ## Public API Summary
 
 ```python
-# src/marketschema/http/__init__.py
+# python/src/marketschema/http/__init__.py
 __all__ = [
     # Client
     "AsyncHttpClient",

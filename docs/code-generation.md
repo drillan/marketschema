@@ -26,7 +26,7 @@ make generate-models
 
 ```bash
 datamodel-codegen \
-  --input src/marketschema/schemas/ \
+  --input schemas/ \
   --input-file-type jsonschema \
   --output-model-type pydantic_v2.BaseModel \
   --target-python-version 3.13 \
@@ -39,7 +39,7 @@ datamodel-codegen \
   --use-field-description \
   --reuse-model \
   --disable-timestamp \
-  --output src/marketschema/models/
+  --output python/src/marketschema/models/
 ```
 
 ### Configuration
@@ -84,7 +84,7 @@ make generate-rust
 1. Bundle schemas to resolve `$ref`:
 
 ```bash
-npx json-refs resolve src/marketschema/schemas/quote.json > bundled_quote.json
+npx json-refs resolve schemas/quote.json > bundled_quote.json
 ```
 
 2. Generate Rust code:
@@ -112,8 +112,8 @@ typify requires schemas to be self-contained. The `json-refs` tool resolves all 
 # Validate a single schema
 npx ajv validate \
   --spec=draft2020 \
-  -s src/marketschema/schemas/quote.json \
-  -r src/marketschema/schemas/definitions.json \
+  -s schemas/quote.json \
+  -r schemas/definitions.json \
   -d sample_data.json
 
 # Validate all schemas

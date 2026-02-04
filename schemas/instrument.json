@@ -1,6 +1,5 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://marketschema.example.com/schemas/instrument",
   "title": "Instrument",
   "description": "銘柄識別情報を表現する",
   "type": "object",
@@ -15,33 +14,52 @@
     },
     "currency": {
       "oneOf": [
-        { "$ref": "definitions.json#/$defs/Currency" },
-        { "type": "null" }
+        {
+          "$ref": "definitions.json#/$defs/Currency"
+        },
+        {
+          "type": "null"
+        }
       ],
       "description": "単一通貨（株式・債券等）"
     },
     "exchange": {
       "oneOf": [
-        { "$ref": "definitions.json#/$defs/Exchange" },
-        { "type": "null" }
+        {
+          "$ref": "definitions.json#/$defs/Exchange"
+        },
+        {
+          "type": "null"
+        }
       ],
       "description": "上場取引所（ISO 10383 MIC）"
     },
     "base_currency": {
       "oneOf": [
-        { "$ref": "definitions.json#/$defs/Currency" },
-        { "type": "null" }
+        {
+          "$ref": "definitions.json#/$defs/Currency"
+        },
+        {
+          "type": "null"
+        }
       ],
       "description": "基軸通貨（FX・暗号資産のペア商品）"
     },
     "quote_currency": {
       "oneOf": [
-        { "$ref": "definitions.json#/$defs/Currency" },
-        { "type": "null" }
+        {
+          "$ref": "definitions.json#/$defs/Currency"
+        },
+        {
+          "type": "null"
+        }
       ],
       "description": "決済通貨（FX・暗号資産のペア商品）"
     }
   },
-  "required": ["symbol", "asset_class"],
+  "required": [
+    "symbol",
+    "asset_class"
+  ],
   "unevaluatedProperties": false
 }

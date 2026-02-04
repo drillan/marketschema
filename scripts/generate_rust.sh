@@ -37,12 +37,20 @@ SCHEMAS=(
     "volume_info"
 )
 
+failed_schemas=()
 for schema in "${SCHEMAS[@]}"; do
     echo "  Generating: ${schema}.rs"
-    cargo typify "$BUNDLED_DIR/${schema}.json" --output "$RUST_TYPES_DIR/${schema}.rs" 2>/dev/null || {
-        echo "  Warning: typify failed for ${schema}.json, skipping..."
-    }
+    if ! cargo typify "$BUNDLED_DIR/${schema}.json" --output "$RUST_TYPES_DIR/${schema}.rs" 2>&1; then
+        echo "ERROR: typify failed for ${schema}.json" >&2
+        failed_schemas+=("$schema")
+    fi
 done
+
+if [ ${#failed_schemas[@]} -gt 0 ]; then
+    echo "ERROR: The following schemas failed to generate:" >&2
+    printf '  - %s\n' "${failed_schemas[@]}" >&2
+    exit 1
+fi
 
 # Create mod.rs to export all modules (alphabetically sorted)
 echo "Creating mod.rs..."

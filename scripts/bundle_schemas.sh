@@ -8,7 +8,7 @@ set -o pipefail  # パイプライン内の任意のコマンド失敗を検出
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-SCHEMAS_DIR="$PROJECT_ROOT/src/marketschema/schemas"
+SCHEMAS_DIR="$PROJECT_ROOT/schemas"
 OUTPUT_DIR="$PROJECT_ROOT/rust/bundled"
 
 echo "Bundling JSON Schema files..."

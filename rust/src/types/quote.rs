@@ -35,7 +35,6 @@ pub mod error {
 #[doc = r""]
 #[doc = r" ```json"]
 #[doc = "{"]
-#[doc = "  \"$id\": \"https://marketschema.example.com/schemas/quote\","]
 #[doc = "  \"title\": \"Quote\","]
 #[doc = "  \"description\": \"最良気配値（BBO: Best Bid/Offer）を表現する\","]
 #[doc = "  \"type\": \"object\","]

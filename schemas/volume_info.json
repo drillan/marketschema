@@ -1,6 +1,5 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://marketschema.example.com/schemas/volume_info",
   "title": "VolumeInfo",
   "description": "出来高と売買代金を表現する",
   "type": "object",
@@ -19,12 +18,20 @@
     },
     "quote_volume": {
       "oneOf": [
-        { "$ref": "definitions.json#/$defs/Size" },
-        { "type": "null" }
+        {
+          "$ref": "definitions.json#/$defs/Size"
+        },
+        {
+          "type": "null"
+        }
       ],
       "description": "売買代金（決済通貨建て）"
     }
   },
-  "required": ["symbol", "timestamp", "volume"],
+  "required": [
+    "symbol",
+    "timestamp",
+    "volume"
+  ],
   "unevaluatedProperties": false
 }

@@ -1,6 +1,5 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://marketschema.example.com/schemas/quote",
   "title": "Quote",
   "description": "最良気配値（BBO: Best Bid/Offer）を表現する",
   "type": "object",
@@ -23,19 +22,32 @@
     },
     "bid_size": {
       "oneOf": [
-        { "$ref": "definitions.json#/$defs/Size" },
-        { "type": "null" }
+        {
+          "$ref": "definitions.json#/$defs/Size"
+        },
+        {
+          "type": "null"
+        }
       ],
       "description": "買い気配の数量"
     },
     "ask_size": {
       "oneOf": [
-        { "$ref": "definitions.json#/$defs/Size" },
-        { "type": "null" }
+        {
+          "$ref": "definitions.json#/$defs/Size"
+        },
+        {
+          "type": "null"
+        }
       ],
       "description": "売り気配の数量"
     }
   },
-  "required": ["symbol", "timestamp", "bid", "ask"],
+  "required": [
+    "symbol",
+    "timestamp",
+    "bid",
+    "ask"
+  ],
   "unevaluatedProperties": false
 }
