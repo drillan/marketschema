@@ -1,0 +1,5 @@
+# Clippy configuration for marketschema-http
+# See: https://doc.rust-lang.org/clippy/configuration.html
+
+# Minimum Supported Rust Version
+msrv = "1.71.1"

@@ -244,7 +244,7 @@ HTTP クライアントを簡単に利用したい。
 
 ## Assumptions
 
-- Rust 1.70.0 以上を使用する（MSRV: 1.70.0 - `std::sync::OnceLock` 安定化）
+- Rust 1.71.1 以上を使用する（MSRV: 1.71.1 - moka 0.12 の要求による）
 - HTTP ライブラリとして reqwest を使用する
 - 非同期ランタイムとして tokio を使用する
 - エラー型の derive には thiserror を使用する

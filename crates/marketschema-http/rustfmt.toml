@@ -1,0 +1,6 @@
+# Rustfmt configuration for marketschema-http
+# See: https://rust-lang.github.io/rustfmt/
+
+edition = "2021"
+max_width = 100
+use_small_heuristics = "Default"
