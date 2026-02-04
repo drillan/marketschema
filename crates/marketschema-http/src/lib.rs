@@ -1,12 +1,12 @@
 //! Async HTTP client for marketschema adapters.
 //!
-//! This crate will provide a robust HTTP client layer for building market data adapters.
-//! Planned features include connection pooling, configurable timeouts, automatic retries,
-//! rate limiting, and response caching.
+//! This crate provides a robust HTTP client layer for building market data adapters.
+//! Features include connection pooling, configurable timeouts, and clean error handling.
+//! Planned features include automatic retries, rate limiting, and response caching.
 //!
-//! # Example (available after US1 implementation)
+//! # Example
 //!
-//! ```ignore
+//! ```rust,no_run
 //! use marketschema_http::{AsyncHttpClient, AsyncHttpClientBuilder};
 //! use std::time::Duration;
 //!
@@ -48,6 +48,26 @@ pub const DEFAULT_CACHE_TTL_SECS: u64 = 300;
 /// Default maximum cache size (number of entries).
 /// Note: Uses `u64` for moka Cache API compatibility (max_capacity parameter).
 pub const DEFAULT_CACHE_SIZE: u64 = 1000;
+
+// =============================================================================
+// HTTP Status Codes
+// Named constants to avoid magic numbers (CLAUDE.md: ハードコード禁止)
+// =============================================================================
+
+/// HTTP 429 Too Many Requests - Rate limit exceeded.
+pub const HTTP_STATUS_TOO_MANY_REQUESTS: u16 = 429;
+
+/// HTTP 500 Internal Server Error.
+pub const HTTP_STATUS_INTERNAL_SERVER_ERROR: u16 = 500;
+
+/// HTTP 502 Bad Gateway.
+pub const HTTP_STATUS_BAD_GATEWAY: u16 = 502;
+
+/// HTTP 503 Service Unavailable.
+pub const HTTP_STATUS_SERVICE_UNAVAILABLE: u16 = 503;
+
+/// HTTP 504 Gateway Timeout.
+pub const HTTP_STATUS_GATEWAY_TIMEOUT: u16 = 504;
 
 // =============================================================================
 // Modules

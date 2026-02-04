@@ -16,6 +16,11 @@
 use std::time::Duration;
 use thiserror::Error;
 
+use crate::{
+    HTTP_STATUS_BAD_GATEWAY, HTTP_STATUS_GATEWAY_TIMEOUT, HTTP_STATUS_INTERNAL_SERVER_ERROR,
+    HTTP_STATUS_SERVICE_UNAVAILABLE,
+};
+
 /// HTTP error types.
 ///
 /// All errors include a message and optionally the URL that caused the error.
@@ -202,7 +207,14 @@ impl HttpError {
             Self::Timeout { .. } => true,
             Self::Connection { .. } => true,
             Self::Status { status_code, .. } => {
-                matches!(status_code, 500 | 502 | 503 | 504)
+                // Server errors are retryable
+                matches!(
+                    *status_code,
+                    HTTP_STATUS_INTERNAL_SERVER_ERROR
+                        | HTTP_STATUS_BAD_GATEWAY
+                        | HTTP_STATUS_SERVICE_UNAVAILABLE
+                        | HTTP_STATUS_GATEWAY_TIMEOUT
+                )
             }
             Self::RateLimit { .. } => true,
             _ => false,

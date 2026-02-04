@@ -672,4 +672,110 @@ mod error_tests {
             );
         }
     }
+
+    #[tokio::test]
+    async fn test_timeout_returns_timeout_error() {
+        let mock_server = MockServer::start().await;
+
+        Mock::given(method("GET"))
+            .and(path("/api/slow"))
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .set_body_string("slow response")
+                    .set_delay(Duration::from_secs(5)),
+            )
+            .mount(&mock_server)
+            .await;
+
+        let client = AsyncHttpClientBuilder::new()
+            .timeout(Duration::from_millis(100))
+            .build()
+            .unwrap();
+
+        let url = format!("{}/api/slow", mock_server.uri());
+        let result = client.get_json(&url).await;
+
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(matches!(err, HttpError::Timeout { .. }));
+        assert!(err.is_retryable());
+        assert!(err.url().is_some());
+    }
+
+    #[tokio::test]
+    async fn test_connection_error_returns_connection_error() {
+        let client = AsyncHttpClientBuilder::new()
+            .timeout(Duration::from_millis(100))
+            .build()
+            .unwrap();
+
+        // Use a non-routable IP address to trigger connection error
+        let url = "http://192.0.2.1:12345/api/data";
+        let result = client.get_json(url).await;
+
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        // Could be Timeout or Connection depending on network config
+        assert!(
+            matches!(
+                err,
+                HttpError::Connection { .. } | HttpError::Timeout { .. }
+            ),
+            "Expected Connection or Timeout error, got {:?}",
+            err
+        );
+        assert!(err.is_retryable());
+    }
+
+    #[tokio::test]
+    async fn test_error_response_body_is_captured() {
+        let mock_server = MockServer::start().await;
+
+        let error_body = r#"{"error": "Not Found", "code": 404}"#;
+        Mock::given(method("GET"))
+            .and(path("/api/missing"))
+            .respond_with(ResponseTemplate::new(404).set_body_string(error_body))
+            .mount(&mock_server)
+            .await;
+
+        let client = AsyncHttpClientBuilder::new().build().unwrap();
+        let url = format!("{}/api/missing", mock_server.uri());
+
+        let result = client.get_json(&url).await;
+
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        if let HttpError::Status { response_body, .. } = err {
+            assert!(response_body.is_some());
+            assert_eq!(response_body.unwrap(), error_body);
+        } else {
+            panic!("Expected Status error");
+        }
+    }
+
+    #[tokio::test]
+    async fn test_rate_limit_response_body_is_captured() {
+        let mock_server = MockServer::start().await;
+
+        let error_body = r#"{"error": "Too Many Requests", "retry_after": 60}"#;
+        Mock::given(method("GET"))
+            .and(path("/api/rate-limited"))
+            .respond_with(ResponseTemplate::new(429).set_body_string(error_body))
+            .mount(&mock_server)
+            .await;
+
+        let client = AsyncHttpClientBuilder::new().build().unwrap();
+        let url = format!("{}/api/rate-limited", mock_server.uri());
+
+        let result = client.get_json(&url).await;
+
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        if let HttpError::RateLimit { response_body, .. } = err {
+            assert!(response_body.is_some());
+            assert_eq!(response_body.unwrap(), error_body);
+        } else {
+            panic!("Expected RateLimit error");
+        }
+    }
 }

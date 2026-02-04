@@ -26,7 +26,7 @@ use reqwest::Response;
 use serde_json::Value;
 
 use crate::error::HttpError;
-use crate::{DEFAULT_MAX_CONNECTIONS, DEFAULT_TIMEOUT_SECS};
+use crate::{DEFAULT_MAX_CONNECTIONS, DEFAULT_TIMEOUT_SECS, HTTP_STATUS_TOO_MANY_REQUESTS};
 
 /// Async HTTP client for adapter implementations.
 ///
@@ -314,9 +314,26 @@ impl AsyncHttpClient {
         }
 
         let status_code = status.as_u16();
-        let response_body = response.text().await.ok();
 
-        if status_code == 429 {
+        // Explicitly handle body read errors instead of using .ok()
+        // (CLAUDE.md: 暗黙的フォールバック禁止)
+        let response_body = match response.text().await {
+            Ok(body) if body.is_empty() => None,
+            Ok(body) => Some(body),
+            Err(e) => {
+                // Log the error but don't fail - the primary error is the HTTP status
+                // This is explicit handling, not silent suppression
+                tracing::warn!(
+                    url = %url,
+                    status_code = %status_code,
+                    error = %e,
+                    "Failed to read error response body"
+                );
+                None
+            }
+        };
+
+        if status_code == HTTP_STATUS_TOO_MANY_REQUESTS {
             return Err(HttpError::RateLimit {
                 message: format!("Rate limit exceeded: {}", status),
                 url: Some(url.to_string()),
@@ -400,13 +417,15 @@ impl AsyncHttpClientBuilder {
         self
     }
 
-    /// Set the maximum number of concurrent connections.
+    /// Set the maximum number of idle connections per host in the connection pool.
+    ///
+    /// Note: This controls `reqwest::ClientBuilder::pool_max_idle_per_host()`.
     ///
     /// Default: 100.
     ///
     /// # Arguments
     ///
-    /// * `max` - The maximum number of connections in the pool.
+    /// * `max` - The maximum number of idle connections per host.
     #[must_use]
     pub fn max_connections(mut self, max: usize) -> Self {
         self.max_connections = max;
