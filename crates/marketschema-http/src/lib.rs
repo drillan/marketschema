@@ -2,9 +2,8 @@
 //!
 //! This crate provides a robust HTTP client layer for building market data adapters.
 //! Features include connection pooling, configurable timeouts, automatic retries
-//! with exponential backoff, rate limiting via token bucket algorithm, and clean
-//! error handling.
-//! Planned features include response caching.
+//! with exponential backoff, rate limiting via token bucket algorithm, response caching,
+//! and clean error handling.
 //!
 //! # Example
 //!
@@ -76,6 +75,7 @@ pub const HTTP_STATUS_GATEWAY_TIMEOUT: u16 = 504;
 // See: specs/003-http-client-rust/spec.md for details
 // =============================================================================
 
+mod adapter;
 mod client;
 mod error;
 mod rate_limit;
@@ -88,6 +88,7 @@ mod cache;
 // Public Exports
 // =============================================================================
 
+pub use adapter::BaseAdapter;
 pub use client::{AsyncHttpClient, AsyncHttpClientBuilder};
 pub use error::HttpError;
 pub use rate_limit::RateLimiter;
