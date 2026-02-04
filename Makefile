@@ -28,13 +28,10 @@ test:
 test-cov:
 	cd python && uv run pytest tests -v --cov=src/marketschema --cov-report=term-missing --cov-report=html
 
-# Validate JSON schemas
+# Validate JSON schemas (using Python jsonschema for relative $ref support)
 validate-schemas:
 	@echo "Validating JSON Schemas..."
-	@cd schemas && for f in *.json; do \
-		echo "  Checking $$f..."; \
-		npx ajv compile --spec=draft2020 -s "$$f" -r definitions.json || exit 1; \
-	done
+	cd python && uv run pytest tests/contract/test_schema_compliance.py tests/unit/test_schemas.py -v --tb=short
 	@echo "All schemas valid!"
 
 # Generate Python pydantic models from JSON Schema

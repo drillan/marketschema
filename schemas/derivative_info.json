@@ -1,6 +1,5 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://marketschema.example.com/schemas/derivative_info",
   "title": "DerivativeInfo",
   "description": "先物・オプション共通の情報を表現する",
   "type": "object",
@@ -15,43 +14,67 @@
     },
     "tick_value": {
       "oneOf": [
-        { "type": "number" },
-        { "type": "null" }
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
       ],
       "description": "ティック価値（1ティックあたりの金額変動）"
     },
     "contract_value": {
       "oneOf": [
-        { "type": "number" },
-        { "type": "null" }
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
       ],
       "description": "契約基本価値"
     },
     "contract_value_currency": {
       "oneOf": [
-        { "$ref": "definitions.json#/$defs/Currency" },
-        { "type": "null" }
+        {
+          "$ref": "definitions.json#/$defs/Currency"
+        },
+        {
+          "type": "null"
+        }
       ],
       "description": "契約価値の通貨"
     },
     "lot_size": {
       "oneOf": [
-        { "type": "number" },
-        { "type": "null" }
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
       ],
       "description": "取引単位（注文可能な最小数量単位）"
     },
     "min_order_size": {
       "oneOf": [
-        { "type": "number" },
-        { "type": "null" }
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
       ],
       "description": "最小注文数量"
     },
     "max_order_size": {
       "oneOf": [
-        { "type": "number" },
-        { "type": "null" }
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
       ],
       "description": "最大注文数量"
     },
@@ -65,33 +88,54 @@
     },
     "is_perpetual": {
       "oneOf": [
-        { "type": "boolean" },
-        { "type": "null" }
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
       ],
       "description": "無期限契約か否か（暗号資産デリバティブ向け）"
     },
     "is_inverse": {
       "oneOf": [
-        { "type": "boolean" },
-        { "type": "null" }
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
       ],
       "description": "インバース契約か否か（false=linear、暗号資産デリバティブ向け）"
     },
     "settlement_method": {
       "oneOf": [
-        { "$ref": "definitions.json#/$defs/SettlementMethod" },
-        { "type": "null" }
+        {
+          "$ref": "definitions.json#/$defs/SettlementMethod"
+        },
+        {
+          "type": "null"
+        }
       ],
       "description": "決済方法"
     },
     "settlement_currency": {
       "oneOf": [
-        { "$ref": "definitions.json#/$defs/Currency" },
-        { "type": "null" }
+        {
+          "$ref": "definitions.json#/$defs/Currency"
+        },
+        {
+          "type": "null"
+        }
       ],
       "description": "決済通貨"
     }
   },
-  "required": ["multiplier", "tick_size", "underlying_symbol", "underlying_type"],
+  "required": [
+    "multiplier",
+    "tick_size",
+    "underlying_symbol",
+    "underlying_type"
+  ],
   "unevaluatedProperties": false
 }
