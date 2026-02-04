@@ -1,4 +1,4 @@
-.PHONY: all install lint format typecheck test test-cov validate-schemas generate-models generate-rust clean help
+.PHONY: all install lint format typecheck test test-cov validate-schemas generate-models generate-rust docs clean help
 
 # Default target
 all: lint typecheck test
@@ -46,6 +46,10 @@ generate-rust: bundle-schemas
 bundle-schemas:
 	./scripts/bundle_schemas.sh
 
+# Build documentation
+docs:
+	uv run --directory $(CURDIR)/python sphinx-build -M html $(CURDIR)/docs $(CURDIR)/docs/_build
+
 # Check Rust crate
 rust-check:
 	cd rust && cargo check
@@ -80,6 +84,7 @@ help:
 	@echo "  generate-models - Generate Python pydantic models"
 	@echo "  generate-rust   - Generate Rust structs"
 	@echo "  bundle-schemas  - Bundle schemas for Rust"
+	@echo "  docs            - Build HTML documentation"
 	@echo "  rust-check      - Check Rust crate compiles"
 	@echo "  rust-test       - Run Rust tests"
 	@echo "  clean           - Remove generated files"

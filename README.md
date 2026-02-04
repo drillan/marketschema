@@ -23,7 +23,7 @@ marketschema は金融マーケットデータを統一的に扱うための標�
 
 ```bash
 # リポジトリをクローン
-git clone https://github.com/example/marketschema.git
+git clone https://github.com/drillan/marketschema.git
 cd marketschema
 
 # Python 依存関係をインストール
