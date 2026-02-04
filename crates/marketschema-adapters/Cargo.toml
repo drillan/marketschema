@@ -26,4 +26,5 @@ thiserror = "2.0"
 
 [dev-dependencies]
 marketschema-adapters = { path = ".", features = ["test-utils"] }
+serial_test = "3.0"
 tokio = { version = "1.0", features = ["rt-multi-thread", "macros"] }
