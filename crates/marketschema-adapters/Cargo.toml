@@ -25,4 +25,5 @@ serde_json = "1.0"
 thiserror = "2.0"
 
 [dev-dependencies]
+marketschema-adapters = { path = ".", features = ["test-utils"] }
 tokio = { version = "1.0", features = ["rt-multi-thread", "macros"] }
