@@ -453,13 +453,7 @@ impl AsyncHttpClient {
         // URL-encode each parameter to prevent collisions with special characters
         let query_string: String = params
             .iter()
-            .map(|(k, v)| {
-                format!(
-                    "{}={}",
-                    urlencoding::encode(k),
-                    urlencoding::encode(v)
-                )
-            })
+            .map(|(k, v)| format!("{}={}", urlencoding::encode(k), urlencoding::encode(v)))
             .collect::<Vec<_>>()
             .join("&");
 

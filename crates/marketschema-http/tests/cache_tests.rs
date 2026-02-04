@@ -151,9 +151,7 @@ async fn test_lru_eviction_on_max_size() {
 
     // Add more entries to trigger eviction
     for i in 4..=10 {
-        cache
-            .set(&format!("key{}", i), format!("value{}", i))
-            .await;
+        cache.set(&format!("key{}", i), format!("value{}", i)).await;
     }
 
     // Force moka to process eviction
@@ -255,9 +253,7 @@ async fn test_cache_shared_across_tasks() {
 
     let cache_clone = Arc::clone(&cache);
     let handle = tokio::spawn(async move {
-        cache_clone
-            .set("from_task", "task_value".to_string())
-            .await;
+        cache_clone.set("from_task", "task_value".to_string()).await;
     });
 
     handle.await.unwrap();

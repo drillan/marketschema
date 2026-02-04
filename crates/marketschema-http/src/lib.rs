@@ -76,6 +76,7 @@ pub const HTTP_STATUS_GATEWAY_TIMEOUT: u16 = 504;
 // See: specs/003-http-client-rust/spec.md for details
 // =============================================================================
 
+mod adapter;
 mod client;
 mod error;
 mod rate_limit;
@@ -88,6 +89,7 @@ mod cache;
 // Public Exports
 // =============================================================================
 
+pub use adapter::BaseAdapter;
 pub use client::{AsyncHttpClient, AsyncHttpClientBuilder};
 pub use error::HttpError;
 pub use rate_limit::RateLimiter;

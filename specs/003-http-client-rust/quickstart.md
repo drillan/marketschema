@@ -269,10 +269,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-## Full Example: Adapter Integration
+## BaseAdapter Trait Integration
+
+The `BaseAdapter` trait provides a standard interface for adapter implementations
+to access a shared HTTP client.
+
+### Basic Usage with OnceLock (Recommended)
+
+Use `OnceLock` for lazy initialization - the HTTP client is only created when
+first accessed:
 
 ```rust
-use marketschema_http::{AsyncHttpClient, AsyncHttpClientBuilder, HttpError, RetryConfig, RateLimiter};
+use marketschema_http::{AsyncHttpClient, AsyncHttpClientBuilder, BaseAdapter, HttpError};
 use std::sync::{Arc, OnceLock};
 
 pub struct MyExchangeAdapter {
@@ -288,24 +296,23 @@ impl MyExchangeAdapter {
         }
     }
 
-    fn http_client(&self) -> &Arc<AsyncHttpClient> {
-        self.http_client.get_or_init(|| {
-            let retry = RetryConfig::new().max_retries(3);
-            let limiter = Arc::new(RateLimiter::new(10.0, 20));
-
-            Arc::new(
-                AsyncHttpClientBuilder::new()
-                    .retry(retry)
-                    .rate_limit(limiter)
-                    .build()
-                    .expect("Failed to build HTTP client"),
-            )
-        })
-    }
-
     pub async fn get_ticker(&self, symbol: &str) -> Result<serde_json::Value, HttpError> {
         let url = format!("{}/ticker/{}", self.base_url, symbol);
         self.http_client().get_json(&url).await
+    }
+}
+
+impl BaseAdapter for MyExchangeAdapter {
+    fn http_client(&self) -> Arc<AsyncHttpClient> {
+        self.http_client
+            .get_or_init(|| {
+                Arc::new(
+                    AsyncHttpClientBuilder::new()
+                        .build()
+                        .expect("Failed to build HTTP client"),
+                )
+            })
+            .clone()
     }
 }
 
@@ -315,6 +322,87 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let ticker = adapter.get_ticker("BTCUSD").await?;
     println!("Ticker: {}", ticker);
+
+    Ok(())
+}
+```
+
+### Constructor Injection Pattern
+
+For testing or custom configurations, inject the client via constructor:
+
+```rust
+use marketschema_http::{AsyncHttpClient, AsyncHttpClientBuilder, BaseAdapter, HttpError, RetryConfig, RateLimiter};
+use std::sync::Arc;
+
+pub struct TestableAdapter {
+    http_client: Arc<AsyncHttpClient>,
+    base_url: String,
+}
+
+impl TestableAdapter {
+    /// Create adapter with default HTTP client configuration.
+    pub fn new(base_url: &str) -> Self {
+        let retry = RetryConfig::new().with_max_retries(3);
+        let limiter = Arc::new(RateLimiter::new(10.0, 20));
+
+        let client = Arc::new(
+            AsyncHttpClientBuilder::new()
+                .retry(retry)
+                .rate_limit(limiter)
+                .build()
+                .expect("Failed to build HTTP client"),
+        );
+
+        Self::with_client(base_url, client)
+    }
+
+    /// Create adapter with a custom HTTP client (useful for testing).
+    pub fn with_client(base_url: &str, client: Arc<AsyncHttpClient>) -> Self {
+        Self {
+            http_client: client,
+            base_url: base_url.to_string(),
+        }
+    }
+
+    pub async fn get_ticker(&self, symbol: &str) -> Result<serde_json::Value, HttpError> {
+        let url = format!("{}/ticker/{}", self.base_url, symbol);
+        self.http_client().get_json(&url).await
+    }
+}
+
+impl BaseAdapter for TestableAdapter {
+    fn http_client(&self) -> Arc<AsyncHttpClient> {
+        self.http_client.clone()
+    }
+}
+```
+
+### Sharing Adapters Across Tasks
+
+Adapters implementing `BaseAdapter` are `Send + Sync`, making them safe to share:
+
+```rust
+use std::sync::Arc;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let adapter = Arc::new(MyExchangeAdapter::new("https://api.example.com"));
+
+    let mut handles = vec![];
+
+    for symbol in ["BTCUSD", "ETHUSD", "XRPUSD"] {
+        let adapter = adapter.clone();
+        let symbol = symbol.to_string();
+        handles.push(tokio::spawn(async move {
+            adapter.get_ticker(&symbol).await
+        }));
+    }
+
+    for handle in handles {
+        let ticker = handle.await??;
+        println!("Ticker: {}", ticker);
+    }
 
     Ok(())
 }
