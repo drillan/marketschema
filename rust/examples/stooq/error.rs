@@ -6,10 +6,12 @@ use thiserror::Error;
 #[derive(Debug, Error)]
 pub enum StooqError {
     /// Invalid date format encountered.
-    #[error("Invalid date format: {value:?}, expected YYYY-MM-DD")]
+    #[error("Invalid date format: {value:?}, expected YYYY-MM-DD: {parse_error}")]
     InvalidDateFormat {
         /// The invalid date value.
         value: String,
+        /// The underlying parse error message.
+        parse_error: String,
     },
 
     /// Insufficient columns in CSV row.
@@ -46,10 +48,12 @@ pub enum StooqError {
     Http(#[from] marketschema_http::HttpError),
 
     /// Data conversion error (e.g., string to float).
-    #[error("Conversion error: {message}")]
+    #[error("Conversion error at row {row_index}: {message}")]
     Conversion {
         /// Error message.
         message: String,
+        /// Row index (1-based, excluding header) where the error occurred.
+        row_index: usize,
     },
 
     /// HTTP client not configured.
