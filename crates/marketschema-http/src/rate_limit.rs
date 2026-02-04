@@ -77,7 +77,7 @@ impl RateLimiter {
     ///
     /// # Panics
     ///
-    /// Panics if `requests_per_second` is not positive or `burst_size` is zero.
+    /// Panics if `requests_per_second` is not finite and positive, or `burst_size` is zero.
     ///
     /// # Example
     ///
@@ -90,8 +90,8 @@ impl RateLimiter {
     #[must_use]
     pub fn new(requests_per_second: f64, burst_size: usize) -> Self {
         assert!(
-            requests_per_second > 0.0,
-            "requests_per_second must be positive, got {}",
+            requests_per_second.is_finite() && requests_per_second > 0.0,
+            "requests_per_second must be finite and positive, got {}",
             requests_per_second
         );
         assert!(
@@ -246,21 +246,39 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "requests_per_second must be positive")]
+    #[should_panic(expected = "requests_per_second must be finite and positive")]
     fn test_new_panics_on_zero_rps() {
-        RateLimiter::new(0.0, 10);
+        let _ = RateLimiter::new(0.0, 10);
     }
 
     #[test]
-    #[should_panic(expected = "requests_per_second must be positive")]
+    #[should_panic(expected = "requests_per_second must be finite and positive")]
     fn test_new_panics_on_negative_rps() {
-        RateLimiter::new(-5.0, 10);
+        let _ = RateLimiter::new(-5.0, 10);
+    }
+
+    #[test]
+    #[should_panic(expected = "requests_per_second must be finite and positive")]
+    fn test_new_panics_on_infinity_rps() {
+        let _ = RateLimiter::new(f64::INFINITY, 10);
+    }
+
+    #[test]
+    #[should_panic(expected = "requests_per_second must be finite and positive")]
+    fn test_new_panics_on_negative_infinity_rps() {
+        let _ = RateLimiter::new(f64::NEG_INFINITY, 10);
+    }
+
+    #[test]
+    #[should_panic(expected = "requests_per_second must be finite and positive")]
+    fn test_new_panics_on_nan_rps() {
+        let _ = RateLimiter::new(f64::NAN, 10);
     }
 
     #[test]
     #[should_panic(expected = "burst_size must be positive")]
     fn test_new_panics_on_zero_burst_size() {
-        RateLimiter::new(10.0, 0);
+        let _ = RateLimiter::new(10.0, 0);
     }
 
     // =============================================================================
@@ -460,5 +478,53 @@ mod tests {
         // Wait for spawned task
         let result = handle.await.unwrap();
         assert!(result);
+    }
+
+    #[tokio::test]
+    async fn test_concurrent_contention_with_limited_burst() {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        use std::sync::Arc;
+
+        // burst_size=2, 4 tasks competing for tokens
+        // 10 rps = 100ms per token replenishment
+        let limiter = Arc::new(RateLimiter::new(10.0, 2));
+        let acquired_count = Arc::new(AtomicUsize::new(0));
+
+        const TASK_COUNT: usize = 4;
+        let mut handles = Vec::with_capacity(TASK_COUNT);
+
+        let start = Instant::now();
+
+        for _ in 0..TASK_COUNT {
+            let limiter = Arc::clone(&limiter);
+            let counter = Arc::clone(&acquired_count);
+
+            handles.push(tokio::spawn(async move {
+                limiter.acquire().await;
+                counter.fetch_add(1, Ordering::SeqCst);
+            }));
+        }
+
+        // Wait for all tasks to complete
+        for handle in handles {
+            handle.await.unwrap();
+        }
+
+        let elapsed = start.elapsed();
+
+        // All 4 tasks should have acquired tokens
+        assert_eq!(acquired_count.load(Ordering::SeqCst), TASK_COUNT);
+
+        // With burst_size=2 and 4 tasks, 2 tasks get immediate tokens,
+        // and 2 tasks must wait for replenishment.
+        // At 10 rps, each additional token takes ~100ms.
+        // Minimum wait: ~200ms for 2 additional tokens (sequential worst case)
+        // In practice, tokens may replenish while tasks are waiting,
+        // so we expect at least ~100ms of waiting.
+        assert!(
+            elapsed.as_millis() >= 80,
+            "Expected contention-induced waiting, but elapsed only {:?}",
+            elapsed
+        );
     }
 }
