@@ -266,6 +266,51 @@ mod parse_html_row_extended_tests {
         let result = adapter.parse_html_row_extended(&row, symbol, 1).unwrap();
         assert!((result.close - result.adj_close).abs() < f64::EPSILON);
     }
+
+    #[test]
+    fn test_invalid_adj_close() {
+        let adapter = StockAnalysisAdapter::new();
+        let mut row = create_valid_row();
+        row[5] = "not_a_number".to_string(); // Invalid adj_close
+        let symbol = "TSLA";
+
+        let result = adapter.parse_html_row_extended(&row, symbol, 1);
+        assert!(matches!(result, Err(StockAnalysisError::Conversion { .. })));
+    }
+
+    #[test]
+    fn test_insufficient_columns_extended() {
+        let adapter = StockAnalysisAdapter::new();
+        let row = vec![
+            "Feb 2, 2026".to_string(),
+            "260.03".to_string(),
+            "270.49".to_string(),
+        ];
+        let symbol = "TSLA";
+
+        let result = adapter.parse_html_row_extended(&row, symbol, 1);
+        assert!(matches!(
+            result,
+            Err(StockAnalysisError::InsufficientColumns {
+                expected: 8,
+                actual: 3
+            })
+        ));
+    }
+
+    #[test]
+    fn test_invalid_date_in_row_extended() {
+        let adapter = StockAnalysisAdapter::new();
+        let mut row = create_valid_row();
+        row[0] = "invalid-date".to_string();
+        let symbol = "TSLA";
+
+        let result = adapter.parse_html_row_extended(&row, symbol, 1);
+        assert!(matches!(
+            result,
+            Err(StockAnalysisError::InvalidDateFormat { .. })
+        ));
+    }
 }
 
 mod parse_html_tests {
@@ -416,6 +461,36 @@ mod parse_html_extended_tests {
         assert_eq!(result.len(), 1);
         assert!((result[0].close - 269.96).abs() < f64::EPSILON);
         assert!((result[0].adj_close - 265.00).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn test_empty_html_extended() {
+        let adapter = StockAnalysisAdapter::new();
+        let html = "";
+        let symbol = "TSLA";
+
+        let result = adapter.parse_html_extended(html, symbol);
+        assert!(matches!(result, Err(StockAnalysisError::EmptyHtml)));
+    }
+
+    #[test]
+    fn test_whitespace_only_html_extended() {
+        let adapter = StockAnalysisAdapter::new();
+        let html = "   \n\t  ";
+        let symbol = "TSLA";
+
+        let result = adapter.parse_html_extended(html, symbol);
+        assert!(matches!(result, Err(StockAnalysisError::EmptyHtml)));
+    }
+
+    #[test]
+    fn test_no_table_found_extended() {
+        let adapter = StockAnalysisAdapter::new();
+        let html = "<html><body><div>No table here</div></body></html>";
+        let symbol = "TSLA";
+
+        let result = adapter.parse_html_extended(html, symbol);
+        assert!(matches!(result, Err(StockAnalysisError::NoTableFound)));
     }
 }
 

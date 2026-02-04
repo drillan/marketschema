@@ -97,6 +97,13 @@ async fn main() -> ExitCode {
                 StockAnalysisError::Http(HttpError::Connection { message, .. }) => {
                     eprintln!("\nError: Connection failed: {}", message);
                 }
+                StockAnalysisError::Http(HttpError::RateLimit { retry_after, .. }) => {
+                    if let Some(delay) = retry_after {
+                        eprintln!("\nError: Rate limited. Please retry after {:?}", delay);
+                    } else {
+                        eprintln!("\nError: Rate limited. Please wait before retrying.");
+                    }
+                }
                 StockAnalysisError::NoTableFound => {
                     eprintln!(
                         "\nError: No data table found. The page structure may have changed, \
