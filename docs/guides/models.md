@@ -536,8 +536,439 @@ schemas/
 
 Python モデルは datamodel-codegen を使用して自動生成される。詳細は [コード生成ガイド](../code-generation.md) を参照。
 
+---
+
+# Rust モデル実装ガイド
+
+marketschema の Rust モデルを使用してマーケットデータを扱う方法を解説する。
+
+## 概要
+
+marketschema は金融マーケットデータを統一的に扱うための Rust 構造体を提供する。JSON Schema から自動生成された serde 対応の構造体を使用することで、異なるデータソースからのデータを一貫した形式で扱える。
+
+このガイドの対象読者:
+
+- マーケットデータを扱う Rust アプリケーションの開発者
+- 複数の取引所やデータプロバイダを統合するシステムの開発者
+- 型安全なデータ処理を求める開発者
+
+## クイックスタート
+
+### インストール
+
+```toml
+[dependencies]
+marketschema = { git = "https://github.com/drillan/marketschema" }
+serde_json = "1.0"
+```
+
+### 最初のモデル作成
+
+気配値（Quote）モデルを作成する例:
+
+```rust
+use marketschema::Quote;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let quote: Quote = serde_json::from_str(r#"{
+        "symbol": "AAPL",
+        "timestamp": "2025-01-15T10:30:00Z",
+        "bid": 150.0,
+        "ask": 150.05,
+        "bid_size": 100.0,
+        "ask_size": 200.0
+    }"#)?;
+
+    println!("{}", serde_json::to_string_pretty(&quote)?);
+    Ok(())
+}
+```
+
+出力:
+
+```json
+{
+  "symbol": "AAPL",
+  "timestamp": "2025-01-15T10:30:00Z",
+  "bid": 150.0,
+  "ask": 150.05,
+  "bid_size": 100.0,
+  "ask_size": 200.0
+}
+```
+
+## マーケットデータモデル
+
+### Quote（気配値）
+
+最良気配値（BBO: Best Bid/Offer）を表現する。
+
+```rust
+use marketschema::Quote;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // 必須フィールドのみ
+    let quote: Quote = serde_json::from_str(r#"{
+        "symbol": "BTC-USD",
+        "timestamp": "2025-01-15T00:00:00Z",
+        "bid": 42000.00,
+        "ask": 42001.50
+    }"#)?;
+
+    // オプションフィールドを含む
+    let quote_with_size: Quote = serde_json::from_str(r#"{
+        "symbol": "BTC-USD",
+        "timestamp": "2025-01-15T00:00:00Z",
+        "bid": 42000.00,
+        "ask": 42001.50,
+        "bid_size": 1.5,
+        "ask_size": 2.0
+    }"#)?;
+
+    Ok(())
+}
+```
+
+フィールド:
+
+| フィールド | 型 | 必須 | 説明 |
+|-----------|------|------|------|
+| `symbol` | QuoteSymbol | Yes | 銘柄識別子 |
+| `timestamp` | DateTime<Utc> | Yes | 気配値取得時刻 |
+| `bid` | f64 | Yes | 買い気配値 |
+| `ask` | f64 | Yes | 売り気配値 |
+| `bid_size` | Option<f64> | No | 買い気配の数量 |
+| `ask_size` | Option<f64> | No | 売り気配の数量 |
+
+### Ohlcv（ローソク足）
+
+ローソク足データ（始値、高値、安値、終値、出来高）を表現する。
+
+```rust
+use marketschema::Ohlcv;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let ohlcv: Ohlcv = serde_json::from_str(r#"{
+        "symbol": "ETH-USD",
+        "timestamp": "2025-01-15T00:00:00Z",
+        "open": 2500.00,
+        "high": 2550.00,
+        "low": 2480.00,
+        "close": 2530.00,
+        "volume": 10000.0,
+        "quote_volume": 25000000.0
+    }"#)?;
+
+    Ok(())
+}
+```
+
+フィールド:
+
+| フィールド | 型 | 必須 | 説明 |
+|-----------|------|------|------|
+| `symbol` | OhlcvSymbol | Yes | 銘柄識別子 |
+| `timestamp` | DateTime<Utc> | Yes | 足の開始時刻 |
+| `open` | f64 | Yes | 始値 |
+| `high` | f64 | Yes | 高値 |
+| `low` | f64 | Yes | 安値 |
+| `close` | f64 | Yes | 終値 |
+| `volume` | f64 | Yes | 出来高 |
+| `quote_volume` | Option<f64> | No | 売買代金（決済通貨建て） |
+
+### Trade（約定）
+
+個別約定（歩み値 / Time & Sales）を表現する。
+
+```rust
+use marketschema::Trade;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let trade: Trade = serde_json::from_str(r#"{
+        "symbol": "AAPL",
+        "timestamp": "2025-01-15T10:30:00Z",
+        "price": 150.25,
+        "size": 100.0,
+        "side": "buy"
+    }"#)?;
+
+    Ok(())
+}
+```
+
+フィールド:
+
+| フィールド | 型 | 必須 | 説明 |
+|-----------|------|------|------|
+| `symbol` | TradeSymbol | Yes | 銘柄識別子 |
+| `timestamp` | DateTime<Utc> | Yes | 約定時刻 |
+| `price` | f64 | Yes | 約定価格 |
+| `size` | f64 | Yes | 約定数量 |
+| `side` | TradeSide | Yes | 売買方向（buy/sell） |
+
+### OrderBook（板情報）
+
+複数レベルの板情報を表現する。
+
+```rust
+use marketschema::OrderBook;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let orderbook: OrderBook = serde_json::from_str(r#"{
+        "symbol": "BTC-USD",
+        "timestamp": "2025-01-15T00:00:00Z",
+        "bids": [
+            { "price": 42000.0, "size": 1.5 },
+            { "price": 41999.0, "size": 2.0 },
+            { "price": 41998.0, "size": 3.5 }
+        ],
+        "asks": [
+            { "price": 42001.0, "size": 1.0 },
+            { "price": 42002.0, "size": 2.5 },
+            { "price": 42003.0, "size": 4.0 }
+        ]
+    }"#)?;
+
+    // 最良気配を取得
+    if let Some(best_bid) = orderbook.bids.first() {
+        println!("Best bid: {} @ {}", best_bid.size, best_bid.price);
+    }
+    if let Some(best_ask) = orderbook.asks.first() {
+        println!("Best ask: {} @ {}", best_ask.size, best_ask.price);
+    }
+
+    Ok(())
+}
+```
+
+フィールド:
+
+| フィールド | 型 | 必須 | 説明 |
+|-----------|------|------|------|
+| `symbol` | OrderBookSymbol | Yes | 銘柄識別子 |
+| `timestamp` | DateTime<Utc> | Yes | 板情報取得時刻 |
+| `bids` | Vec<PriceLevel> | Yes | 買い板（価格降順） |
+| `asks` | Vec<PriceLevel> | Yes | 売り板（価格昇順） |
+
+### VolumeInfo（出来高・売買代金）
+
+出来高と売買代金を表現する。
+
+```rust
+use marketschema::VolumeInfo;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let volume_info: VolumeInfo = serde_json::from_str(r#"{
+        "symbol": "AAPL",
+        "timestamp": "2025-01-15T00:00:00Z",
+        "volume": 1000000.0,
+        "quote_volume": 150000000.0
+    }"#)?;
+
+    Ok(())
+}
+```
+
+フィールド:
+
+| フィールド | 型 | 必須 | 説明 |
+|-----------|------|------|------|
+| `symbol` | VolumeInfoSymbol | Yes | 銘柄識別子 |
+| `timestamp` | DateTime<Utc> | Yes | データ取得時刻 |
+| `volume` | f64 | Yes | 出来高（数量ベース） |
+| `quote_volume` | Option<f64> | No | 売買代金（決済通貨建て） |
+
+## 銘柄情報モデル
+
+### Instrument（銘柄情報）
+
+銘柄識別情報を表現する。
+
+```rust
+use marketschema::Instrument;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // 株式
+    let stock: Instrument = serde_json::from_str(r#"{
+        "symbol": "AAPL",
+        "asset_class": "equity",
+        "currency": "USD",
+        "exchange": "XNAS"
+    }"#)?;
+
+    // 暗号資産ペア
+    let crypto: Instrument = serde_json::from_str(r#"{
+        "symbol": "BTC-USD",
+        "asset_class": "crypto",
+        "base_currency": "BTC",
+        "quote_currency": "USD"
+    }"#)?;
+
+    // FX ペア
+    let fx: Instrument = serde_json::from_str(r#"{
+        "symbol": "USD/JPY",
+        "asset_class": "fx",
+        "base_currency": "USD",
+        "quote_currency": "JPY"
+    }"#)?;
+
+    Ok(())
+}
+```
+
+### DerivativeInfo（デリバティブ共通）
+
+先物・オプション共通の情報を表現する。
+
+```rust
+use marketschema::DerivativeInfo;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let derivative: DerivativeInfo = serde_json::from_str(r#"{
+        "multiplier": 100.0,
+        "tick_size": 0.01,
+        "underlying_symbol": "SPX",
+        "underlying_type": "index"
+    }"#)?;
+
+    Ok(())
+}
+```
+
+### ExpiryInfo（満期情報）
+
+先物・オプションの満期関連情報を表現する。
+
+```rust
+use marketschema::ExpiryInfo;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let expiry: ExpiryInfo = serde_json::from_str(r#"{
+        "expiry": "2025-03",
+        "last_trading_day": "2025-03-20",
+        "expiration_date": "2025-03-21",
+        "settlement_date": "2025-03-21"
+    }"#)?;
+
+    Ok(())
+}
+```
+
+### OptionInfo（オプション）
+
+オプション固有の情報を表現する。
+
+```rust
+use marketschema::OptionInfo;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let option: OptionInfo = serde_json::from_str(r#"{
+        "strike_price": 5000.0,
+        "option_type": "call",
+        "exercise_style": "european"
+    }"#)?;
+
+    Ok(())
+}
+```
+
+## ビルダーパターン
+
+Rust モデルはビルダーパターンによる構築をサポートする。
+
+```rust
+use marketschema::Quote;
+use marketschema::types::quote::QuoteSymbol;
+use chrono::Utc;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let quote: Quote = Quote::builder()
+        .symbol("7203.T".parse::<QuoteSymbol>()?)
+        .timestamp(Utc::now())
+        .bid(2850.0)
+        .ask(2851.0)
+        .bid_size(Some(1000.0))
+        .ask_size(Some(500.0))
+        .try_into()?;
+
+    println!("{:?}", quote);
+    Ok(())
+}
+```
+
+## バリデーション
+
+marketschema のモデルは serde による自動バリデーションを提供する。
+
+### デシリアライズエラーの例
+
+```rust
+use marketschema::Quote;
+
+fn main() {
+    // timestamp が欠落
+    let invalid_json = r#"{"symbol": "AAPL", "bid": 150.0, "ask": 150.05}"#;
+    let result: Result<Quote, _> = serde_json::from_str(invalid_json);
+    assert!(result.is_err());
+}
+```
+
+### 追加フィールドの禁止
+
+すべてのモデルは `#[serde(deny_unknown_fields)]` で設定されており、スキーマに定義されていないフィールドは拒否される。
+
+```rust
+use marketschema::Quote;
+
+fn main() {
+    let unknown_field_json = r#"{
+        "symbol": "AAPL",
+        "timestamp": "2025-01-15T00:00:00Z",
+        "bid": 150.0,
+        "ask": 150.05,
+        "unknown_field": "value"
+    }"#;
+    let result: Result<Quote, _> = serde_json::from_str(unknown_field_json);
+    assert!(result.is_err());
+}
+```
+
+### Symbol バリデーション
+
+各 Symbol ニュータイプは最小長1文字のバリデーションを持つ。
+
+```rust
+use marketschema::types::quote::QuoteSymbol;
+use std::str::FromStr;
+
+fn main() {
+    // 有効な symbol
+    let symbol = QuoteSymbol::from_str("7203.T");
+    assert!(symbol.is_ok());
+
+    // 無効な symbol（空文字列）
+    let empty = QuoteSymbol::from_str("");
+    assert!(empty.is_err());
+}
+```
+
+## JSON Schema との関係
+
+marketschema は Schema First アプローチを採用している。
+
+### アプローチ
+
+1. JSON Schema でデータ構造を定義
+2. スキーマから Python (pydantic) および Rust (serde) のコードを自動生成
+3. スキーマを Single Source of Truth として保持
+
+### コード生成
+
+Rust モデルは typify を使用して自動生成される。詳細は [コード生成ガイド](../code-generation.md) を参照。
+
 ## 参照
 
+- [クイックスタートガイド](https://github.com/drillan/marketschema/blob/main/specs/002-data-model-rust/quickstart.md) - Rust 向けクイックスタート
 - [用語集](../glossary.md) - 標準フィールド名の定義
 - [コード生成ガイド](../code-generation.md) - JSON Schema からのコード生成方法
 - [ADR: フィールド名](../adr/index.md) - フィールド名の決定経緯

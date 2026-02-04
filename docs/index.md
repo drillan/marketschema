@@ -5,6 +5,7 @@
 :caption: Contents
 
 guides/index
+code-generation
 glossary
 adr/index
 research/index

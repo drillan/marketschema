@@ -6,13 +6,24 @@ This crate provides Rust struct definitions generated from JSON Schema for marke
 
 ## Types
 
+### Market Data Types
+
 | Type | Description |
 |------|-------------|
 | `Quote` | Best bid/offer (BBO) |
 | `Trade` | Trade execution |
 | `Ohlcv` | OHLCV candlestick |
 | `OrderBook` | Order book with price levels |
+| `VolumeInfo` | Volume and quote volume |
+
+### Instrument Types
+
+| Type | Description |
+|------|-------------|
 | `Instrument` | Instrument metadata |
+| `DerivativeInfo` | Derivative contract information (futures/options common) |
+| `ExpiryInfo` | Expiration information for derivatives |
+| `OptionInfo` | Option-specific information (strike, type, exercise style) |
 
 ## Installation
 
