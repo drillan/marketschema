@@ -50,4 +50,15 @@ pub enum BitbankError {
         "HTTP client not configured. Use BitbankAdapter::with_http_client() or BitbankAdapter::with_default_http_client()"
     )]
     HttpClientNotConfigured,
+
+    /// Unexpected JSON value type.
+    #[error("Unexpected type at index {index} in {context}: expected array, got {actual_type}")]
+    UnexpectedType {
+        /// Index of the element with unexpected type.
+        index: usize,
+        /// Context where the element was found (e.g., "OHLCV data").
+        context: String,
+        /// Description of the actual type.
+        actual_type: String,
+    },
 }

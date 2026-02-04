@@ -346,6 +346,40 @@ mod parse_ohlcv_batch_tests {
         let ohlcvs = adapter.parse_ohlcv_batch(&ohlcv_arrays, "btc_jpy").unwrap();
         assert!(ohlcvs.is_empty());
     }
+
+    #[test]
+    fn test_non_array_element_returns_error() {
+        let adapter = BitbankAdapter::new();
+        let ohlcv_arrays = vec![
+            json!([
+                "14500000",
+                "15000000",
+                "14000000",
+                "14750000",
+                "123.4567",
+                1704067200000_i64
+            ]),
+            json!("not an array"), // This should cause an error
+            json!([
+                "14750000",
+                "15500000",
+                "14500000",
+                "15000000",
+                "234.5678",
+                1704153600000_i64
+            ]),
+        ];
+
+        let result = adapter.parse_ohlcv_batch(&ohlcv_arrays, "btc_jpy");
+        assert!(matches!(
+            result,
+            Err(BitbankError::UnexpectedType {
+                index: 1,
+                context,
+                actual_type
+            }) if context == "OHLCV data" && actual_type == "string"
+        ));
+    }
 }
 
 mod parse_orderbook_tests {
@@ -417,6 +451,52 @@ mod parse_orderbook_tests {
 
         assert!(orderbook.asks.is_empty());
         assert!(orderbook.bids.is_empty());
+    }
+
+    #[test]
+    fn test_non_array_ask_element_returns_error() {
+        let adapter = BitbankAdapter::new();
+        let data = json!({
+            "asks": [
+                ["14878899", "0.1"],
+                "not an array"  // This should cause an error
+            ],
+            "bids": [["14878898", "0.3"]],
+            "timestamp": 1704067200000_i64
+        });
+
+        let result = adapter.parse_orderbook(&data, "btc_jpy");
+        assert!(matches!(
+            result,
+            Err(BitbankError::UnexpectedType {
+                index: 1,
+                context,
+                actual_type
+            }) if context == "ask levels" && actual_type == "string"
+        ));
+    }
+
+    #[test]
+    fn test_non_array_bid_element_returns_error() {
+        let adapter = BitbankAdapter::new();
+        let data = json!({
+            "asks": [["14878899", "0.1"]],
+            "bids": [
+                123,  // This should cause an error (number instead of array)
+                ["14878897", "0.4"]
+            ],
+            "timestamp": 1704067200000_i64
+        });
+
+        let result = adapter.parse_orderbook(&data, "btc_jpy");
+        assert!(matches!(
+            result,
+            Err(BitbankError::UnexpectedType {
+                index: 0,
+                context,
+                actual_type
+            }) if context == "bid levels" && actual_type == "number"
+        ));
     }
 }
 

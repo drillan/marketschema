@@ -14,6 +14,20 @@
 //! | `/{pair}/transactions`                  | Trade[]      |
 //! | `/{pair}/candlestick/{type}/{yyyymmdd}` | OHLCV[]      |
 //! | `/{pair}/depth`                         | OrderBook    |
+//!
+//! # Design Note: Adapter-local types
+//!
+//! This adapter defines its own `Quote`, `Trade`, `Ohlcv`, `OrderBook`, and `PriceLevel`
+//! types rather than using types from the `marketschema` crate. This is intentional:
+//!
+//! - **Lightweight intermediate representation**: These types serve as a simple,
+//!   dependency-free output format for the adapter.
+//! - **Decoupling**: Keeps the example adapter independent of schema evolution
+//!   in the core `marketschema` crate.
+//! - **Flexibility**: Users can easily map these types to their own domain models
+//!   or directly to `marketschema` types if desired.
+//!
+//! This follows the same pattern used by the Stooq adapter example.
 
 use std::sync::Arc;
 
@@ -187,6 +201,40 @@ impl BitbankAdapter {
             })
     }
 
+    /// Get value type description for error messages.
+    fn value_type_name(value: &Value) -> &'static str {
+        match value {
+            Value::Null => "null",
+            Value::Bool(_) => "boolean",
+            Value::Number(_) => "number",
+            Value::String(_) => "string",
+            Value::Array(_) => "array",
+            Value::Object(_) => "object",
+        }
+    }
+
+    /// Validate that all elements in a slice are arrays and return them.
+    ///
+    /// Unlike `filter_map`, this method returns an error if any element
+    /// is not an array, following the "no implicit fallback" rule.
+    fn validate_array_elements<'a>(
+        &self,
+        values: &'a [Value],
+        context: &str,
+    ) -> Result<Vec<&'a Vec<Value>>, BitbankError> {
+        values
+            .iter()
+            .enumerate()
+            .map(|(index, value)| {
+                value.as_array().ok_or_else(|| BitbankError::UnexpectedType {
+                    index,
+                    context: context.to_string(),
+                    actual_type: Self::value_type_name(value).to_string(),
+                })
+            })
+            .collect()
+    }
+
     /// Parse a JSON value to f64.
     fn parse_float(&self, value: &Value, field_name: &str) -> Result<f64, BitbankError> {
         Transforms::to_float(value).map_err(|e| BitbankError::Conversion {
@@ -357,9 +405,9 @@ impl BitbankAdapter {
         ohlcv_arrays: &[Value],
         symbol: &str,
     ) -> Result<Vec<Ohlcv>, BitbankError> {
-        ohlcv_arrays
-            .iter()
-            .filter_map(|arr| arr.as_array())
+        let arrays = self.validate_array_elements(ohlcv_arrays, "OHLCV data")?;
+        arrays
+            .into_iter()
             .map(|arr| self.parse_ohlcv(arr, symbol))
             .collect()
     }
@@ -423,15 +471,15 @@ impl BitbankAdapter {
                     context: "depth response".to_string(),
                 })?;
 
-        let asks: Result<Vec<PriceLevel>, BitbankError> = asks_raw
-            .iter()
-            .filter_map(|v| v.as_array())
+        let ask_arrays = self.validate_array_elements(asks_raw, "ask levels")?;
+        let asks: Result<Vec<PriceLevel>, BitbankError> = ask_arrays
+            .into_iter()
             .map(|arr| self.parse_price_level(arr, "ask level"))
             .collect();
 
-        let bids: Result<Vec<PriceLevel>, BitbankError> = bids_raw
-            .iter()
-            .filter_map(|v| v.as_array())
+        let bid_arrays = self.validate_array_elements(bids_raw, "bid levels")?;
+        let bids: Result<Vec<PriceLevel>, BitbankError> = bid_arrays
+            .into_iter()
             .map(|arr| self.parse_price_level(arr, "bid level"))
             .collect();
 
