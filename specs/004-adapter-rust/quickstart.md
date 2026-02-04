@@ -23,10 +23,12 @@ marketschema-adapters = { path = "crates/marketschema-adapters" }
 
 ```rust
 use marketschema_adapters::{BaseAdapter, ModelMapping, Transforms};
+use async_trait::async_trait;
 
 /// 架空の API 用アダプター
 struct MyApiAdapter;
 
+#[async_trait]
 impl BaseAdapter for MyApiAdapter {
     fn source_name(&self) -> &'static str {
         "myapi"
@@ -57,10 +59,11 @@ fn main() {
         .expect("Failed to register adapter");
 
     // 登録済みアダプター一覧を確認
-    println!("Registered adapters: {:?}", AdapterRegistry::list_adapters());
+    let adapters = AdapterRegistry::list_adapters().expect("Failed to list adapters");
+    println!("Registered adapters: {:?}", adapters);
 
     // アダプターを取得してデータを変換
-    if let Some(adapter) = AdapterRegistry::get("myapi") {
+    if let Ok(Some(adapter)) = AdapterRegistry::get("myapi") {
         let raw_data = json!({
             "ticker": {
                 "bid": "100.50",
@@ -147,9 +150,7 @@ use marketschema_adapters::{AdapterError, MappingError};
 
 match mapping.apply(&data) {
     Ok(value) => println!("Success: {}", value),
-    Err(MappingError { message }) => {
-        eprintln!("Mapping failed: {}", message);
-    }
+    Err(e) => eprintln!("Mapping failed: {}", e),
 }
 
 match AdapterRegistry::register("duplicate", || Box::new(MyApiAdapter)) {
@@ -163,6 +164,8 @@ match AdapterRegistry::register("duplicate", || Box::new(MyApiAdapter)) {
 
 ## テストでのベストプラクティス
 
+> **Note:** `AdapterRegistry::clear()` はテストコードまたは `test-utils` feature が有効な場合のみ利用可能です。
+
 ```rust
 #[cfg(test)]
 mod tests {
@@ -170,7 +173,8 @@ mod tests {
 
     fn setup() {
         // テスト間でレジストリをクリア
-        AdapterRegistry::clear();
+        // clear() は #[cfg(test)] または feature = "test-utils" でのみ利用可能
+        AdapterRegistry::clear().expect("Failed to clear registry");
     }
 
     #[test]
@@ -178,7 +182,7 @@ mod tests {
         setup();
 
         AdapterRegistry::register("test", || Box::new(MyApiAdapter)).unwrap();
-        assert!(AdapterRegistry::is_registered("test"));
+        assert!(AdapterRegistry::is_registered("test").unwrap());
     }
 
     #[test]

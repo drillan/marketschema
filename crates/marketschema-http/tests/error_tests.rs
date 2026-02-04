@@ -729,7 +729,7 @@ mod source_chain_tests {
         // The source should be a reqwest::Error
         let source_err = source.unwrap();
         assert!(
-            source_err.to_string().len() > 0,
+            !source_err.to_string().is_empty(),
             "source error should have a message"
         );
     }
