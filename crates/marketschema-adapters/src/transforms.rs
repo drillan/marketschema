@@ -5,6 +5,18 @@ use crate::mapping::TransformFn;
 use serde_json::Value;
 use std::sync::Arc;
 
+/// Milliseconds per second.
+pub const MS_PER_SECOND: i64 = 1000;
+
+/// Nanoseconds per millisecond.
+pub const NS_PER_MS: i64 = 1_000_000;
+
+/// Seconds per hour.
+pub const SECONDS_PER_HOUR: i64 = 3600;
+
+/// JST offset from UTC in hours.
+pub const JST_UTC_OFFSET_HOURS: i32 = 9;
+
 /// Struct providing common transformation functions as associated functions.
 pub struct Transforms;
 
@@ -77,6 +89,8 @@ impl Transforms {
 
     /// Converts Unix milliseconds timestamp to ISO 8601 UTC string.
     pub fn unix_timestamp_ms(value: &Value) -> Result<String, TransformError> {
+        use super::{MS_PER_SECOND, NS_PER_MS};
+
         let ms = Self::to_int(value)?;
         if ms < 0 {
             return Err(TransformError::new(format!(
@@ -85,9 +99,8 @@ impl Transforms {
             )));
         }
 
-        const MS_PER_SECOND: i64 = 1000;
         let secs = ms / MS_PER_SECOND;
-        let nsecs = ((ms % MS_PER_SECOND) * 1_000_000) as u32;
+        let nsecs = ((ms % MS_PER_SECOND) * NS_PER_MS) as u32;
 
         let dt = chrono::DateTime::from_timestamp(secs, nsecs)
             .ok_or_else(|| TransformError::new(format!("Invalid Unix timestamp ms: {}", ms)))?;
@@ -123,11 +136,11 @@ impl Transforms {
 
     /// Converts JST (Japan Standard Time) timestamp to UTC.
     pub fn jst_to_utc(value: &Value) -> Result<String, TransformError> {
+        use super::{JST_UTC_OFFSET_HOURS, SECONDS_PER_HOUR};
+
         let s = value.as_str().ok_or_else(|| {
             TransformError::new(format!("Expected string for timestamp: {:?}", value))
         })?;
-
-        const JST_UTC_OFFSET_HOURS: i32 = 9;
 
         // Try parsing with timezone first
         if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(s) {
@@ -141,12 +154,13 @@ impl Transforms {
             .or_else(|_| chrono::NaiveDateTime::parse_from_str(s, "%Y-%m-%d %H:%M:%S"))
             .map_err(|e| TransformError::new(format!("Invalid datetime '{}': {}", s, e)))?;
 
-        let jst = chrono::FixedOffset::east_opt(JST_UTC_OFFSET_HOURS * 3600).ok_or_else(|| {
-            TransformError::new(format!(
-                "Invalid JST offset: {} hours",
-                JST_UTC_OFFSET_HOURS
-            ))
-        })?;
+        let jst = chrono::FixedOffset::east_opt(JST_UTC_OFFSET_HOURS * SECONDS_PER_HOUR as i32)
+            .ok_or_else(|| {
+                TransformError::new(format!(
+                    "Invalid JST offset: {} hours",
+                    JST_UTC_OFFSET_HOURS
+                ))
+            })?;
         let dt = naive
             .and_local_timezone(jst)
             .single()
@@ -163,14 +177,17 @@ impl Transforms {
     }
 
     /// Normalizes trade side strings to "buy" or "sell".
+    ///
+    /// Recognized buy values: "buy", "bid", "b"
+    /// Recognized sell values: "sell", "ask", "offer", "s", "a"
     pub fn side_from_string(value: &Value) -> Result<String, TransformError> {
         let s = value
             .as_str()
             .ok_or_else(|| TransformError::new(format!("Expected string for side: {:?}", value)))?;
 
         match s.to_lowercase().as_str() {
-            "buy" | "bid" | "long" => Ok("buy".to_string()),
-            "sell" | "ask" | "short" => Ok("sell".to_string()),
+            "buy" | "bid" | "b" => Ok("buy".to_string()),
+            "sell" | "ask" | "offer" | "s" | "a" => Ok("sell".to_string()),
             _ => Err(TransformError::new(format!(
                 "Cannot normalize side value: '{}'",
                 s
