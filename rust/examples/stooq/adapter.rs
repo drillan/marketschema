@@ -28,6 +28,12 @@ use super::constants::{
 use super::error::StooqError;
 
 /// OHLCV data structure for Stooq adapter.
+///
+/// This is a lightweight intermediate representation used during CSV parsing,
+/// separate from the library's `marketschema::Ohlcv` type. This allows the
+/// adapter to perform initial data transformation without depending on the
+/// full schema type system. The data can be converted to `marketschema::Ohlcv`
+/// for downstream processing if needed.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Ohlcv {
     /// Stock symbol (e.g., "spy.us").
@@ -69,6 +75,9 @@ impl StooqAdapter {
 
     /// Create a new `StooqAdapter` with the given HTTP client.
     #[must_use]
+    // Unused in the current crate but provided as a public API for external callers
+    // who want to inject a custom HTTP client (e.g., for testing with mocks).
+    #[allow(dead_code)]
     pub fn with_http_client(http_client: Arc<AsyncHttpClient>) -> Self {
         Self {
             http_client: Some(http_client),
@@ -104,9 +113,10 @@ impl StooqAdapter {
     /// Returns [`StooqError::InvalidDateFormat`] if the date format is invalid
     /// or represents an invalid calendar date (e.g., "2024-02-30").
     pub fn date_to_iso_timestamp(date_str: &str) -> Result<String, StooqError> {
-        let date = NaiveDate::parse_from_str(date_str, "%Y-%m-%d").map_err(|_| {
+        let date = NaiveDate::parse_from_str(date_str, "%Y-%m-%d").map_err(|e| {
             StooqError::InvalidDateFormat {
                 value: date_str.to_string(),
+                parse_error: e.to_string(),
             }
         })?;
         Ok(format!("{}T00:00:00Z", date.format("%Y-%m-%d")))
@@ -118,6 +128,7 @@ impl StooqAdapter {
     ///
     /// * `row` - List of string values from CSV row.
     /// * `symbol` - Stock symbol (e.g., "spy.us").
+    /// * `row_index` - 1-based row index (excluding header) for error reporting.
     ///
     /// # Returns
     ///
@@ -128,7 +139,12 @@ impl StooqAdapter {
     /// * [`StooqError::InsufficientColumns`] - If row has insufficient columns.
     /// * [`StooqError::InvalidDateFormat`] - If date format is invalid.
     /// * [`StooqError::Conversion`] - If numeric conversion fails.
-    pub fn parse_csv_row(&self, row: &[String], symbol: &str) -> Result<Ohlcv, StooqError> {
+    pub fn parse_csv_row(
+        &self,
+        row: &[String],
+        symbol: &str,
+        row_index: usize,
+    ) -> Result<Ohlcv, StooqError> {
         if row.len() < STOOQ_EXPECTED_COLUMN_COUNT {
             return Err(StooqError::InsufficientColumns {
                 expected: STOOQ_EXPECTED_COLUMN_COUNT,
@@ -138,11 +154,11 @@ impl StooqAdapter {
 
         let timestamp = Self::date_to_iso_timestamp(&row[STOOQ_CSV_INDEX_DATE])?;
 
-        let open = self.parse_float(&row[STOOQ_CSV_INDEX_OPEN], "open")?;
-        let high = self.parse_float(&row[STOOQ_CSV_INDEX_HIGH], "high")?;
-        let low = self.parse_float(&row[STOOQ_CSV_INDEX_LOW], "low")?;
-        let close = self.parse_float(&row[STOOQ_CSV_INDEX_CLOSE], "close")?;
-        let volume = self.parse_float(&row[STOOQ_CSV_INDEX_VOLUME], "volume")?;
+        let open = self.parse_float(&row[STOOQ_CSV_INDEX_OPEN], "open", row_index)?;
+        let high = self.parse_float(&row[STOOQ_CSV_INDEX_HIGH], "high", row_index)?;
+        let low = self.parse_float(&row[STOOQ_CSV_INDEX_LOW], "low", row_index)?;
+        let close = self.parse_float(&row[STOOQ_CSV_INDEX_CLOSE], "close", row_index)?;
+        let volume = self.parse_float(&row[STOOQ_CSV_INDEX_VOLUME], "volume", row_index)?;
 
         Ok(Ohlcv {
             symbol: symbol.to_string(),
@@ -156,12 +172,18 @@ impl StooqAdapter {
     }
 
     /// Parse a string to f64.
-    fn parse_float(&self, value: &str, field_name: &str) -> Result<f64, StooqError> {
+    fn parse_float(
+        &self,
+        value: &str,
+        field_name: &str,
+        row_index: usize,
+    ) -> Result<f64, StooqError> {
         value.parse::<f64>().map_err(|e| StooqError::Conversion {
             message: format!(
                 "Failed to parse '{}' as float for field '{}': {}",
                 value, field_name, e
             ),
+            row_index,
         })
     }
 
@@ -215,19 +237,21 @@ impl StooqAdapter {
 
         // Parse data rows
         let mut results: Vec<Ohlcv> = Vec::new();
+        let mut row_index: usize = 0;
 
         for record_result in records {
+            row_index += 1;
             let record = record_result.map_err(|e| StooqError::CsvParse {
                 message: e.to_string(),
             })?;
 
-            // Skip empty rows
+            // Skip empty rows (common in CSV files with trailing newlines)
             if record.is_empty() || record.iter().all(|s| s.is_empty()) {
                 continue;
             }
 
             let row: Vec<String> = record.iter().map(String::from).collect();
-            results.push(self.parse_csv_row(&row, symbol)?);
+            results.push(self.parse_csv_row(&row, symbol, row_index)?);
         }
 
         Ok(results)

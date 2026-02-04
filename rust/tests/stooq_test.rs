@@ -1,7 +1,13 @@
 //! Tests for the Stooq adapter.
 
-use marketschema_examples::stooq::{
-    STOOQ_BASE_URL, STOOQ_EXPECTED_HEADER, STOOQ_INTERVAL_DAILY, StooqAdapter, StooqError,
+// Use #[path] to reference the example module directly, avoiding code duplication.
+// This allows tests to validate the exact same code that the examples demonstrate.
+#[path = "../examples/stooq/mod.rs"]
+mod stooq;
+
+use marketschema_adapters::BaseAdapter;
+use stooq::{
+    StooqAdapter, StooqError, STOOQ_BASE_URL, STOOQ_EXPECTED_HEADER, STOOQ_INTERVAL_DAILY,
 };
 
 mod date_to_iso_timestamp_tests {
@@ -68,7 +74,7 @@ mod parse_csv_row_tests {
         ];
         let symbol = "spy.us";
 
-        let result = adapter.parse_csv_row(&row, symbol).unwrap();
+        let result = adapter.parse_csv_row(&row, symbol, 1).unwrap();
 
         assert_eq!(result.symbol, symbol);
         assert_eq!(result.timestamp, "2024-01-15T00:00:00Z");
@@ -89,7 +95,7 @@ mod parse_csv_row_tests {
         ];
         let symbol = "spy.us";
 
-        let result = adapter.parse_csv_row(&row, symbol);
+        let result = adapter.parse_csv_row(&row, symbol, 1);
         assert!(matches!(
             result,
             Err(StooqError::InsufficientColumns {
@@ -112,7 +118,7 @@ mod parse_csv_row_tests {
         ];
         let symbol = "spy.us";
 
-        let result = adapter.parse_csv_row(&row, symbol);
+        let result = adapter.parse_csv_row(&row, symbol, 1);
         assert!(matches!(result, Err(StooqError::InvalidDateFormat { .. })));
     }
 
@@ -129,8 +135,30 @@ mod parse_csv_row_tests {
         ];
         let symbol = "spy.us";
 
-        let result = adapter.parse_csv_row(&row, symbol);
+        let result = adapter.parse_csv_row(&row, symbol, 1);
         assert!(matches!(result, Err(StooqError::Conversion { .. })));
+    }
+
+    #[test]
+    fn test_conversion_error_includes_row_index() {
+        let adapter = StooqAdapter::new();
+        let row = vec![
+            "2024-01-15".to_string(),
+            "not_a_number".to_string(),
+            "105.00".to_string(),
+            "99.00".to_string(),
+            "103.25".to_string(),
+            "1000000".to_string(),
+        ];
+        let symbol = "spy.us";
+
+        let result = adapter.parse_csv_row(&row, symbol, 42);
+        match result {
+            Err(StooqError::Conversion { row_index, .. }) => {
+                assert_eq!(row_index, 42);
+            }
+            _ => panic!("Expected Conversion error"),
+        }
     }
 }
 
@@ -251,7 +279,6 @@ mod http_client_tests {
 
 mod base_adapter_tests {
     use super::*;
-    use marketschema_adapters::BaseAdapter;
 
     #[test]
     fn test_source_name() {

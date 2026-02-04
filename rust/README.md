@@ -71,6 +71,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 - Builder pattern for struct construction
 - String newtypes with validation (each type has its own Symbol newtype, e.g., `QuoteSymbol`, `TradeSymbol`)
 
+## Examples
+
+Run example adapters to see how marketschema integrates with real data sources:
+
+```bash
+# Stooq adapter demo (CSV data source)
+cargo run -p marketschema --example stooq_demo -- spy.us
+```
+
+Example adapters are located in `examples/` directory:
+- `stooq/` - CSV adapter for stooq.com stock data
+
 ## Documentation
 
 - [Quickstart Guide](https://github.com/drillan/marketschema/blob/main/specs/002-data-model-rust/quickstart.md)
