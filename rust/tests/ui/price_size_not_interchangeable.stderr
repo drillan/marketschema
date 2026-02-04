@@ -1,0 +1,7 @@
+error[E0308]: mismatched types
+  --> tests/ui/price_size_not_interchangeable.rs:11:23
+   |
+11 |     let _size: Size = price;
+   |                ----   ^^^^^ expected `Size`, found `Price`
+   |                |
+   |                expected due to this

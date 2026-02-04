@@ -1,0 +1,10 @@
+error[E0277]: the trait bound `marketschema::types::Currency: From<String>` is not satisfied
+  --> tests/ui/currency_no_from_string.rs:11:49
+   |
+11 |     let _currency: Currency = "JPY".to_string().into();
+   |                                                 ^^^^ the trait `From<String>` is not implemented for `marketschema::types::Currency`
+   |
+   = help: the trait `From<String>` is not implemented for `marketschema::types::Currency`
+           but trait `From<&marketschema::types::Currency>` is implemented for it
+   = help: for that trait implementation, expected `&marketschema::types::Currency`, found `String`
+   = note: required for `String` to implement `Into<marketschema::types::Currency>`
