@@ -483,3 +483,197 @@ fn test_types_module_reexport() {
     )
     .unwrap();
 }
+
+// =============================================================================
+// Tests for required field validation
+// Verify that missing required fields cause deserialization errors
+// =============================================================================
+
+#[test]
+fn test_volume_info_rejects_missing_required_fields() {
+    // symbol missing
+    let json = r#"{"timestamp": "2026-02-02T00:00:00Z", "volume": 100.0}"#;
+    let result: Result<VolumeInfo, _> = serde_json::from_str(json);
+    assert!(result.is_err());
+
+    // timestamp missing
+    let json = r#"{"symbol": "TEST", "volume": 100.0}"#;
+    let result: Result<VolumeInfo, _> = serde_json::from_str(json);
+    assert!(result.is_err());
+
+    // volume missing
+    let json = r#"{"symbol": "TEST", "timestamp": "2026-02-02T00:00:00Z"}"#;
+    let result: Result<VolumeInfo, _> = serde_json::from_str(json);
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_expiry_info_rejects_missing_required_fields() {
+    // expiration_date missing
+    let json = r#"{"expiry": "2026-03"}"#;
+    let result: Result<ExpiryInfo, _> = serde_json::from_str(json);
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_option_info_rejects_missing_required_fields() {
+    // strike_price missing
+    let json = r#"{"option_type": "call"}"#;
+    let result: Result<OptionInfo, _> = serde_json::from_str(json);
+    assert!(result.is_err());
+
+    // option_type missing
+    let json = r#"{"strike_price": 100.0}"#;
+    let result: Result<OptionInfo, _> = serde_json::from_str(json);
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_derivative_info_rejects_missing_required_fields() {
+    // underlying_symbol missing
+    let json = r#"{"underlying_type": "index", "multiplier": 1.0, "tick_size": 0.01}"#;
+    let result: Result<DerivativeInfo, _> = serde_json::from_str(json);
+    assert!(result.is_err());
+
+    // underlying_type missing
+    let json = r#"{"underlying_symbol": "TEST", "multiplier": 1.0, "tick_size": 0.01}"#;
+    let result: Result<DerivativeInfo, _> = serde_json::from_str(json);
+    assert!(result.is_err());
+
+    // multiplier missing
+    let json = r#"{"underlying_symbol": "TEST", "underlying_type": "index", "tick_size": 0.01}"#;
+    let result: Result<DerivativeInfo, _> = serde_json::from_str(json);
+    assert!(result.is_err());
+
+    // tick_size missing
+    let json = r#"{"underlying_symbol": "TEST", "underlying_type": "index", "multiplier": 1.0}"#;
+    let result: Result<DerivativeInfo, _> = serde_json::from_str(json);
+    assert!(result.is_err());
+}
+
+// =============================================================================
+// Tests for enum value validation
+// Verify that invalid enum values are rejected
+// =============================================================================
+
+#[test]
+fn test_option_info_rejects_invalid_option_type() {
+    let json = r#"{"strike_price": 100.0, "option_type": "invalid"}"#;
+    let result: Result<OptionInfo, _> = serde_json::from_str(json);
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_option_info_rejects_invalid_exercise_style() {
+    let json = r#"{"strike_price": 100.0, "option_type": "call", "exercise_style": "invalid"}"#;
+    let result: Result<OptionInfo, _> = serde_json::from_str(json);
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_derivative_info_rejects_invalid_underlying_type() {
+    let json = r#"{
+        "underlying_symbol": "TEST",
+        "underlying_type": "invalid_type",
+        "multiplier": 1.0,
+        "tick_size": 0.01
+    }"#;
+    let result: Result<DerivativeInfo, _> = serde_json::from_str(json);
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_derivative_info_rejects_invalid_settlement_method() {
+    let json = r#"{
+        "underlying_symbol": "TEST",
+        "underlying_type": "index",
+        "multiplier": 1.0,
+        "tick_size": 0.01,
+        "settlement_method": "invalid"
+    }"#;
+    let result: Result<DerivativeInfo, _> = serde_json::from_str(json);
+    assert!(result.is_err());
+}
+
+// =============================================================================
+// Tests for pattern validation
+// Verify that invalid formats are rejected
+// =============================================================================
+
+#[test]
+fn test_expiry_info_rejects_invalid_date_format() {
+    // Slash format instead of dash
+    let json = r#"{"expiration_date": "2026/03/20"}"#;
+    let result: Result<ExpiryInfo, _> = serde_json::from_str(json);
+    assert!(result.is_err());
+
+    // No separators
+    let json = r#"{"expiration_date": "20260320"}"#;
+    let result: Result<ExpiryInfo, _> = serde_json::from_str(json);
+    assert!(result.is_err());
+
+    // Wrong number of digits
+    let json = r#"{"expiration_date": "26-03-20"}"#;
+    let result: Result<ExpiryInfo, _> = serde_json::from_str(json);
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_derivative_info_rejects_invalid_currency_code() {
+    // Lowercase
+    let json = r#"{
+        "underlying_symbol": "TEST",
+        "underlying_type": "index",
+        "multiplier": 1.0,
+        "tick_size": 0.01,
+        "settlement_currency": "jpy"
+    }"#;
+    let result: Result<DerivativeInfo, _> = serde_json::from_str(json);
+    assert!(result.is_err());
+
+    // Wrong length (2 characters)
+    let json = r#"{
+        "underlying_symbol": "TEST",
+        "underlying_type": "index",
+        "multiplier": 1.0,
+        "tick_size": 0.01,
+        "settlement_currency": "JP"
+    }"#;
+    let result: Result<DerivativeInfo, _> = serde_json::from_str(json);
+    assert!(result.is_err());
+
+    // Wrong length (4 characters)
+    let json = r#"{
+        "underlying_symbol": "TEST",
+        "underlying_type": "index",
+        "multiplier": 1.0,
+        "tick_size": 0.01,
+        "settlement_currency": "JPYY"
+    }"#;
+    let result: Result<DerivativeInfo, _> = serde_json::from_str(json);
+    assert!(result.is_err());
+}
+
+// =============================================================================
+// Tests for minLength validation
+// Verify that empty strings are rejected for fields with minLength: 1
+// =============================================================================
+
+#[test]
+fn test_volume_info_rejects_empty_symbol() {
+    let json = r#"{"symbol": "", "timestamp": "2026-02-02T00:00:00Z", "volume": 100.0}"#;
+    let result: Result<VolumeInfo, _> = serde_json::from_str(json);
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_derivative_info_rejects_empty_underlying_symbol() {
+    let json = r#"{
+        "underlying_symbol": "",
+        "underlying_type": "index",
+        "multiplier": 1.0,
+        "tick_size": 0.01
+    }"#;
+    let result: Result<DerivativeInfo, _> = serde_json::from_str(json);
+    assert!(result.is_err());
+}
