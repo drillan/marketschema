@@ -176,7 +176,7 @@ fn test_quote_serialization_roundtrip() {
 }
 
 // =============================================================================
-// Tests for deny_unknown_fields (FR-010 compliance)
+// Tests for deny_unknown_fields (FR-R016 compliance)
 // These tests verify that unknown fields are rejected during deserialization
 // =============================================================================
 
@@ -275,7 +275,7 @@ fn test_instrument_rejects_unknown_fields() {
 }
 
 // =============================================================================
-// Tests for VolumeInfo (T055)
+// Tests for VolumeInfo
 // =============================================================================
 
 use marketschema::types::volume_info::VolumeInfo;
@@ -324,7 +324,7 @@ fn test_volume_info_rejects_unknown_fields() {
 }
 
 // =============================================================================
-// Tests for ExpiryInfo (T056)
+// Tests for ExpiryInfo
 // =============================================================================
 
 use marketschema::types::expiry_info::ExpiryInfo;
@@ -382,7 +382,7 @@ fn test_expiry_info_rejects_unknown_fields() {
 }
 
 // =============================================================================
-// Tests for OptionInfo (T057)
+// Tests for OptionInfo
 // =============================================================================
 
 use marketschema::types::option_info::OptionInfo;
@@ -433,7 +433,7 @@ fn test_option_info_rejects_unknown_fields() {
 }
 
 // =============================================================================
-// Tests for DerivativeInfo (T058)
+// Tests for DerivativeInfo
 // =============================================================================
 
 use marketschema::types::derivative_info::DerivativeInfo;
@@ -713,6 +713,36 @@ fn test_derivative_info_rejects_invalid_currency_code() {
     assert!(result.is_err());
 }
 
+#[test]
+fn test_instrument_rejects_invalid_currency_pattern() {
+    // T029: Instrument - invalid currency pattern (lowercase)
+    let json = r#"{
+        "symbol": "7203.T",
+        "asset_class": "equity",
+        "currency": "jpy"
+    }"#;
+    let result: Result<Instrument, _> = serde_json::from_str(json);
+    assert!(result.is_err());
+
+    // invalid currency pattern (wrong length)
+    let json = r#"{
+        "symbol": "7203.T",
+        "asset_class": "equity",
+        "currency": "JP"
+    }"#;
+    let result: Result<Instrument, _> = serde_json::from_str(json);
+    assert!(result.is_err());
+
+    // invalid exchange pattern (3 characters instead of 4)
+    let json = r#"{
+        "symbol": "7203.T",
+        "asset_class": "equity",
+        "exchange": "XJP"
+    }"#;
+    let result: Result<Instrument, _> = serde_json::from_str(json);
+    assert!(result.is_err());
+}
+
 // =============================================================================
 // Tests for minLength validation
 // Verify that empty strings are rejected for fields with minLength: 1
@@ -734,6 +764,72 @@ fn test_derivative_info_rejects_empty_underlying_symbol() {
         "tick_size": 0.01
     }"#;
     let result: Result<DerivativeInfo, _> = serde_json::from_str(json);
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_quote_rejects_empty_symbol() {
+    let json = r#"{"symbol": "", "timestamp": "2026-02-02T09:00:00Z", "bid": 100.0, "ask": 101.0}"#;
+    let result: Result<Quote, _> = serde_json::from_str(json);
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_trade_rejects_empty_symbol() {
+    let json = r#"{"symbol": "", "timestamp": "2026-02-02T14:30:00Z", "price": 175.50, "size": 100.0, "side": "buy"}"#;
+    let result: Result<Trade, _> = serde_json::from_str(json);
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_ohlcv_rejects_empty_symbol() {
+    let json = r#"{"symbol": "", "timestamp": "2026-02-02T00:00:00Z", "open": 100.0, "high": 105.0, "low": 99.0, "close": 103.0, "volume": 1000.0}"#;
+    let result: Result<Ohlcv, _> = serde_json::from_str(json);
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_orderbook_rejects_empty_symbol() {
+    let json = r#"{"symbol": "", "timestamp": "2026-02-02T09:00:00Z", "bids": [], "asks": []}"#;
+    let result: Result<OrderBook, _> = serde_json::from_str(json);
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_instrument_rejects_empty_symbol() {
+    let json = r#"{"symbol": "", "asset_class": "equity"}"#;
+    let result: Result<Instrument, _> = serde_json::from_str(json);
+    assert!(result.is_err());
+}
+
+// =============================================================================
+// Tests for enum validation
+// Verify that invalid enum values are rejected
+// =============================================================================
+
+#[test]
+fn test_instrument_rejects_invalid_asset_class() {
+    let json = r#"{"symbol": "TEST", "asset_class": "invalid"}"#;
+    let result: Result<Instrument, _> = serde_json::from_str(json);
+    assert!(result.is_err());
+}
+
+// =============================================================================
+// Tests for timestamp format validation
+// Verify that invalid timestamp formats are rejected
+// =============================================================================
+
+#[test]
+fn test_quote_rejects_invalid_timestamp_format() {
+    // Unix timestamp instead of ISO 8601
+    let json = r#"{"symbol": "TEST", "timestamp": 1706857200, "bid": 100.0, "ask": 101.0}"#;
+    let result: Result<Quote, _> = serde_json::from_str(json);
+    assert!(result.is_err());
+
+    // Invalid date format
+    let json =
+        r#"{"symbol": "TEST", "timestamp": "2026/02/02 09:00:00", "bid": 100.0, "ask": 101.0}"#;
+    let result: Result<Quote, _> = serde_json::from_str(json);
     assert!(result.is_err());
 }
 
@@ -852,36 +948,6 @@ fn test_instrument_rejects_missing_required_fields() {
 }
 
 #[test]
-fn test_instrument_rejects_invalid_currency_pattern() {
-    // T029: Instrument - invalid currency pattern (lowercase)
-    let json = r#"{
-        "symbol": "7203.T",
-        "asset_class": "equity",
-        "currency": "jpy"
-    }"#;
-    let result: Result<Instrument, _> = serde_json::from_str(json);
-    assert!(result.is_err());
-
-    // invalid currency pattern (wrong length)
-    let json = r#"{
-        "symbol": "7203.T",
-        "asset_class": "equity",
-        "currency": "JP"
-    }"#;
-    let result: Result<Instrument, _> = serde_json::from_str(json);
-    assert!(result.is_err());
-
-    // invalid exchange pattern (3 characters instead of 4)
-    let json = r#"{
-        "symbol": "7203.T",
-        "asset_class": "equity",
-        "exchange": "XJP"
-    }"#;
-    let result: Result<Instrument, _> = serde_json::from_str(json);
-    assert!(result.is_err());
-}
-
-#[test]
 fn test_orderbook_rejects_missing_required_fields() {
     // missing symbol
     let json = r#"{
@@ -920,7 +986,8 @@ fn test_ohlcv_serialization_roundtrip() {
 
     let ohlcv: Ohlcv = serde_json::from_str(json).expect("Failed to deserialize");
     let serialized = serde_json::to_string(&ohlcv).expect("Failed to serialize");
-    let roundtrip: Ohlcv = serde_json::from_str(&serialized).expect("Failed to deserialize roundtrip");
+    let roundtrip: Ohlcv =
+        serde_json::from_str(&serialized).expect("Failed to deserialize roundtrip");
 
     assert_eq!(*ohlcv.symbol, *roundtrip.symbol);
     assert_eq!(ohlcv.open, roundtrip.open);
@@ -937,11 +1004,14 @@ fn test_trade_serialization_roundtrip() {
 
     let trade: Trade = serde_json::from_str(json).expect("Failed to deserialize");
     let serialized = serde_json::to_string(&trade).expect("Failed to serialize");
-    let roundtrip: Trade = serde_json::from_str(&serialized).expect("Failed to deserialize roundtrip");
+    let roundtrip: Trade =
+        serde_json::from_str(&serialized).expect("Failed to deserialize roundtrip");
 
     assert_eq!(*trade.symbol, *roundtrip.symbol);
     assert_eq!(trade.price, roundtrip.price);
     assert_eq!(trade.size, roundtrip.size);
+    assert_eq!(trade.side.to_string(), roundtrip.side.to_string());
+    assert_eq!(trade.timestamp, roundtrip.timestamp);
 }
 
 #[test]
@@ -951,11 +1021,13 @@ fn test_orderbook_serialization_roundtrip() {
 
     let orderbook: OrderBook = serde_json::from_str(json).expect("Failed to deserialize");
     let serialized = serde_json::to_string(&orderbook).expect("Failed to serialize");
-    let roundtrip: OrderBook = serde_json::from_str(&serialized).expect("Failed to deserialize roundtrip");
+    let roundtrip: OrderBook =
+        serde_json::from_str(&serialized).expect("Failed to deserialize roundtrip");
 
     assert_eq!(*orderbook.symbol, *roundtrip.symbol);
     assert_eq!(orderbook.bids.len(), roundtrip.bids.len());
     assert_eq!(orderbook.asks.len(), roundtrip.asks.len());
+    assert_eq!(orderbook.timestamp, roundtrip.timestamp);
 }
 
 #[test]
@@ -965,9 +1037,14 @@ fn test_instrument_serialization_roundtrip() {
 
     let instrument: Instrument = serde_json::from_str(json).expect("Failed to deserialize");
     let serialized = serde_json::to_string(&instrument).expect("Failed to serialize");
-    let roundtrip: Instrument = serde_json::from_str(&serialized).expect("Failed to deserialize roundtrip");
+    let roundtrip: Instrument =
+        serde_json::from_str(&serialized).expect("Failed to deserialize roundtrip");
 
     assert_eq!(*instrument.symbol, *roundtrip.symbol);
+    assert_eq!(
+        instrument.asset_class.to_string(),
+        roundtrip.asset_class.to_string()
+    );
 }
 
 #[test]
@@ -977,21 +1054,25 @@ fn test_volume_info_serialization_roundtrip() {
 
     let volume_info: VolumeInfo = serde_json::from_str(json).expect("Failed to deserialize");
     let serialized = serde_json::to_string(&volume_info).expect("Failed to serialize");
-    let roundtrip: VolumeInfo = serde_json::from_str(&serialized).expect("Failed to deserialize roundtrip");
+    let roundtrip: VolumeInfo =
+        serde_json::from_str(&serialized).expect("Failed to deserialize roundtrip");
 
     assert_eq!(*volume_info.symbol, *roundtrip.symbol);
     assert_eq!(volume_info.volume, roundtrip.volume);
     assert_eq!(volume_info.quote_volume, roundtrip.quote_volume);
+    assert_eq!(volume_info.timestamp, roundtrip.timestamp);
 }
 
 #[test]
 fn test_expiry_info_serialization_roundtrip() {
     // T052: ExpiryInfo roundtrip
-    let json = r#"{"expiration_date":"2026-03-20","expiry":"2026-03","last_trading_day":"2026-03-19"}"#;
+    let json =
+        r#"{"expiration_date":"2026-03-20","expiry":"2026-03","last_trading_day":"2026-03-19"}"#;
 
     let expiry_info: ExpiryInfo = serde_json::from_str(json).expect("Failed to deserialize");
     let serialized = serde_json::to_string(&expiry_info).expect("Failed to serialize");
-    let roundtrip: ExpiryInfo = serde_json::from_str(&serialized).expect("Failed to deserialize roundtrip");
+    let roundtrip: ExpiryInfo =
+        serde_json::from_str(&serialized).expect("Failed to deserialize roundtrip");
 
     assert_eq!(*expiry_info.expiration_date, *roundtrip.expiration_date);
 }
@@ -1003,9 +1084,14 @@ fn test_option_info_serialization_roundtrip() {
 
     let option_info: OptionInfo = serde_json::from_str(json).expect("Failed to deserialize");
     let serialized = serde_json::to_string(&option_info).expect("Failed to serialize");
-    let roundtrip: OptionInfo = serde_json::from_str(&serialized).expect("Failed to deserialize roundtrip");
+    let roundtrip: OptionInfo =
+        serde_json::from_str(&serialized).expect("Failed to deserialize roundtrip");
 
     assert_eq!(option_info.strike_price, roundtrip.strike_price);
+    assert_eq!(
+        option_info.option_type.to_string(),
+        roundtrip.option_type.to_string()
+    );
 }
 
 #[test]
@@ -1013,10 +1099,15 @@ fn test_derivative_info_serialization_roundtrip() {
     // T054: DerivativeInfo roundtrip
     let json = r#"{"multiplier":1000.0,"settlement_currency":"JPY","settlement_method":"cash","tick_size":5.0,"underlying_symbol":"NK225","underlying_type":"index"}"#;
 
-    let derivative_info: DerivativeInfo = serde_json::from_str(json).expect("Failed to deserialize");
+    let derivative_info: DerivativeInfo =
+        serde_json::from_str(json).expect("Failed to deserialize");
     let serialized = serde_json::to_string(&derivative_info).expect("Failed to serialize");
-    let roundtrip: DerivativeInfo = serde_json::from_str(&serialized).expect("Failed to deserialize roundtrip");
+    let roundtrip: DerivativeInfo =
+        serde_json::from_str(&serialized).expect("Failed to deserialize roundtrip");
 
-    assert_eq!(*derivative_info.underlying_symbol, *roundtrip.underlying_symbol);
+    assert_eq!(
+        *derivative_info.underlying_symbol,
+        *roundtrip.underlying_symbol
+    );
     assert_eq!(derivative_info.multiplier, roundtrip.multiplier);
 }
