@@ -3,14 +3,16 @@
 //! # Usage
 //!
 //! ```bash
-//! cargo run -p marketschema-examples --example stooq_demo -- spy.us
+//! cargo run -p marketschema --example stooq_demo -- spy.us
 //! ```
+
+mod stooq;
 
 use std::env;
 use std::process::ExitCode;
 
-use marketschema_examples::stooq::{StooqAdapter, StooqError};
 use marketschema_http::HttpError;
+use stooq::{StooqAdapter, StooqError};
 
 /// Default symbol to fetch if not provided.
 const DEFAULT_SYMBOL: &str = "spy.us";

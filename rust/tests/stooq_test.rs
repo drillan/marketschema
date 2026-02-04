@@ -1,7 +1,10 @@
 //! Tests for the Stooq adapter.
 
-use marketschema_examples::stooq::{
-    STOOQ_BASE_URL, STOOQ_EXPECTED_HEADER, STOOQ_INTERVAL_DAILY, StooqAdapter, StooqError,
+mod stooq;
+
+use marketschema_adapters::BaseAdapter;
+use stooq::{
+    StooqAdapter, StooqError, STOOQ_BASE_URL, STOOQ_EXPECTED_HEADER, STOOQ_INTERVAL_DAILY,
 };
 
 mod date_to_iso_timestamp_tests {
@@ -251,7 +254,6 @@ mod http_client_tests {
 
 mod base_adapter_tests {
     use super::*;
-    use marketschema_adapters::BaseAdapter;
 
     #[test]
     fn test_source_name() {

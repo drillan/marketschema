@@ -69,6 +69,7 @@ impl StooqAdapter {
 
     /// Create a new `StooqAdapter` with the given HTTP client.
     #[must_use]
+    #[allow(dead_code)]
     pub fn with_http_client(http_client: Arc<AsyncHttpClient>) -> Self {
         Self {
             http_client: Some(http_client),
