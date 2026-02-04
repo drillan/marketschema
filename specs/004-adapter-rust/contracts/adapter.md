@@ -14,7 +14,9 @@ use crate::transforms::Transforms;
 use marketschema_models::{Quote, OHLCV, Trade, OrderBook, Instrument};
 
 /// Base trait for data source adapters.
-#[async_trait]
+///
+/// Note: `#[async_trait]` is reserved for future async methods (e.g., `fetch_data`).
+/// Current methods are synchronous but the trait is designed for async extension.
 pub trait BaseAdapter: Send + Sync {
     /// Returns the data source identifier.
     fn source_name(&self) -> &'static str;
@@ -283,11 +285,11 @@ impl BaseAdapter for MyApiAdapter {
     fn get_quote_mapping(&self) -> Vec<ModelMapping> {
         vec![
             ModelMapping::new("bid", "bid_price")
-                .with_transform(Transforms::to_float()),
+                .with_transform(Transforms::to_float_fn()),
             ModelMapping::new("ask", "ask_price")
-                .with_transform(Transforms::to_float()),
+                .with_transform(Transforms::to_float_fn()),
             ModelMapping::new("timestamp", "time")
-                .with_transform(Transforms::unix_timestamp_ms()),
+                .with_transform(Transforms::unix_timestamp_ms_fn()),
         ]
     }
 }

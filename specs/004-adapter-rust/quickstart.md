@@ -71,7 +71,7 @@ fn main() {
 
         for mapping in adapter.get_quote_mapping() {
             match mapping.apply(&raw_data) {
-                Ok(value) => println!("{}: {}", mapping.target_field(), value),
+                Ok(value) => println!("{}: {}", mapping.target_field, value),
                 Err(e) => eprintln!("Error: {}", e),
             }
         }
