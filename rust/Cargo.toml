@@ -18,3 +18,4 @@ chrono = { version = "0.4", features = ["serde"] }
 regress = "0.10"
 
 [dev-dependencies]
+trybuild = "1.0"
