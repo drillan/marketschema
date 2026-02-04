@@ -58,12 +58,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 - Type-safe deserialization with serde
 - Unknown fields are rejected (`#[serde(deny_unknown_fields)]`)
 - Builder pattern for struct construction
-- String newtypes with validation (e.g., `QuoteSymbol`)
+- String newtypes with validation (each type has its own Symbol newtype, e.g., `QuoteSymbol`, `TradeSymbol`)
 
 ## Documentation
 
-- [Quickstart Guide](../specs/002-data-model-rust/quickstart.md)
-- [Code Generation Guide](../docs/code-generation.md)
+- [Quickstart Guide](https://github.com/drillan/marketschema/blob/main/specs/002-data-model-rust/quickstart.md)
+- [Code Generation Guide](https://github.com/drillan/marketschema/blob/main/docs/code-generation.md)
 
 ## License
 

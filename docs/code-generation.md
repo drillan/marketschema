@@ -108,6 +108,8 @@ npx json-refs resolve "$schema" | \
         else . end)' > "$OUTPUT"
 ```
 
+> **Note**: The `walk` function is a built-in since jq 1.6.
+
 **How it works**:
 
 1. `json-refs resolve` resolves all `$ref` references

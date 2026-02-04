@@ -5,7 +5,7 @@ edition = "2021"
 authors = ["driller <eleshis@gmail.com>"]
 description = "Unified market data schema for financial applications"
 license = "MIT"
-repository = "https://github.com/example/marketschema"
+repository = "https://github.com/drillan/marketschema"
 readme = "README.md"
 
 [lib]
