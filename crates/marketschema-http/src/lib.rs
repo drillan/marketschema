@@ -2,9 +2,8 @@
 //!
 //! This crate provides a robust HTTP client layer for building market data adapters.
 //! Features include connection pooling, configurable timeouts, automatic retries
-//! with exponential backoff, rate limiting via token bucket algorithm, and clean
-//! error handling.
-//! Planned features include response caching.
+//! with exponential backoff, rate limiting via token bucket algorithm, response caching,
+//! and clean error handling.
 //!
 //! # Example
 //!

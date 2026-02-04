@@ -148,9 +148,9 @@ use std::collections::HashSet;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let retry_config = RetryConfig::new()
-        .max_retries(5)
-        .backoff_factor(1.0)
-        .jitter(0.2);
+        .with_max_retries(5)
+        .with_backoff_factor(1.0)
+        .with_jitter(0.2);
 
     let client = AsyncHttpClientBuilder::new()
         .retry(retry_config)

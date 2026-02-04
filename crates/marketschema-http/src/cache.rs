@@ -1,4 +1,4 @@
-//! LRU cache for HTTP responses (US5).
+//! Response cache for HTTP responses using TinyLFU eviction policy (US5).
 //!
 //! This module provides [`ResponseCache`] for caching HTTP responses.
 //! It uses the moka library which implements a TinyLFU-based eviction policy
@@ -28,7 +28,7 @@ use std::time::Duration;
 
 use moka::future::Cache;
 
-/// LRU cache for HTTP responses using moka.
+/// Response cache for HTTP responses using moka.
 ///
 /// Uses moka's TinyLFU eviction policy for optimal hit rates.
 /// TTL and max capacity are managed by moka internally.

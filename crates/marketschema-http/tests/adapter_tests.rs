@@ -40,6 +40,44 @@ mod trait_definition_tests {
         fn assert_send_sync<T: BaseAdapter + Send + Sync>() {}
         // The trait bound BaseAdapter: Send + Sync should be satisfied by implementors
     }
+
+    /// Test that BaseAdapter can be used as a trait object (dyn BaseAdapter).
+    /// This verifies object safety at runtime, complementing the compile-time check.
+    #[test]
+    fn test_trait_object_usage() {
+        struct SimpleAdapter {
+            http_client: OnceLock<Arc<AsyncHttpClient>>,
+        }
+
+        impl SimpleAdapter {
+            fn new() -> Self {
+                Self {
+                    http_client: OnceLock::new(),
+                }
+            }
+        }
+
+        impl BaseAdapter for SimpleAdapter {
+            fn http_client(&self) -> Arc<AsyncHttpClient> {
+                self.http_client
+                    .get_or_init(|| {
+                        Arc::new(
+                            AsyncHttpClientBuilder::new()
+                                .build()
+                                .expect("Default HTTP client configuration should not fail"),
+                        )
+                    })
+                    .clone()
+            }
+        }
+
+        // Use as a trait object
+        let adapter: Arc<dyn BaseAdapter> = Arc::new(SimpleAdapter::new());
+        let client = adapter.http_client();
+
+        // Verify we got a valid client
+        assert!(Arc::strong_count(&client) >= 1);
+    }
 }
 
 // =============================================================================
@@ -70,7 +108,11 @@ mod lazy_initialization_tests {
             self.http_client
                 .get_or_init(|| {
                     self.init_count.fetch_add(1, Ordering::SeqCst);
-                    Arc::new(AsyncHttpClientBuilder::new().build().unwrap())
+                    Arc::new(
+                        AsyncHttpClientBuilder::new()
+                            .build()
+                            .expect("Default HTTP client configuration should not fail"),
+                    )
                 })
                 .clone()
         }
@@ -104,6 +146,39 @@ mod lazy_initialization_tests {
 
         // Both should point to the same Arc
         assert!(Arc::ptr_eq(&client1, &client2));
+    }
+
+    /// Test that concurrent first access from multiple threads only initializes once.
+    /// This verifies OnceLock's thread-safety guarantees for the lazy initialization pattern.
+    #[tokio::test]
+    async fn test_concurrent_first_access_initializes_once() {
+        use tokio::task::JoinSet;
+
+        let init_count = Arc::new(AtomicUsize::new(0));
+        let adapter = Arc::new(LazyAdapter::new(init_count.clone()));
+
+        let mut join_set = JoinSet::new();
+
+        // 10 tasks attempt to access http_client() concurrently
+        for _ in 0..10 {
+            let adapter_clone = adapter.clone();
+            join_set.spawn(async move { adapter_clone.http_client() });
+        }
+
+        // Collect all results
+        let mut clients = Vec::new();
+        while let Some(result) = join_set.join_next().await {
+            clients.push(result.expect("Task should not panic"));
+        }
+
+        // Initialization should have occurred exactly once
+        assert_eq!(init_count.load(Ordering::SeqCst), 1);
+
+        // All returned clients should be the same instance
+        let first_client = &clients[0];
+        for client in &clients[1..] {
+            assert!(Arc::ptr_eq(first_client, client));
+        }
     }
 }
 
@@ -266,7 +341,13 @@ mod drop_behavior_tests {
         impl BaseAdapter for DropTracker {
             fn http_client(&self) -> Arc<AsyncHttpClient> {
                 self.http_client
-                    .get_or_init(|| Arc::new(AsyncHttpClientBuilder::new().build().unwrap()))
+                    .get_or_init(|| {
+                        Arc::new(
+                            AsyncHttpClientBuilder::new()
+                                .build()
+                                .expect("Default HTTP client configuration should not fail"),
+                        )
+                    })
                     .clone()
             }
         }
@@ -321,7 +402,13 @@ mod integration_tests {
     impl BaseAdapter for ExampleExchangeAdapter {
         fn http_client(&self) -> Arc<AsyncHttpClient> {
             self.http_client
-                .get_or_init(|| Arc::new(AsyncHttpClientBuilder::new().build().unwrap()))
+                .get_or_init(|| {
+                    Arc::new(
+                        AsyncHttpClientBuilder::new()
+                            .build()
+                            .expect("Default HTTP client configuration should not fail"),
+                    )
+                })
                 .clone()
         }
     }
@@ -384,5 +471,43 @@ mod integration_tests {
         for result in results {
             assert!(result.is_ok());
         }
+    }
+
+    /// Test that HTTP errors are properly propagated through the adapter.
+    #[tokio::test]
+    async fn test_adapter_propagates_http_errors() {
+        let mock_server = MockServer::start().await;
+
+        Mock::given(method("GET"))
+            .and(path("/api/ticker/INVALID"))
+            .respond_with(ResponseTemplate::new(404).set_body_string("Not Found"))
+            .mount(&mock_server)
+            .await;
+
+        let adapter = ExampleExchangeAdapter::new(&mock_server.uri());
+        let result = adapter.get_ticker("INVALID").await;
+
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(
+            matches!(err, marketschema_http::HttpError::Status { status_code, .. } if status_code == 404)
+        );
+    }
+
+    /// Test that network errors are properly propagated.
+    #[tokio::test]
+    async fn test_adapter_propagates_connection_errors() {
+        // Use a non-routable address to trigger connection error
+        let adapter = ExampleExchangeAdapter::new("http://192.0.2.1:1");
+        let result = adapter.get_ticker("BTCUSD").await;
+
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        // Connection error or timeout expected
+        assert!(matches!(
+            err,
+            marketschema_http::HttpError::Connection { .. }
+                | marketschema_http::HttpError::Timeout { .. }
+        ));
     }
 }

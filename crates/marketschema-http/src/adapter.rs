@@ -33,7 +33,11 @@
 //!     fn http_client(&self) -> Arc<AsyncHttpClient> {
 //!         self.http_client
 //!             .get_or_init(|| {
-//!                 Arc::new(AsyncHttpClientBuilder::new().build().unwrap())
+//!                 Arc::new(
+//!                     AsyncHttpClientBuilder::new()
+//!                         .build()
+//!                         .expect("Default HTTP client configuration should not fail"),
+//!                 )
 //!             })
 //!             .clone()
 //!     }
@@ -120,7 +124,11 @@ use crate::AsyncHttpClient;
 ///     fn http_client(&self) -> Arc<AsyncHttpClient> {
 ///         self.http_client
 ///             .get_or_init(|| {
-///                 Arc::new(AsyncHttpClientBuilder::new().build().unwrap())
+///                 Arc::new(
+///                     AsyncHttpClientBuilder::new()
+///                         .build()
+///                         .expect("Default HTTP client configuration should not fail"),
+///                 )
 ///             })
 ///             .clone()
 ///     }
@@ -139,6 +147,20 @@ pub trait BaseAdapter: Send + Sync {
     /// to this method should return clones of the same `Arc`, not new client
     /// instances.
     ///
+    /// # Performance Considerations
+    ///
+    /// Each call to `http_client()` returns a clone of the `Arc`. While `Arc::clone()`
+    /// is inexpensive (just an atomic increment), for hot paths where the client is
+    /// accessed frequently, consider caching the `Arc` locally:
+    ///
+    /// ```rust,ignore
+    /// // Cache the client for multiple requests
+    /// let client = adapter.http_client();
+    /// for url in urls {
+    ///     client.get_json(url).await?;
+    /// }
+    /// ```
+    ///
     /// # Example
     ///
     /// ```rust
@@ -153,7 +175,11 @@ pub trait BaseAdapter: Send + Sync {
     ///     fn http_client(&self) -> Arc<AsyncHttpClient> {
     ///         self.http_client
     ///             .get_or_init(|| {
-    ///                 Arc::new(AsyncHttpClientBuilder::new().build().unwrap())
+    ///                 Arc::new(
+    ///                     AsyncHttpClientBuilder::new()
+    ///                         .build()
+    ///                         .expect("Default HTTP client configuration should not fail"),
+    ///                 )
     ///             })
     ///             .clone()
     ///     }
