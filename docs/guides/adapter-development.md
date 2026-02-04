@@ -561,3 +561,339 @@ __all__ = ["{Source}Adapter"]
 
 - [HTTP クライアント使用ガイド](http-client.md) - HTTP クライアントの詳細
 - [モデル実装ガイド](models.md) - pydantic モデルの使い方
+
+---
+
+# Rust アダプター開発ガイド
+
+外部データソースから marketschema モデルへのデータ変換アダプターを Rust で開発する方法を解説する。
+
+## 概要
+
+marketschema-adapters クレートは、外部データソース（取引所 API、データプロバイダなど）から取得したデータを marketschema の標準モデル（Quote, Ohlcv, Trade など）に変換するためのフレームワークを提供する。
+
+このガイドの対象読者:
+
+- 新しいデータソースの Rust アダプターを開発する開発者
+- 既存アダプターをメンテナンスする開発者
+- データソース統合パターンを理解したい開発者
+
+## 主要コンポーネント
+
+| コンポーネント | 説明 |
+|--------------|------|
+| `BaseAdapter` | すべてのアダプターが実装する基底 trait |
+| `ModelMapping` | フィールドマッピング設定（ビルダーパターン） |
+| `Transforms` | データ変換の共通関数群 |
+| `AdapterRegistry` | スレッドセーフなグローバルアダプターレジストリ |
+
+## BaseAdapter trait の実装
+
+### 基本構造
+
+```rust
+use marketschema_adapters::{BaseAdapter, ModelMapping, Transforms};
+use async_trait::async_trait;
+
+struct MyApiAdapter;
+
+#[async_trait]
+impl BaseAdapter for MyApiAdapter {
+    fn source_name(&self) -> &'static str {
+        "myapi"
+    }
+
+    fn get_quote_mapping(&self) -> Vec<ModelMapping> {
+        vec![
+            ModelMapping::new("bid", "ticker.bid")
+                .with_transform(Transforms::to_float_fn()),
+            ModelMapping::new("ask", "ticker.ask")
+                .with_transform(Transforms::to_float_fn()),
+            ModelMapping::new("timestamp", "ticker.time")
+                .with_transform(Transforms::unix_timestamp_ms_fn()),
+        ]
+    }
+
+    fn get_ohlcv_mapping(&self) -> Vec<ModelMapping> {
+        vec![
+            ModelMapping::new("open", "open")
+                .with_transform(Transforms::to_float_fn()),
+            ModelMapping::new("high", "high")
+                .with_transform(Transforms::to_float_fn()),
+            ModelMapping::new("low", "low")
+                .with_transform(Transforms::to_float_fn()),
+            ModelMapping::new("close", "close")
+                .with_transform(Transforms::to_float_fn()),
+            ModelMapping::new("volume", "volume")
+                .with_transform(Transforms::to_float_fn()),
+            ModelMapping::new("timestamp", "time")
+                .with_transform(Transforms::iso_timestamp_fn()),
+        ]
+    }
+}
+```
+
+### 利用可能なマッピングメソッド
+
+| メソッド | 対象モデル |
+|---------|-----------|
+| `get_quote_mapping()` | Quote |
+| `get_ohlcv_mapping()` | Ohlcv |
+| `get_trade_mapping()` | Trade |
+| `get_orderbook_mapping()` | OrderBook |
+| `get_instrument_mapping()` | Instrument |
+
+各メソッドはデフォルトで空の `Vec<ModelMapping>` を返す。サポートするモデルのみオーバーライドする。
+
+## ModelMapping
+
+### ビルダーパターン
+
+```rust
+use marketschema_adapters::{ModelMapping, Transforms};
+use serde_json::json;
+
+// 基本的なマッピング（必須フィールド）
+let mapping = ModelMapping::new("bid", "ticker.bid_price")
+    .with_transform(Transforms::to_float_fn());
+
+// デフォルト値とオプショナル設定
+let mapping = ModelMapping::new("bid_size", "ticker.bid_qty")
+    .with_transform(Transforms::to_float_fn())
+    .with_default(json!(0.0))
+    .optional();
+```
+
+### ドット記法によるネストアクセス
+
+`source_field` にドット記法を使用すると、ネストした JSON から値を取得できる:
+
+```rust
+// {"response": {"data": {"price": 100.0}}} から価格を取得
+let mapping = ModelMapping::new("price", "response.data.price")
+    .with_transform(Transforms::to_float_fn());
+```
+
+### メソッド一覧
+
+| メソッド | 説明 |
+|---------|------|
+| `new(target, source)` | 新しいマッピングを作成（`required=true`） |
+| `with_transform(fn)` | 変換関数を設定 |
+| `with_default(value)` | デフォルト値を設定 |
+| `optional()` | `required=false` に設定 |
+| `apply(data)` | ソースデータから値を取得・変換 |
+
+## Transforms
+
+### 利用可能な変換関数
+
+| 関数 | 説明 | 入力例 | 出力例 |
+|-----|------|-------|-------|
+| `to_float_fn()` | 文字列/数値を f64 に変換 | `"123.45"` | `123.45` |
+| `to_int_fn()` | 文字列/数値を i64 に変換 | `"123"` | `123` |
+| `unix_timestamp_ms_fn()` | ミリ秒タイムスタンプを ISO 8601 に変換 | `1704067200000` | `"2024-01-01T00:00:00Z"` |
+| `unix_timestamp_sec_fn()` | 秒タイムスタンプを ISO 8601 に変換 | `1704067200` | `"2024-01-01T00:00:00Z"` |
+| `iso_timestamp_fn()` | ISO 8601 文字列を UTC に正規化 | `"2024-01-01T09:00:00+09:00"` | `"2024-01-01T00:00:00Z"` |
+| `jst_to_utc_fn()` | JST タイムスタンプを UTC に変換 | `"2024-01-01T09:00:00"` | `"2024-01-01T00:00:00Z"` |
+| `side_from_string_fn()` | 文字列を `"buy"`/`"sell"` に正規化 | `"BUY"` | `"buy"` |
+| `uppercase_fn()` | 大文字に変換 | `"abc"` | `"ABC"` |
+| `lowercase_fn()` | 小文字に変換 | `"ABC"` | `"abc"` |
+
+### side_from_string の変換ルール
+
+| 入力（大文字小文字不問） | 出力 |
+|----------------------|-----|
+| `buy`, `bid`, `b` | `"buy"` |
+| `sell`, `ask`, `offer`, `s`, `a` | `"sell"` |
+
+> **Note**: `long`/`short` は意図的にサポートされていない。これらはポジション方向を表し、約定の売買方向とは異なる意味を持つため。
+
+## AdapterRegistry
+
+### アダプターの登録と取得
+
+```rust
+use marketschema_adapters::{BaseAdapter, AdapterRegistry, ModelMapping};
+use async_trait::async_trait;
+
+struct MyAdapter;
+
+#[async_trait]
+impl BaseAdapter for MyAdapter {
+    fn source_name(&self) -> &'static str {
+        "myapi"
+    }
+}
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // アダプターを登録
+    AdapterRegistry::register("myapi", || Box::new(MyAdapter))?;
+
+    // 登録済みアダプター一覧を取得
+    let adapters = AdapterRegistry::list_adapters()?;
+    println!("Registered adapters: {:?}", adapters);
+
+    // アダプターを取得
+    if let Some(adapter) = AdapterRegistry::get("myapi")? {
+        println!("Source: {}", adapter.source_name());
+    }
+
+    // 登録済みか確認
+    if AdapterRegistry::is_registered("myapi")? {
+        println!("myapi is registered");
+    }
+
+    Ok(())
+}
+```
+
+### エラーハンドリング
+
+```rust
+use marketschema_adapters::{AdapterRegistry, AdapterError};
+
+fn register_adapter() -> Result<(), AdapterError> {
+    // 重複登録はエラー
+    AdapterRegistry::register("myapi", || Box::new(MyAdapter))?;
+
+    match AdapterRegistry::register("myapi", || Box::new(MyAdapter)) {
+        Err(AdapterError::DuplicateRegistration(name)) => {
+            println!("Adapter '{}' is already registered", name);
+        }
+        _ => {}
+    }
+
+    Ok(())
+}
+```
+
+## 完全な実装例
+
+### JSON API アダプター
+
+```rust
+use marketschema_adapters::{
+    BaseAdapter, ModelMapping, Transforms, AdapterRegistry,
+};
+use marketschema_http::{AsyncHttpClient, AsyncHttpClientBuilder, HttpError};
+use async_trait::async_trait;
+use std::sync::Arc;
+
+const MYAPI_BASE_URL: &str = "https://api.example.com";
+
+struct MyApiAdapter {
+    http_client: Arc<AsyncHttpClient>,
+}
+
+impl MyApiAdapter {
+    pub fn new() -> Result<Self, HttpError> {
+        let http_client = Arc::new(AsyncHttpClientBuilder::new().build()?);
+        Ok(Self { http_client })
+    }
+
+    pub async fn fetch_ticker(&self, symbol: &str) -> Result<serde_json::Value, HttpError> {
+        let url = format!("{}/ticker/{}", MYAPI_BASE_URL, symbol);
+        self.http_client.get_json(&url).await
+    }
+}
+
+#[async_trait]
+impl BaseAdapter for MyApiAdapter {
+    fn source_name(&self) -> &'static str {
+        "myapi"
+    }
+
+    fn get_quote_mapping(&self) -> Vec<ModelMapping> {
+        vec![
+            ModelMapping::new("bid", "data.bid_price")
+                .with_transform(Transforms::to_float_fn()),
+            ModelMapping::new("ask", "data.ask_price")
+                .with_transform(Transforms::to_float_fn()),
+            ModelMapping::new("bid_size", "data.bid_qty")
+                .with_transform(Transforms::to_float_fn())
+                .optional(),
+            ModelMapping::new("ask_size", "data.ask_qty")
+                .with_transform(Transforms::to_float_fn())
+                .optional(),
+            ModelMapping::new("timestamp", "data.timestamp")
+                .with_transform(Transforms::unix_timestamp_ms_fn()),
+        ]
+    }
+}
+```
+
+## エラー型
+
+### AdapterError
+
+```rust
+pub enum AdapterError {
+    /// 一般的なアダプターエラー
+    General(String),
+    /// 重複登録エラー
+    DuplicateRegistration(String),
+    /// マッピングエラー
+    Mapping(MappingError),
+    /// 変換エラー
+    Transform(TransformError),
+}
+```
+
+### MappingError
+
+フィールドマッピングに失敗した場合のエラー。
+
+```rust
+// 必須フィールドが見つからない場合
+if let Err(MappingError { message }) = mapping.apply(&data) {
+    eprintln!("Mapping failed: {}", message);
+}
+```
+
+### TransformError
+
+値の変換に失敗した場合のエラー。
+
+```rust
+// 変換関数がエラーを返した場合
+if let Err(TransformError { message }) = Transforms::to_float(&value) {
+    eprintln!("Transform failed: {}", message);
+}
+```
+
+## スレッドセーフ性
+
+- `BaseAdapter` trait は `Send + Sync` を要求する
+- `AdapterRegistry` は `RwLock` で保護されたグローバルシングルトン
+- `TransformFn` は `Arc<dyn Fn(...) + Send + Sync>` として定義される
+- 複数スレッドから安全にアダプターを登録・取得可能
+
+## チェックリスト
+
+新しい Rust アダプターを作成する際のチェックリスト:
+
+### 実装
+
+- [ ] `BaseAdapter` trait を実装
+- [ ] `source_name()` で一意のデータソース識別子を返す
+- [ ] 必要な `get_*_mapping()` メソッドをオーバーライド
+- [ ] すべてのパブリック関数に型ヒントを付与
+
+### エラーハンドリング
+
+- [ ] 変換関数は失敗時に `TransformError` を返す
+- [ ] サイレント障害を避け、エラーを伝播させる
+- [ ] エラーメッセージに元の値を含める
+
+### テスト
+
+- [ ] マッピングのユニットテストを作成
+- [ ] 変換関数の正常系・異常系をテスト
+- [ ] モックを使用して HTTP 通信をテスト
+
+## 参照
+
+- [HTTP クライアント使用ガイド（Rust）](#rust-http-クライアント使用ガイド) - Rust HTTP クライアントの詳細
+- [モデル実装ガイド（Rust）](#rust-モデル実装ガイド) - Rust モデルの使い方
+- [004-adapter-rust spec](../specs/004-adapter-rust/spec.md) - 詳細仕様
