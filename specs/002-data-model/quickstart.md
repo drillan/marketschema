@@ -28,7 +28,7 @@ npm install -g ajv-cli
 ### スキーマファイルの場所
 
 ```
-src/marketschema/schemas/
+schemas/
 ├── definitions.json    # 共通型定義
 ├── quote.json          # Quote スキーマ
 ├── ohlcv.json          # OHLCV スキーマ
@@ -46,15 +46,15 @@ src/marketschema/schemas/
 # Quote データのバリデーション
 ajv validate \
   --spec=draft2020 \
-  -s src/marketschema/schemas/quote.json \
-  -r "src/marketschema/schemas/definitions.json" \
+  -s schemas/quote.json \
+  -r "schemas/definitions.json" \
   -d sample_quote.json
 
 # OHLCV データのバリデーション
 ajv validate \
   --spec=draft2020 \
-  -s src/marketschema/schemas/ohlcv.json \
-  -r "src/marketschema/schemas/definitions.json" \
+  -s schemas/ohlcv.json \
+  -r "schemas/definitions.json" \
   -d sample_ohlcv.json
 ```
 
@@ -121,7 +121,7 @@ uv tool install datamodel-code-generator
 
 # モデルの生成
 datamodel-codegen \
-  --input src/marketschema/schemas/ \
+  --input schemas/ \
   --input-file-type jsonschema \
   --output-model-type pydantic_v2.BaseModel \
   --target-python-version 3.13 \
@@ -135,7 +135,7 @@ datamodel-codegen \
   --reuse-model \
   --reuse-scope tree \
   --disable-timestamp \
-  --output src/marketschema/models/
+  --output python/src/marketschema/models/
 ```
 
 ### 生成されたモデルの使用
@@ -172,7 +172,7 @@ except ValidationError as e:
 cargo install cargo-typify
 
 # スキーマのバンドル（外部参照の解決）
-npx json-refs resolve src/marketschema/schemas/quote.json > bundled_quote.json
+npx json-refs resolve schemas/quote.json > bundled_quote.json
 
 # Rust コードの生成
 cargo typify bundled_quote.json --output src/types/quote.rs

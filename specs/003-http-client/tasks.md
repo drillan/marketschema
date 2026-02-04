@@ -15,7 +15,7 @@
 
 ## Path Conventions
 
-- **Single project**: `src/marketschema/`, `tests/` at repository root
+- **Single project**: `python/src/marketschema/`, `python/tests/` at repository root
 
 ---
 
@@ -23,10 +23,10 @@
 
 **Purpose**: Project initialization and HTTP module structure
 
-- [x] T001 Create HTTP module directory structure per plan.md (`src/marketschema/http/`)
+- [x] T001 Create HTTP module directory structure per plan.md (`python/src/marketschema/http/`)
 - [x] T002 Add httpx>=0.27.0 to project dependencies (pyproject.toml)
 - [x] T003 [P] Add pytest-asyncio>=0.24.0, respx>=0.21.0 to dev dependencies (pyproject.toml)
-- [x] T004 [P] Create `src/marketschema/http/__init__.py` with public API exports
+- [x] T004 [P] Create `python/src/marketschema/http/__init__.py` with public API exports
 
 ---
 
@@ -36,8 +36,8 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [x] T005 Create base exception `HttpError` in `src/marketschema/http/exceptions.py`
-- [x] T006 [P] Create `tests/unit/http/__init__.py` test directory structure
+- [x] T005 Create base exception `HttpError` in `python/src/marketschema/http/exceptions.py`
+- [x] T006 [P] Create `python/tests/unit/http/__init__.py` test directory structure
 - [x] T007 Verify httpx and respx are installed and importable
 
 **Checkpoint**: Foundation ready - user story implementation can now begin
@@ -54,22 +54,22 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [x] T008 [P] [US1] Unit test for AsyncHttpClient constructor in `tests/unit/http/test_client.py`
-- [x] T009 [P] [US1] Unit test for `get_json()` method in `tests/unit/http/test_client.py`
-- [x] T010 [P] [US1] Unit test for `get_text()` method in `tests/unit/http/test_client.py`
-- [x] T011 [P] [US1] Unit test for `get()` method in `tests/unit/http/test_client.py`
-- [x] T012 [P] [US1] Unit test for context manager (`async with`) in `tests/unit/http/test_client.py`
+- [x] T008 [P] [US1] Unit test for AsyncHttpClient constructor in `python/tests/unit/http/test_client.py`
+- [x] T009 [P] [US1] Unit test for `get_json()` method in `python/tests/unit/http/test_client.py`
+- [x] T010 [P] [US1] Unit test for `get_text()` method in `python/tests/unit/http/test_client.py`
+- [x] T011 [P] [US1] Unit test for `get()` method in `python/tests/unit/http/test_client.py`
+- [x] T012 [P] [US1] Unit test for context manager (`async with`) in `python/tests/unit/http/test_client.py`
 
 ### Implementation for User Story 1
 
-- [x] T013 [US1] Define constants (DEFAULT_TIMEOUT_SECONDS, DEFAULT_MAX_CONNECTIONS) in `src/marketschema/http/client.py`
-- [x] T014 [US1] Implement AsyncHttpClient constructor with timeout, max_connections, headers in `src/marketschema/http/client.py`
-- [x] T015 [US1] Implement `get()` method returning raw httpx.Response in `src/marketschema/http/client.py`
-- [x] T016 [US1] Implement `get_json()` method returning dict in `src/marketschema/http/client.py`
-- [x] T017 [US1] Implement `get_text()` method returning str in `src/marketschema/http/client.py`
-- [x] T018 [US1] Implement `close()` method in `src/marketschema/http/client.py`
-- [x] T019 [US1] Implement `__aenter__` and `__aexit__` for context manager in `src/marketschema/http/client.py`
-- [x] T020 [US1] Update `src/marketschema/http/__init__.py` to export AsyncHttpClient
+- [x] T013 [US1] Define constants (DEFAULT_TIMEOUT_SECONDS, DEFAULT_MAX_CONNECTIONS) in `python/src/marketschema/http/client.py`
+- [x] T014 [US1] Implement AsyncHttpClient constructor with timeout, max_connections, headers in `python/src/marketschema/http/client.py`
+- [x] T015 [US1] Implement `get()` method returning raw httpx.Response in `python/src/marketschema/http/client.py`
+- [x] T016 [US1] Implement `get_json()` method returning dict in `python/src/marketschema/http/client.py`
+- [x] T017 [US1] Implement `get_text()` method returning str in `python/src/marketschema/http/client.py`
+- [x] T018 [US1] Implement `close()` method in `python/src/marketschema/http/client.py`
+- [x] T019 [US1] Implement `__aenter__` and `__aexit__` for context manager in `python/src/marketschema/http/client.py`
+- [x] T020 [US1] Update `python/src/marketschema/http/__init__.py` to export AsyncHttpClient
 
 **Checkpoint**: User Story 1 should be fully functional - basic HTTP requests work with context manager
 
@@ -85,23 +85,23 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [x] T021 [P] [US2] Unit test for HttpError base exception in `tests/unit/http/test_exceptions.py`
-- [x] T022 [P] [US2] Unit test for HttpTimeoutError in `tests/unit/http/test_exceptions.py`
-- [x] T023 [P] [US2] Unit test for HttpConnectionError in `tests/unit/http/test_exceptions.py`
-- [x] T024 [P] [US2] Unit test for HttpStatusError in `tests/unit/http/test_exceptions.py`
-- [x] T025 [P] [US2] Unit test for HttpRateLimitError in `tests/unit/http/test_exceptions.py`
-- [x] T026 [P] [US2] Unit test for `__cause__` exception chaining in `tests/unit/http/test_exceptions.py`
-- [x] T027 [P] [US2] Unit test for client raising correct exceptions in `tests/unit/http/test_client.py`
+- [x] T021 [P] [US2] Unit test for HttpError base exception in `python/tests/unit/http/test_exceptions.py`
+- [x] T022 [P] [US2] Unit test for HttpTimeoutError in `python/tests/unit/http/test_exceptions.py`
+- [x] T023 [P] [US2] Unit test for HttpConnectionError in `python/tests/unit/http/test_exceptions.py`
+- [x] T024 [P] [US2] Unit test for HttpStatusError in `python/tests/unit/http/test_exceptions.py`
+- [x] T025 [P] [US2] Unit test for HttpRateLimitError in `python/tests/unit/http/test_exceptions.py`
+- [x] T026 [P] [US2] Unit test for `__cause__` exception chaining in `python/tests/unit/http/test_exceptions.py`
+- [x] T027 [P] [US2] Unit test for client raising correct exceptions in `python/tests/unit/http/test_client.py`
 
 ### Implementation for User Story 2
 
-- [x] T028 [P] [US2] Implement HttpTimeoutError in `src/marketschema/http/exceptions.py`
-- [x] T029 [P] [US2] Implement HttpConnectionError in `src/marketschema/http/exceptions.py`
-- [x] T030 [P] [US2] Implement HttpStatusError with status_code, response_body in `src/marketschema/http/exceptions.py`
-- [x] T031 [US2] Implement HttpRateLimitError with retry_after in `src/marketschema/http/exceptions.py`
-- [x] T032 [US2] Update AsyncHttpClient to catch httpx exceptions and raise custom exceptions in `src/marketschema/http/client.py`
-- [x] T033 [US2] Ensure all exceptions preserve original exception via `__cause__` in `src/marketschema/http/exceptions.py`
-- [x] T034 [US2] Update `src/marketschema/http/__init__.py` to export all exception classes
+- [x] T028 [P] [US2] Implement HttpTimeoutError in `python/src/marketschema/http/exceptions.py`
+- [x] T029 [P] [US2] Implement HttpConnectionError in `python/src/marketschema/http/exceptions.py`
+- [x] T030 [P] [US2] Implement HttpStatusError with status_code, response_body in `python/src/marketschema/http/exceptions.py`
+- [x] T031 [US2] Implement HttpRateLimitError with retry_after in `python/src/marketschema/http/exceptions.py`
+- [x] T032 [US2] Update AsyncHttpClient to catch httpx exceptions and raise custom exceptions in `python/src/marketschema/http/client.py`
+- [x] T033 [US2] Ensure all exceptions preserve original exception via `__cause__` in `python/src/marketschema/http/exceptions.py`
+- [x] T034 [US2] Update `python/src/marketschema/http/__init__.py` to export all exception classes
 
 **Checkpoint**: User Story 2 complete - all HTTP errors are properly wrapped in custom exceptions
 
@@ -117,20 +117,20 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [x] T035 [P] [US3] Unit test for RetryMiddleware constructor in `tests/unit/http/test_middleware.py`
-- [x] T036 [P] [US3] Unit test for `should_retry()` method in `tests/unit/http/test_middleware.py`
-- [x] T037 [P] [US3] Unit test for `get_delay()` exponential backoff in `tests/unit/http/test_middleware.py`
-- [x] T038 [P] [US3] Unit test for jitter randomization in `tests/unit/http/test_middleware.py`
-- [x] T039 [US3] Unit test for AsyncHttpClient with retry middleware integration in `tests/unit/http/test_client.py`
+- [x] T035 [P] [US3] Unit test for RetryMiddleware constructor in `python/tests/unit/http/test_middleware.py`
+- [x] T036 [P] [US3] Unit test for `should_retry()` method in `python/tests/unit/http/test_middleware.py`
+- [x] T037 [P] [US3] Unit test for `get_delay()` exponential backoff in `python/tests/unit/http/test_middleware.py`
+- [x] T038 [P] [US3] Unit test for jitter randomization in `python/tests/unit/http/test_middleware.py`
+- [x] T039 [US3] Unit test for AsyncHttpClient with retry middleware integration in `python/tests/unit/http/test_client.py`
 
 ### Implementation for User Story 3
 
-- [x] T040 [US3] Define retry constants (DEFAULT_MAX_RETRIES, DEFAULT_BACKOFF_FACTOR, DEFAULT_JITTER, RETRYABLE_STATUS_CODES, NON_RETRYABLE_STATUS_CODES) in `src/marketschema/http/middleware.py`
-- [x] T041 [US3] Implement RetryMiddleware constructor in `src/marketschema/http/middleware.py`
-- [x] T042 [US3] Implement `should_retry()` method in `src/marketschema/http/middleware.py`
-- [x] T043 [US3] Implement `get_delay()` method with exponential backoff and jitter in `src/marketschema/http/middleware.py`
-- [x] T044 [US3] Integrate RetryMiddleware into AsyncHttpClient request flow in `src/marketschema/http/client.py`
-- [x] T045 [US3] Update `src/marketschema/http/__init__.py` to export RetryMiddleware
+- [x] T040 [US3] Define retry constants (DEFAULT_MAX_RETRIES, DEFAULT_BACKOFF_FACTOR, DEFAULT_JITTER, RETRYABLE_STATUS_CODES, NON_RETRYABLE_STATUS_CODES) in `python/src/marketschema/http/middleware.py`
+- [x] T041 [US3] Implement RetryMiddleware constructor in `python/src/marketschema/http/middleware.py`
+- [x] T042 [US3] Implement `should_retry()` method in `python/src/marketschema/http/middleware.py`
+- [x] T043 [US3] Implement `get_delay()` method with exponential backoff and jitter in `python/src/marketschema/http/middleware.py`
+- [x] T044 [US3] Integrate RetryMiddleware into AsyncHttpClient request flow in `python/src/marketschema/http/client.py`
+- [x] T045 [US3] Update `python/src/marketschema/http/__init__.py` to export RetryMiddleware
 
 **Checkpoint**: User Story 3 complete - automatic retries work with exponential backoff
 
@@ -146,20 +146,20 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [x] T046 [P] [US4] Unit test for RateLimitMiddleware constructor in `tests/unit/http/test_middleware.py`
-- [x] T047 [P] [US4] Unit test for `acquire()` blocking behavior in `tests/unit/http/test_middleware.py`
-- [x] T048 [P] [US4] Unit test for `try_acquire()` non-blocking in `tests/unit/http/test_middleware.py`
-- [x] T049 [P] [US4] Unit test for burst size handling in `tests/unit/http/test_middleware.py`
-- [x] T050 [US4] Unit test for AsyncHttpClient with rate limit middleware integration in `tests/unit/http/test_client.py`
+- [x] T046 [P] [US4] Unit test for RateLimitMiddleware constructor in `python/tests/unit/http/test_middleware.py`
+- [x] T047 [P] [US4] Unit test for `acquire()` blocking behavior in `python/tests/unit/http/test_middleware.py`
+- [x] T048 [P] [US4] Unit test for `try_acquire()` non-blocking in `python/tests/unit/http/test_middleware.py`
+- [x] T049 [P] [US4] Unit test for burst size handling in `python/tests/unit/http/test_middleware.py`
+- [x] T050 [US4] Unit test for AsyncHttpClient with rate limit middleware integration in `python/tests/unit/http/test_client.py`
 
 ### Implementation for User Story 4
 
-- [x] T051 [US4] Implement RateLimitMiddleware constructor with token bucket state in `src/marketschema/http/middleware.py`
-- [x] T052 [US4] Implement token refill logic in `src/marketschema/http/middleware.py`
-- [x] T053 [US4] Implement `acquire()` async method (blocking) in `src/marketschema/http/middleware.py`
-- [x] T054 [US4] Implement `try_acquire()` method (non-blocking) in `src/marketschema/http/middleware.py`
-- [x] T055 [US4] Integrate RateLimitMiddleware into AsyncHttpClient request flow in `src/marketschema/http/client.py`
-- [x] T056 [US4] Update `src/marketschema/http/__init__.py` to export RateLimitMiddleware
+- [x] T051 [US4] Implement RateLimitMiddleware constructor with token bucket state in `python/src/marketschema/http/middleware.py`
+- [x] T052 [US4] Implement token refill logic in `python/src/marketschema/http/middleware.py`
+- [x] T053 [US4] Implement `acquire()` async method (blocking) in `python/src/marketschema/http/middleware.py`
+- [x] T054 [US4] Implement `try_acquire()` method (non-blocking) in `python/src/marketschema/http/middleware.py`
+- [x] T055 [US4] Integrate RateLimitMiddleware into AsyncHttpClient request flow in `python/src/marketschema/http/client.py`
+- [x] T056 [US4] Update `python/src/marketschema/http/__init__.py` to export RateLimitMiddleware
 
 **Checkpoint**: User Story 4 complete - rate limiting prevents excessive requests
 
@@ -175,23 +175,23 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [x] T057 [P] [US5] Unit test for ResponseCache constructor in `tests/unit/http/test_cache.py`
-- [x] T058 [P] [US5] Unit test for `get()` and `set()` methods in `tests/unit/http/test_cache.py`
-- [x] T059 [P] [US5] Unit test for TTL expiration in `tests/unit/http/test_cache.py`
-- [x] T060 [P] [US5] Unit test for LRU eviction in `tests/unit/http/test_cache.py`
-- [x] T061 [P] [US5] Unit test for `delete()` and `clear()` methods in `tests/unit/http/test_cache.py`
-- [x] T062 [US5] Unit test for AsyncHttpClient with cache integration in `tests/unit/http/test_client.py`
+- [x] T057 [P] [US5] Unit test for ResponseCache constructor in `python/tests/unit/http/test_cache.py`
+- [x] T058 [P] [US5] Unit test for `get()` and `set()` methods in `python/tests/unit/http/test_cache.py`
+- [x] T059 [P] [US5] Unit test for TTL expiration in `python/tests/unit/http/test_cache.py`
+- [x] T060 [P] [US5] Unit test for LRU eviction in `python/tests/unit/http/test_cache.py`
+- [x] T061 [P] [US5] Unit test for `delete()` and `clear()` methods in `python/tests/unit/http/test_cache.py`
+- [x] T062 [US5] Unit test for AsyncHttpClient with cache integration in `python/tests/unit/http/test_client.py`
 
 ### Implementation for User Story 5
 
-- [x] T063 [US5] Define cache constants (DEFAULT_CACHE_MAX_SIZE, DEFAULT_CACHE_TTL_SECONDS) in `src/marketschema/http/cache.py`
-- [x] T064 [US5] Implement CacheEntry dataclass in `src/marketschema/http/cache.py`
-- [x] T065 [US5] Implement ResponseCache constructor with OrderedDict in `src/marketschema/http/cache.py`
-- [x] T066 [US5] Implement `get()` method with TTL check in `src/marketschema/http/cache.py`
-- [x] T067 [US5] Implement `set()` method with LRU eviction in `src/marketschema/http/cache.py`
-- [x] T068 [US5] Implement `delete()` and `clear()` methods in `src/marketschema/http/cache.py`
-- [x] T069 [US5] Integrate ResponseCache into AsyncHttpClient request flow in `src/marketschema/http/client.py`
-- [x] T070 [US5] Update `src/marketschema/http/__init__.py` to export ResponseCache
+- [x] T063 [US5] Define cache constants (DEFAULT_CACHE_MAX_SIZE, DEFAULT_CACHE_TTL_SECONDS) in `python/src/marketschema/http/cache.py`
+- [x] T064 [US5] Implement CacheEntry dataclass in `python/src/marketschema/http/cache.py`
+- [x] T065 [US5] Implement ResponseCache constructor with OrderedDict in `python/src/marketschema/http/cache.py`
+- [x] T066 [US5] Implement `get()` method with TTL check in `python/src/marketschema/http/cache.py`
+- [x] T067 [US5] Implement `set()` method with LRU eviction in `python/src/marketschema/http/cache.py`
+- [x] T068 [US5] Implement `delete()` and `clear()` methods in `python/src/marketschema/http/cache.py`
+- [x] T069 [US5] Integrate ResponseCache into AsyncHttpClient request flow in `python/src/marketschema/http/client.py`
+- [x] T070 [US5] Update `python/src/marketschema/http/__init__.py` to export ResponseCache
 
 **Checkpoint**: User Story 5 complete - response caching reduces redundant requests
 
@@ -207,19 +207,19 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [x] T071 [P] [US6] Unit test for `http_client` property lazy initialization in `tests/unit/adapters/test_base.py`
-- [x] T072 [P] [US6] Unit test for BaseAdapter context manager in `tests/unit/adapters/test_base.py`
-- [x] T073 [P] [US6] Unit test for custom http_client injection in `tests/unit/adapters/test_base.py`
-- [x] T074 [US6] Integration test for BaseAdapter with HTTP client in `tests/integration/test_http_adapter.py`
+- [x] T071 [P] [US6] Unit test for `http_client` property lazy initialization in `python/tests/unit/adapters/test_base.py`
+- [x] T072 [P] [US6] Unit test for BaseAdapter context manager in `python/tests/unit/adapters/test_base.py`
+- [x] T073 [P] [US6] Unit test for custom http_client injection in `python/tests/unit/adapters/test_base.py`
+- [x] T074 [US6] Integration test for BaseAdapter with HTTP client in `python/tests/integration/test_http_adapter.py`
 
 ### Implementation for User Story 6
 
-- [x] T075 [US6] Add `_http_client` attribute to BaseAdapter in `src/marketschema/adapters/base.py`
-- [x] T076 [US6] Add `http_client` property with lazy initialization in `src/marketschema/adapters/base.py`
-- [x] T077 [US6] Update BaseAdapter constructor to accept optional http_client in `src/marketschema/adapters/base.py`
-- [x] T078 [US6] Implement `close()` method in BaseAdapter to close HTTP client in `src/marketschema/adapters/base.py`
-- [x] T079 [US6] Implement `__aenter__` and `__aexit__` for BaseAdapter in `src/marketschema/adapters/base.py`
-- [x] T080 [US6] Update `src/marketschema/exceptions.py` to reference HttpError (optional, for documentation)
+- [x] T075 [US6] Add `_http_client` attribute to BaseAdapter in `python/src/marketschema/adapters/base.py`
+- [x] T076 [US6] Add `http_client` property with lazy initialization in `python/src/marketschema/adapters/base.py`
+- [x] T077 [US6] Update BaseAdapter constructor to accept optional http_client in `python/src/marketschema/adapters/base.py`
+- [x] T078 [US6] Implement `close()` method in BaseAdapter to close HTTP client in `python/src/marketschema/adapters/base.py`
+- [x] T079 [US6] Implement `__aenter__` and `__aexit__` for BaseAdapter in `python/src/marketschema/adapters/base.py`
+- [x] T080 [US6] Update `python/src/marketschema/exceptions.py` to reference HttpError (optional, for documentation)
 
 **Checkpoint**: User Story 6 complete - BaseAdapter integrates seamlessly with HTTP client
 
@@ -231,9 +231,9 @@
 
 - [x] T081 [P] Run all tests and verify 90%+ coverage on HTTP module
 - [x] T082 [P] Run ruff check and format on all new files
-- [x] T083 [P] Run mypy on src/marketschema/http/ and verify no type errors
+- [x] T083 [P] Run mypy on python/src/marketschema/http/ and verify no type errors
 - [x] T084 Validate quickstart.md examples work correctly
-- [x] T085 Update `src/marketschema/__init__.py` to optionally expose http module
+- [x] T085 Update `python/src/marketschema/__init__.py` to optionally expose http module
 
 ---
 

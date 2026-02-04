@@ -160,7 +160,7 @@ make generate-rust
 
 ```bash
 # Bundle a single schema
-cd src/marketschema/schemas
+cd schemas
 npx json-refs resolve quote.json | \
     jq 'walk(if type == "object" and has("unevaluatedProperties")
         then .additionalProperties = .unevaluatedProperties | del(.unevaluatedProperties)

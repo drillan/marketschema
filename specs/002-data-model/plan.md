@@ -105,7 +105,7 @@ docs/
 └── glossary.md                     # Term definitions
 ```
 
-**Structure Decision**: Single project 構造を採用。JSON Schema ファイルは `src/marketschema/schemas/` に配置し、パッケージデータとして配布可能にする。
+**Structure Decision**: Single project 構造を採用。JSON Schema ファイルは `schemas/` に配置し、パッケージデータとして配布可能にする。
 
 ## Constitution Check (Post-Design)
 

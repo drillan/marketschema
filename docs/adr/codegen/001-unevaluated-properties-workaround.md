@@ -94,7 +94,7 @@ typify issue #579 の対応を待つ。
 1. **意味的等価性**: バンドル後のスキーマでは `$ref` が解決されているため、`additionalProperties` と `unevaluatedProperties` の挙動は実質的に同じになる
 
 2. **関心の分離**:
-   - 元のスキーマ（`src/marketschema/schemas/`）: Draft 2020-12 準拠
+   - 元のスキーマ（`schemas/`）: Draft 2020-12 準拠
    - バンドル済みスキーマ（`rust/bundled/`）: typify 互換
 
 3. **変更の局所化**: `scripts/bundle_schemas.sh` のみ修正すればよい

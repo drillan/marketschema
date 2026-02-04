@@ -54,7 +54,7 @@ specs/003-http-client/
 ### Source Code (repository root)
 
 ```text
-src/marketschema/
+python/src/marketschema/
 ├── __init__.py
 ├── exceptions.py              # EXTEND: HTTP exceptions reference
 ├── adapters/
@@ -86,7 +86,7 @@ tests/
     └── test_http_adapter.py  # NEW: E2E tests
 ```
 
-**Structure Decision**: 既存の単一プロジェクト構造を維持し、`src/marketschema/http/` モジュールを新規追加
+**Structure Decision**: 既存の単一プロジェクト構造を維持し、`python/src/marketschema/http/` モジュールを新規追加
 
 ## Complexity Tracking
 

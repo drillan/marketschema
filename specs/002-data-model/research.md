@@ -128,7 +128,7 @@ https://marketschema.example.com/schemas/<name>
 ### ファイル構成
 
 ```
-src/marketschema/schemas/
+schemas/
 ├── definitions.json    # 共通型定義
 ├── quote.json          # Quote スキーマ
 ├── ohlcv.json          # OHLCV スキーマ

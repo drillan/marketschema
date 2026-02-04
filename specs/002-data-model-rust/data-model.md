@@ -22,7 +22,7 @@ JSON Schema から typify で自動生成される Rust struct の概要。す�
 | bid_size | Option<f64> | ❌ | 買い気配の数量 |
 | ask_size | Option<f64> | ❌ | 売り気配の数量 |
 
-**Source Schema**: `src/marketschema/schemas/quote.json`
+**Source Schema**: `schemas/quote.json`
 
 ---
 
@@ -41,7 +41,7 @@ JSON Schema から typify で自動生成される Rust struct の概要。す�
 | volume | f64 | ✅ | 出来高 |
 | quote_volume | Option<f64> | ❌ | 売買代金（決済通貨建ての出来高） |
 
-**Source Schema**: `src/marketschema/schemas/ohlcv.json`
+**Source Schema**: `schemas/ohlcv.json`
 
 ---
 
@@ -57,7 +57,7 @@ JSON Schema から typify で自動生成される Rust struct の概要。す�
 | size | f64 | ✅ | 約定数量 |
 | side | Side | ✅ | 売買方向 (buy/sell) |
 
-**Source Schema**: `src/marketschema/schemas/trade.json`
+**Source Schema**: `schemas/trade.json`
 
 ---
 
@@ -72,7 +72,7 @@ JSON Schema から typify で自動生成される Rust struct の概要。す�
 | bids | Vec<PriceLevel> | ✅ | 買い板（価格降順） |
 | asks | Vec<PriceLevel> | ✅ | 売り板（価格昇順） |
 
-**Source Schema**: `src/marketschema/schemas/orderbook.json`
+**Source Schema**: `schemas/orderbook.json`
 
 ---
 
@@ -85,7 +85,7 @@ JSON Schema から typify で自動生成される Rust struct の概要。す�
 | price | f64 | ✅ | 気配値 |
 | size | f64 | ✅ | 数量 |
 
-**Source Schema**: `src/marketschema/schemas/definitions.json#/$defs/PriceLevel`
+**Source Schema**: `schemas/definitions.json#/$defs/PriceLevel`
 
 ---
 
@@ -100,7 +100,7 @@ JSON Schema から typify で自動生成される Rust struct の概要。す�
 | currency | Currency (newtype) | ✅ | 通貨コード (ISO 4217) |
 | exchange | Option<Exchange> (newtype) | ❌ | 取引所 (ISO 10383) |
 
-**Source Schema**: `src/marketschema/schemas/instrument.json`
+**Source Schema**: `schemas/instrument.json`
 
 ---
 
@@ -113,7 +113,7 @@ JSON Schema から typify で自動生成される Rust struct の概要。す�
 | volume | Option<f64> | ❌ | 出来高 |
 | quote_volume | Option<f64> | ❌ | 売買代金 |
 
-**Source Schema**: `src/marketschema/schemas/volume_info.json`
+**Source Schema**: `schemas/volume_info.json`
 
 ---
 
@@ -128,7 +128,7 @@ JSON Schema から typify で自動生成される Rust struct の概要。す�
 | last_trading_day | Option<Date> (newtype) | ❌ | 取引可能な最終日 |
 | settlement_date | Option<Date> (newtype) | ❌ | 決済日 |
 
-**Source Schema**: `src/marketschema/schemas/expiry_info.json`
+**Source Schema**: `schemas/expiry_info.json`
 
 ---
 
@@ -142,7 +142,7 @@ JSON Schema から typify で自動生成される Rust struct の概要。す�
 | option_type | OptionType | ✅ | オプションタイプ（call/put） |
 | exercise_style | Option<ExerciseStyle> | ❌ | 行使スタイル（american/european/bermudan） |
 
-**Source Schema**: `src/marketschema/schemas/option_info.json`
+**Source Schema**: `schemas/option_info.json`
 
 ---
 
@@ -167,7 +167,7 @@ JSON Schema から typify で自動生成される Rust struct の概要。す�
 | settlement_method | Option<SettlementMethod> | ❌ | 決済方法 |
 | settlement_currency | Option<Currency> (newtype) | ❌ | 決済通貨 |
 
-**Source Schema**: `src/marketschema/schemas/derivative_info.json`
+**Source Schema**: `schemas/derivative_info.json`
 
 ## Enum Definitions
 

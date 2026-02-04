@@ -6,7 +6,7 @@
 
 ## 概要
 
-examples で共通利用可能な HTTP クライアントレイヤーを `src/marketschema/http/` に追加し、
+examples で共通利用可能な HTTP クライアントレイヤーを `python/src/marketschema/http/` に追加し、
 プロジェクトの正式機能として提供する。
 
 ## 背景
@@ -37,7 +37,7 @@ YAGNI 原則に従い、Phase 1 でコア機能を実装し、Phase 2 以降で�
 ### ディレクトリ構造
 
 ```
-src/marketschema/
+python/src/marketschema/
 ├── http/                          # NEW MODULE
 │   ├── __init__.py               # Public API exports
 │   ├── client.py                 # AsyncHttpClient (Phase 1)
@@ -54,7 +54,7 @@ src/marketschema/
 
 #### Phase 1: AsyncHttpClient（コア機能）
 
-**ファイル**: `src/marketschema/http/client.py`
+**ファイル**: `python/src/marketschema/http/client.py`
 
 ```python
 from typing import Any
@@ -95,7 +95,7 @@ class AsyncHttpClient:
 
 #### Phase 1: HTTP Exceptions
 
-**ファイル**: `src/marketschema/http/exceptions.py`
+**ファイル**: `python/src/marketschema/http/exceptions.py`
 
 ```python
 from marketschema.exceptions import MarketSchemaError
@@ -119,7 +119,7 @@ class HttpRateLimitError(HttpStatusError):
 
 #### Phase 2: Middleware（リトライ・レート制限）
 
-**ファイル**: `src/marketschema/http/middleware.py`
+**ファイル**: `python/src/marketschema/http/middleware.py`
 
 ```python
 class RetryMiddleware:
@@ -144,7 +144,7 @@ class RateLimitMiddleware:
 
 #### Phase 3: Cache
 
-**ファイル**: `src/marketschema/http/cache.py`
+**ファイル**: `python/src/marketschema/http/cache.py`
 
 ```python
 class ResponseCache:
@@ -239,7 +239,7 @@ dev = [
 ### 単体テスト
 
 ```python
-# tests/unit/http/test_client.py
+# python/tests/unit/http/test_client.py
 import pytest
 import respx
 import httpx
@@ -273,7 +273,7 @@ async def test_get_json_timeout():
 ### 統合テスト
 
 ```python
-# tests/integration/test_http_adapter.py
+# python/tests/integration/test_http_adapter.py
 @pytest.mark.asyncio
 async def test_bitbank_adapter_with_http_client():
     adapter = BitbankAdapter()

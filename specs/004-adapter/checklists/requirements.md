@@ -57,7 +57,7 @@
 
 - All items pass validation
 - Specification defines interface contracts for adapter framework
-- Python implementation is complete and tested in `src/marketschema/adapters/`
+- Python implementation is complete and tested in `python/src/marketschema/adapters/`
 - Sample adapters exist in `examples/` (bitbank, stooq, stockanalysis)
 - Rust implementation is planned for future work
 - Responsibility separation: 002-data-model defines scope, 004-adapter defines contracts

@@ -516,10 +516,10 @@ marketschema は Schema First アプローチを採用している。
 
 ### スキーマファイルの場所
 
-スキーマファイルは `src/marketschema/schemas/` に配置されている。主要なスキーマには以下が含まれる（新規追加により増える可能性あり）:
+スキーマファイルは `schemas/` に配置されている。主要なスキーマには以下が含まれる（新規追加により増える可能性あり）:
 
 ```text
-src/marketschema/schemas/
+schemas/
 ├── definitions.json   # 共通型定義
 ├── quote.json         # Quote モデル
 ├── ohlcv.json         # OHLCV モデル

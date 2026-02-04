@@ -255,7 +255,7 @@ HTTP クライアントを簡単に利用したい。
 ## Module Structure
 
 ```
-src/marketschema/http/
+python/src/marketschema/http/
 ├── __init__.py       # Public exports
 ├── client.py         # AsyncHttpClient
 ├── exceptions.py     # Exception classes

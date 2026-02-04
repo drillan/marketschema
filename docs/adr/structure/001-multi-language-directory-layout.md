@@ -35,7 +35,7 @@ marketschema/
 | 場所 | 用途 | `$ref` 形式 |
 |------|------|-------------|
 | `specs/.../contracts/` | 仕様定義 | 絶対URI |
-| `src/marketschema/schemas/` | Python実装 | 相対パス |
+| `schemas/` | Python実装 | 相対パス |
 | `rust/bundled/` | Rust実装 | インライン化（$ref解決済み） |
 
 ## Decision Drivers
@@ -110,7 +110,7 @@ marketschema/
 
 ```
 marketschema/
-├── src/marketschema/schemas/
+├── schemas/
 ├── rust/bundled/
 ├── specs/.../contracts/
 └── ...
@@ -138,7 +138,7 @@ marketschema/
 3. **ビルドパイプラインの明確化**:
    ```
    schemas/ (SSoT)
-      ├──[コピー/変換]──> python/src/marketschema/schemas/
+      ├──[コピー/変換]──> python/schemas/
       └──[バンドル]─────> rust/bundled/
    ```
 
@@ -152,9 +152,9 @@ marketschema/
 # 1. ルートに schemas/ を作成
 mkdir schemas
 
-# 2. src/marketschema/schemas/ の内容を schemas/ に移動
+# 2. schemas/ の内容を schemas/ に移動
 #    （相対$refを使用しているため、これをSSoTとする）
-mv src/marketschema/schemas/*.json schemas/
+mv schemas/*.json schemas/
 
 # 3. specs/002-data-model/contracts/ は schemas/ を参照するよう更新
 #    または、contracts/ の絶対URI版を schemas/ から自動生成
@@ -178,7 +178,7 @@ mv pyproject.toml python/
    - 入力パスを `schemas/` に変更
    - 出力パスを `rust/bundled/` に維持
 
-2. Python ビルド時に `schemas/` から `python/src/marketschema/schemas/` にコピーするステップを追加
+2. Python ビルド時に `schemas/` から `python/schemas/` にコピーするステップを追加
    - または、`schemas/` をPythonパッケージのデータとして直接参照
 
 ### Phase 4: 設定ファイルの更新

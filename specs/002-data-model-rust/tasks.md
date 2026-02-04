@@ -18,7 +18,7 @@
 - **Rust crate**: `rust/src/`, `rust/tests/`
 - **Scripts**: `scripts/`
 - **Bundled schemas**: `rust/bundled/`
-- **Source schemas**: `src/marketschema/schemas/`
+- **Source schemas**: `schemas/`
 
 ---
 
