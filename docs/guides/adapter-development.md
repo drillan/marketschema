@@ -833,6 +833,8 @@ pub enum AdapterError {
     General(String),
     /// 重複登録エラー
     DuplicateRegistration(String),
+    /// ロック毒化エラー（内部の RwLock が panic で毒化した場合）
+    LockPoisoned(String),
     /// マッピングエラー
     Mapping(MappingError),
     /// 変換エラー
@@ -894,6 +896,6 @@ if let Err(TransformError { message }) = Transforms::to_float(&value) {
 
 ## 参照
 
-- [HTTP クライアント使用ガイド（Rust）](#rust-http-クライアント使用ガイド) - Rust HTTP クライアントの詳細
-- [モデル実装ガイド（Rust）](#rust-モデル実装ガイド) - Rust モデルの使い方
+- [HTTP クライアント使用ガイド（Rust）](http-client.md#rust-http-クライアント使用ガイド) - Rust HTTP クライアントの詳細
+- [モデル実装ガイド（Rust）](models.md#rust-モデル実装ガイド) - Rust モデルの使い方
 - [004-adapter-rust spec](../specs/004-adapter-rust/spec.md) - 詳細仕様

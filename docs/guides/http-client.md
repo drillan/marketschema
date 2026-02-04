@@ -505,9 +505,9 @@ println!("Status: {}", response.status());
 use marketschema_http::{AsyncHttpClientBuilder, RetryConfig};
 
 let retry = RetryConfig::new()
-    .max_retries(3)
-    .backoff_factor(0.5)
-    .jitter(0.1);
+    .with_max_retries(3)
+    .with_backoff_factor(0.5)
+    .with_jitter(0.1);
 
 let client = AsyncHttpClientBuilder::new()
     .retry(retry)
@@ -707,12 +707,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-## BaseAdapter での使用
+## アダプターでの使用例
 
-アダプター実装では、`BaseAdapter` trait が HTTP クライアントを管理する:
+アダプター実装では、HTTP クライアントを内部で保持して使用する:
 
 ```rust
-use marketschema_http::{BaseAdapter, AsyncHttpClient};
+use marketschema_adapters::BaseAdapter;
+use marketschema_http::AsyncHttpClient;
 use std::sync::Arc;
 
 struct MyAdapter {
@@ -724,15 +725,17 @@ impl BaseAdapter for MyAdapter {
         "my_source"
     }
 
-    fn http_client(&self) -> Arc<AsyncHttpClient> {
-        Arc::clone(&self.http_client)
-    }
+    // get_quote_mapping(), get_ohlcv_mapping() などを必要に応じて実装
 }
 
 impl MyAdapter {
-    async fn fetch_data(&self, symbol: &str) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
+    pub fn new(http_client: Arc<AsyncHttpClient>) -> Self {
+        Self { http_client }
+    }
+
+    pub async fn fetch_data(&self, symbol: &str) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
         let url = format!("https://api.example.com/{}", symbol);
-        let data = self.http_client().get_json(&url).await?;
+        let data = self.http_client.get_json(&url).await?;
         Ok(data)
     }
 }
@@ -740,6 +743,6 @@ impl MyAdapter {
 
 ## 参照
 
-- [アダプター開発ガイド（Rust）](#rust-アダプター開発ガイド) - Rust アダプター実装の詳細
-- [モデル実装ガイド（Rust）](#rust-モデル実装ガイド) - Rust モデルの使い方
+- [アダプター開発ガイド（Rust）](adapter-development.md#rust-アダプター開発ガイド) - Rust アダプター実装の詳細
+- [モデル実装ガイド（Rust）](models.md#rust-モデル実装ガイド) - Rust モデルの使い方
 - [003-http-client-rust spec](../specs/003-http-client-rust/spec.md) - 詳細仕様
