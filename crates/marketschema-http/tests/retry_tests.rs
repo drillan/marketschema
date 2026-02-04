@@ -508,7 +508,9 @@ async fn test_retry_on_429_with_retry_after_header() {
 
 #[tokio::test]
 async fn test_retry_config_clone() {
-    let config = RetryConfig::new().with_max_retries(5).with_backoff_factor(1.0);
+    let config = RetryConfig::new()
+        .with_max_retries(5)
+        .with_backoff_factor(1.0);
     let cloned = config.clone();
 
     assert_eq!(cloned.max_retries(), 5);

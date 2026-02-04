@@ -2,8 +2,9 @@
 //!
 //! This crate provides a robust HTTP client layer for building market data adapters.
 //! Features include connection pooling, configurable timeouts, automatic retries
-//! with exponential backoff, and clean error handling.
-//! Planned features include rate limiting and response caching.
+//! with exponential backoff, rate limiting via token bucket algorithm, and clean
+//! error handling.
+//! Planned features include response caching.
 //!
 //! # Example
 //!
@@ -77,10 +78,8 @@ pub const HTTP_STATUS_GATEWAY_TIMEOUT: u16 = 504;
 
 mod client;
 mod error;
+mod rate_limit;
 mod retry;
-
-// Phase 2 (US4)
-// mod rate_limit;  // RateLimiter
 
 // Phase 3 (US5)
 // mod cache;       // ResponseCache
@@ -91,10 +90,8 @@ mod retry;
 
 pub use client::{AsyncHttpClient, AsyncHttpClientBuilder};
 pub use error::HttpError;
+pub use rate_limit::RateLimiter;
 pub use retry::RetryConfig;
-
-// Phase 2 (US4)
-// pub use rate_limit::RateLimiter;
 
 // Phase 3
 // pub use cache::ResponseCache;

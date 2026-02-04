@@ -19,6 +19,7 @@
 //! # }
 //! ```
 
+use std::sync::Arc;
 use std::time::Duration;
 
 use reqwest::header::HeaderMap;
@@ -26,6 +27,7 @@ use reqwest::Response;
 use serde_json::Value;
 
 use crate::error::HttpError;
+use crate::rate_limit::RateLimiter;
 use crate::retry::RetryConfig;
 use crate::{DEFAULT_MAX_CONNECTIONS, DEFAULT_TIMEOUT_SECS, HTTP_STATUS_TOO_MANY_REQUESTS};
 
@@ -58,6 +60,7 @@ use crate::{DEFAULT_MAX_CONNECTIONS, DEFAULT_TIMEOUT_SECS, HTTP_STATUS_TOO_MANY_
 pub struct AsyncHttpClient {
     inner: reqwest::Client,
     retry_config: Option<RetryConfig>,
+    rate_limiter: Option<Arc<RateLimiter>>,
 }
 
 impl AsyncHttpClient {
@@ -149,6 +152,9 @@ impl AsyncHttpClient {
     /// If `retry_config` is set, this method will retry failed requests
     /// according to the configuration. Otherwise, it executes once.
     ///
+    /// If `rate_limiter` is set, this method will wait for a token before
+    /// sending the request.
+    ///
     /// Retries are triggered for:
     /// - HTTP status codes in the `retry_statuses` set (e.g., 429, 500, 502, 503, 504)
     /// - Timeout errors (transient network issues)
@@ -161,6 +167,11 @@ impl AsyncHttpClient {
         let mut attempt = 0u32;
 
         loop {
+            // Apply rate limiting before each request attempt
+            if let Some(ref limiter) = self.rate_limiter {
+                limiter.acquire().await;
+            }
+
             let send_result = self.inner.get(url).query(params).send().await;
 
             // Handle connection/timeout errors separately to enable retry
@@ -546,6 +557,7 @@ pub struct AsyncHttpClientBuilder {
     max_connections: usize,
     default_headers: HeaderMap,
     retry_config: Option<RetryConfig>,
+    rate_limiter: Option<Arc<RateLimiter>>,
 }
 
 impl AsyncHttpClientBuilder {
@@ -562,6 +574,7 @@ impl AsyncHttpClientBuilder {
             max_connections: DEFAULT_MAX_CONNECTIONS,
             default_headers: HeaderMap::new(),
             retry_config: None,
+            rate_limiter: None,
         }
     }
 
@@ -632,6 +645,34 @@ impl AsyncHttpClientBuilder {
         self
     }
 
+    /// Set rate limiter for controlling request rate.
+    ///
+    /// The rate limiter uses a token bucket algorithm to prevent exceeding
+    /// API rate limits. When set, each request will wait for a token before
+    /// being sent.
+    ///
+    /// # Arguments
+    ///
+    /// * `limiter` - The rate limiter wrapped in `Arc` for sharing.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use marketschema_http::{AsyncHttpClientBuilder, RateLimiter};
+    /// use std::sync::Arc;
+    ///
+    /// let limiter = Arc::new(RateLimiter::new(10.0, 20));
+    /// let client = AsyncHttpClientBuilder::new()
+    ///     .rate_limit(limiter)
+    ///     .build()
+    ///     .unwrap();
+    /// ```
+    #[must_use]
+    pub fn rate_limit(mut self, limiter: Arc<RateLimiter>) -> Self {
+        self.rate_limiter = Some(limiter);
+        self
+    }
+
     /// Build the [`AsyncHttpClient`].
     ///
     /// # Errors
@@ -651,6 +692,7 @@ impl AsyncHttpClientBuilder {
         Ok(AsyncHttpClient {
             inner: client,
             retry_config: self.retry_config,
+            rate_limiter: self.rate_limiter,
         })
     }
 }
