@@ -382,11 +382,14 @@ mod rate_limit_tests {
         assert!(result.is_err());
         let err = result.unwrap_err();
 
-        // HTTP-date format is complex to parse; for now we accept None
-        // Implementation can choose to parse it or ignore
+        // HTTP-date format is complex to parse; we return None for retry_after
+        // RFC 7231 allows HTTP-date, but we only support delta-seconds format
         match &err {
-            HttpError::RateLimit { .. } => {
-                // Successfully identified as rate limit error
+            HttpError::RateLimit { retry_after, .. } => {
+                assert!(
+                    retry_after.is_none(),
+                    "HTTP-date format should result in None retry_after"
+                );
             }
             _ => panic!("Expected HttpError::RateLimit, got {:?}", err),
         }
@@ -403,6 +406,213 @@ mod rate_limit_tests {
             source: None,
         };
         assert!(err.is_retryable(), "Rate limit errors should be retryable");
+    }
+
+    // =========================================================================
+    // T048-T053: Retry-After header edge cases
+    // =========================================================================
+
+    #[tokio::test]
+    async fn test_429_with_empty_retry_after_header() {
+        let mock_server = MockServer::start().await;
+
+        Mock::given(method("GET"))
+            .and(path("/api/empty-retry"))
+            .respond_with(
+                ResponseTemplate::new(429)
+                    .set_body_string("Too Many Requests")
+                    .insert_header("Retry-After", ""),
+            )
+            .mount(&mock_server)
+            .await;
+
+        let client = AsyncHttpClientBuilder::new().build().unwrap();
+        let url = format!("{}/api/empty-retry", mock_server.uri());
+
+        let result = client.get_json(&url).await;
+
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+
+        match &err {
+            HttpError::RateLimit { retry_after, .. } => {
+                assert!(
+                    retry_after.is_none(),
+                    "Empty Retry-After header should result in None"
+                );
+            }
+            _ => panic!("Expected HttpError::RateLimit, got {:?}", err),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_429_with_zero_retry_after() {
+        let mock_server = MockServer::start().await;
+
+        Mock::given(method("GET"))
+            .and(path("/api/zero-retry"))
+            .respond_with(
+                ResponseTemplate::new(429)
+                    .set_body_string("Too Many Requests")
+                    .insert_header("Retry-After", "0"),
+            )
+            .mount(&mock_server)
+            .await;
+
+        let client = AsyncHttpClientBuilder::new().build().unwrap();
+        let url = format!("{}/api/zero-retry", mock_server.uri());
+
+        let result = client.get_json(&url).await;
+
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+
+        match &err {
+            HttpError::RateLimit { retry_after, .. } => {
+                assert_eq!(
+                    *retry_after,
+                    Some(Duration::from_secs(0)),
+                    "Zero Retry-After should be valid"
+                );
+            }
+            _ => panic!("Expected HttpError::RateLimit, got {:?}", err),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_429_with_whitespace_padded_retry_after() {
+        let mock_server = MockServer::start().await;
+
+        Mock::given(method("GET"))
+            .and(path("/api/whitespace-retry"))
+            .respond_with(
+                ResponseTemplate::new(429)
+                    .set_body_string("Too Many Requests")
+                    .insert_header("Retry-After", "  60  "),
+            )
+            .mount(&mock_server)
+            .await;
+
+        let client = AsyncHttpClientBuilder::new().build().unwrap();
+        let url = format!("{}/api/whitespace-retry", mock_server.uri());
+
+        let result = client.get_json(&url).await;
+
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+
+        match &err {
+            HttpError::RateLimit { retry_after, .. } => {
+                assert_eq!(
+                    *retry_after,
+                    Some(Duration::from_secs(60)),
+                    "Whitespace-padded Retry-After should be trimmed and parsed"
+                );
+            }
+            _ => panic!("Expected HttpError::RateLimit, got {:?}", err),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_429_with_negative_retry_after() {
+        let mock_server = MockServer::start().await;
+
+        Mock::given(method("GET"))
+            .and(path("/api/negative-retry"))
+            .respond_with(
+                ResponseTemplate::new(429)
+                    .set_body_string("Too Many Requests")
+                    .insert_header("Retry-After", "-60"),
+            )
+            .mount(&mock_server)
+            .await;
+
+        let client = AsyncHttpClientBuilder::new().build().unwrap();
+        let url = format!("{}/api/negative-retry", mock_server.uri());
+
+        let result = client.get_json(&url).await;
+
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+
+        match &err {
+            HttpError::RateLimit { retry_after, .. } => {
+                assert!(
+                    retry_after.is_none(),
+                    "Negative Retry-After should result in None"
+                );
+            }
+            _ => panic!("Expected HttpError::RateLimit, got {:?}", err),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_429_with_overflow_retry_after() {
+        let mock_server = MockServer::start().await;
+
+        // u64::MAX + 1 = 18446744073709551616
+        Mock::given(method("GET"))
+            .and(path("/api/overflow-retry"))
+            .respond_with(
+                ResponseTemplate::new(429)
+                    .set_body_string("Too Many Requests")
+                    .insert_header("Retry-After", "18446744073709551616"),
+            )
+            .mount(&mock_server)
+            .await;
+
+        let client = AsyncHttpClientBuilder::new().build().unwrap();
+        let url = format!("{}/api/overflow-retry", mock_server.uri());
+
+        let result = client.get_json(&url).await;
+
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+
+        match &err {
+            HttpError::RateLimit { retry_after, .. } => {
+                assert!(
+                    retry_after.is_none(),
+                    "Overflow Retry-After should result in None"
+                );
+            }
+            _ => panic!("Expected HttpError::RateLimit, got {:?}", err),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_429_with_decimal_retry_after() {
+        let mock_server = MockServer::start().await;
+
+        Mock::given(method("GET"))
+            .and(path("/api/decimal-retry"))
+            .respond_with(
+                ResponseTemplate::new(429)
+                    .set_body_string("Too Many Requests")
+                    .insert_header("Retry-After", "60.5"),
+            )
+            .mount(&mock_server)
+            .await;
+
+        let client = AsyncHttpClientBuilder::new().build().unwrap();
+        let url = format!("{}/api/decimal-retry", mock_server.uri());
+
+        let result = client.get_json(&url).await;
+
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+
+        match &err {
+            HttpError::RateLimit { retry_after, .. } => {
+                // RFC 7231 specifies delta-seconds as non-negative integer
+                // Decimal values are invalid
+                assert!(
+                    retry_after.is_none(),
+                    "Decimal Retry-After should result in None (RFC 7231 requires integer)"
+                );
+            }
+            _ => panic!("Expected HttpError::RateLimit, got {:?}", err),
+        }
     }
 }
 
