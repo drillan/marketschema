@@ -16,14 +16,14 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
+use chrono::NaiveDate;
 use marketschema_adapters::{BaseAdapter, ModelMapping, Transforms};
 use marketschema_http::{AsyncHttpClient, AsyncHttpClientBuilder};
 
 use super::constants::{
     STOOQ_BASE_URL, STOOQ_CSV_INDEX_CLOSE, STOOQ_CSV_INDEX_DATE, STOOQ_CSV_INDEX_HIGH,
-    STOOQ_CSV_INDEX_LOW, STOOQ_CSV_INDEX_OPEN, STOOQ_CSV_INDEX_VOLUME, STOOQ_DATE_DAY_LENGTH,
-    STOOQ_DATE_MONTH_LENGTH, STOOQ_DATE_PARTS_COUNT, STOOQ_DATE_YEAR_LENGTH,
-    STOOQ_EXPECTED_COLUMN_COUNT, STOOQ_EXPECTED_HEADER, STOOQ_INTERVAL_DAILY,
+    STOOQ_CSV_INDEX_LOW, STOOQ_CSV_INDEX_OPEN, STOOQ_CSV_INDEX_VOLUME, STOOQ_EXPECTED_COLUMN_COUNT,
+    STOOQ_EXPECTED_HEADER, STOOQ_INTERVAL_DAILY,
 };
 use super::error::StooqError;
 
@@ -101,43 +101,15 @@ impl StooqAdapter {
     ///
     /// # Errors
     ///
-    /// Returns [`StooqError::InvalidDateFormat`] if the date format is invalid.
+    /// Returns [`StooqError::InvalidDateFormat`] if the date format is invalid
+    /// or represents an invalid calendar date (e.g., "2024-02-30").
     pub fn date_to_iso_timestamp(date_str: &str) -> Result<String, StooqError> {
-        let parts: Vec<&str> = date_str.split('-').collect();
-
-        if parts.len() != STOOQ_DATE_PARTS_COUNT {
-            return Err(StooqError::InvalidDateFormat {
+        let date = NaiveDate::parse_from_str(date_str, "%Y-%m-%d").map_err(|_| {
+            StooqError::InvalidDateFormat {
                 value: date_str.to_string(),
-            });
-        }
-
-        let (year, month, day) = (parts[0], parts[1], parts[2]);
-
-        if year.len() != STOOQ_DATE_YEAR_LENGTH
-            || month.len() != STOOQ_DATE_MONTH_LENGTH
-            || day.len() != STOOQ_DATE_DAY_LENGTH
-        {
-            return Err(StooqError::InvalidDateFormat {
-                value: date_str.to_string(),
-            });
-        }
-
-        // Validate numeric values
-        year.parse::<u16>()
-            .map_err(|_| StooqError::InvalidDateFormat {
-                value: date_str.to_string(),
-            })?;
-        month
-            .parse::<u8>()
-            .map_err(|_| StooqError::InvalidDateFormat {
-                value: date_str.to_string(),
-            })?;
-        day.parse::<u8>()
-            .map_err(|_| StooqError::InvalidDateFormat {
-                value: date_str.to_string(),
-            })?;
-
-        Ok(format!("{}T00:00:00Z", date_str))
+            }
+        })?;
+        Ok(format!("{}T00:00:00Z", date.format("%Y-%m-%d")))
     }
 
     /// Parse a single CSV row into OHLCV model.
@@ -186,7 +158,10 @@ impl StooqAdapter {
     /// Parse a string to f64.
     fn parse_float(&self, value: &str, field_name: &str) -> Result<f64, StooqError> {
         value.parse::<f64>().map_err(|e| StooqError::Conversion {
-            message: format!("Failed to parse '{}' as float for field '{}': {}", value, field_name, e),
+            message: format!(
+                "Failed to parse '{}' as float for field '{}': {}",
+                value, field_name, e
+            ),
         })
     }
 
@@ -200,6 +175,11 @@ impl StooqAdapter {
     /// # Returns
     ///
     /// List of OHLCV model instances.
+    ///
+    /// # Behavior
+    ///
+    /// - Empty rows (rows with no data or all empty fields) are silently skipped.
+    ///   This is common in CSV files that may have trailing newlines.
     ///
     /// # Errors
     ///
@@ -215,12 +195,13 @@ impl StooqAdapter {
         let mut records = reader.records();
 
         // Read and validate header
-        let header_record = records
-            .next()
-            .ok_or(StooqError::EmptyCsv)?
-            .map_err(|e| StooqError::CsvParse {
-                message: e.to_string(),
-            })?;
+        let header_record =
+            records
+                .next()
+                .ok_or(StooqError::EmptyCsv)?
+                .map_err(|e| StooqError::CsvParse {
+                    message: e.to_string(),
+                })?;
 
         let header: Vec<&str> = header_record.iter().collect();
         let expected_header: Vec<&str> = STOOQ_EXPECTED_HEADER.to_vec();
@@ -264,16 +245,13 @@ impl StooqAdapter {
     ///
     /// # Errors
     ///
+    /// * [`StooqError::HttpClientNotConfigured`] - If HTTP client is not configured.
     /// * [`StooqError::Http`] - If HTTP request fails.
-    ///
-    /// # Panics
-    ///
-    /// Panics if HTTP client is not configured.
     pub async fn fetch_csv(&self, symbol: &str) -> Result<String, StooqError> {
         let client = self
             .http_client
             .as_ref()
-            .expect("HTTP client not configured. Use StooqAdapter::with_http_client() or StooqAdapter::with_default_http_client()");
+            .ok_or(StooqError::HttpClientNotConfigured)?;
 
         let csv_content = client
             .get_text_with_params(
@@ -298,12 +276,9 @@ impl StooqAdapter {
     ///
     /// # Errors
     ///
+    /// * [`StooqError::HttpClientNotConfigured`] - If HTTP client is not configured.
     /// * [`StooqError::Http`] - If HTTP request fails.
     /// * Other errors from [`parse_csv`].
-    ///
-    /// # Panics
-    ///
-    /// Panics if HTTP client is not configured.
     pub async fn fetch_and_parse(&self, symbol: &str) -> Result<Vec<Ohlcv>, StooqError> {
         let csv_content = self.fetch_csv(symbol).await?;
         self.parse_csv(&csv_content, symbol)
@@ -322,14 +297,24 @@ impl BaseAdapter for StooqAdapter {
         "stooq"
     }
 
+    /// Returns the OHLCV field mapping for this adapter.
+    ///
+    /// This mapping defines how source fields map to the standard OHLCV model.
+    /// It serves as metadata for generic data transformation pipelines.
+    ///
+    /// Note: Currently `parse_csv_row` constructs `Ohlcv` directly without using
+    /// this mapping. This is intentional for performance and type safety. The mapping
+    /// is provided for future integration with generic transformation utilities.
     fn get_ohlcv_mapping(&self) -> Vec<ModelMapping> {
         vec![
+            ModelMapping::new("symbol", "symbol"),
+            ModelMapping::new("timestamp", "timestamp")
+                .with_transform(Transforms::iso_timestamp_fn()),
             ModelMapping::new("open", "open").with_transform(Transforms::to_float_fn()),
             ModelMapping::new("high", "high").with_transform(Transforms::to_float_fn()),
             ModelMapping::new("low", "low").with_transform(Transforms::to_float_fn()),
             ModelMapping::new("close", "close").with_transform(Transforms::to_float_fn()),
             ModelMapping::new("volume", "volume").with_transform(Transforms::to_float_fn()),
-            ModelMapping::new("timestamp", "timestamp").with_transform(Transforms::iso_timestamp_fn()),
         ]
     }
 }

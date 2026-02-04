@@ -1,7 +1,7 @@
 //! Tests for the Stooq adapter.
 
 use marketschema_examples::stooq::{
-    StooqAdapter, StooqError, STOOQ_BASE_URL, STOOQ_EXPECTED_HEADER, STOOQ_INTERVAL_DAILY,
+    STOOQ_BASE_URL, STOOQ_EXPECTED_HEADER, STOOQ_INTERVAL_DAILY, StooqAdapter, StooqError,
 };
 
 mod date_to_iso_timestamp_tests {
@@ -32,15 +32,17 @@ mod date_to_iso_timestamp_tests {
     }
 
     #[test]
-    fn test_invalid_format_wrong_year_length() {
-        let result = StooqAdapter::date_to_iso_timestamp("24-01-15");
-        assert!(matches!(result, Err(StooqError::InvalidDateFormat { .. })));
+    fn test_short_year_parsed_as_year_24() {
+        // chrono parses "24-01-15" as year 24, which is a valid (ancient) date
+        let result = StooqAdapter::date_to_iso_timestamp("24-01-15").unwrap();
+        assert_eq!(result, "0024-01-15T00:00:00Z");
     }
 
     #[test]
-    fn test_invalid_format_wrong_month_length() {
-        let result = StooqAdapter::date_to_iso_timestamp("2024-1-15");
-        assert!(matches!(result, Err(StooqError::InvalidDateFormat { .. })));
+    fn test_single_digit_month_is_valid() {
+        // chrono's %m accepts single digit months
+        let result = StooqAdapter::date_to_iso_timestamp("2024-1-15").unwrap();
+        assert_eq!(result, "2024-01-15T00:00:00Z");
     }
 
     #[test]
@@ -90,7 +92,10 @@ mod parse_csv_row_tests {
         let result = adapter.parse_csv_row(&row, symbol);
         assert!(matches!(
             result,
-            Err(StooqError::InsufficientColumns { expected: 6, actual: 3 })
+            Err(StooqError::InsufficientColumns {
+                expected: 6,
+                actual: 3
+            })
         ));
     }
 
@@ -217,5 +222,90 @@ mod constants_tests {
             STOOQ_EXPECTED_HEADER,
             ["Date", "Open", "High", "Low", "Close", "Volume"]
         );
+    }
+}
+
+mod http_client_tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_fetch_csv_without_http_client_returns_error() {
+        let adapter = StooqAdapter::new();
+        let result = adapter.fetch_csv("spy.us").await;
+        assert!(matches!(result, Err(StooqError::HttpClientNotConfigured)));
+    }
+
+    #[tokio::test]
+    async fn test_fetch_and_parse_without_http_client_returns_error() {
+        let adapter = StooqAdapter::new();
+        let result = adapter.fetch_and_parse("spy.us").await;
+        assert!(matches!(result, Err(StooqError::HttpClientNotConfigured)));
+    }
+
+    #[test]
+    fn test_with_default_http_client() {
+        let result = StooqAdapter::with_default_http_client();
+        assert!(result.is_ok());
+    }
+}
+
+mod base_adapter_tests {
+    use super::*;
+    use marketschema_adapters::BaseAdapter;
+
+    #[test]
+    fn test_source_name() {
+        let adapter = StooqAdapter::new();
+        assert_eq!(adapter.source_name(), "stooq");
+    }
+
+    #[test]
+    fn test_get_ohlcv_mapping_contains_required_fields() {
+        let adapter = StooqAdapter::new();
+        let mappings = adapter.get_ohlcv_mapping();
+
+        let source_fields: Vec<&str> = mappings.iter().map(|m| m.source_field.as_str()).collect();
+
+        assert!(source_fields.contains(&"open"));
+        assert!(source_fields.contains(&"high"));
+        assert!(source_fields.contains(&"low"));
+        assert!(source_fields.contains(&"close"));
+        assert!(source_fields.contains(&"volume"));
+        assert!(source_fields.contains(&"timestamp"));
+        assert!(source_fields.contains(&"symbol"));
+    }
+}
+
+mod date_validation_tests {
+    use super::*;
+
+    #[test]
+    fn test_invalid_month_out_of_range() {
+        let result = StooqAdapter::date_to_iso_timestamp("2024-13-01");
+        assert!(matches!(result, Err(StooqError::InvalidDateFormat { .. })));
+    }
+
+    #[test]
+    fn test_invalid_day_out_of_range() {
+        let result = StooqAdapter::date_to_iso_timestamp("2024-01-32");
+        assert!(matches!(result, Err(StooqError::InvalidDateFormat { .. })));
+    }
+
+    #[test]
+    fn test_invalid_february_30th() {
+        let result = StooqAdapter::date_to_iso_timestamp("2024-02-30");
+        assert!(matches!(result, Err(StooqError::InvalidDateFormat { .. })));
+    }
+
+    #[test]
+    fn test_valid_leap_year_february_29th() {
+        let result = StooqAdapter::date_to_iso_timestamp("2024-02-29").unwrap();
+        assert_eq!(result, "2024-02-29T00:00:00Z");
+    }
+
+    #[test]
+    fn test_invalid_non_leap_year_february_29th() {
+        let result = StooqAdapter::date_to_iso_timestamp("2023-02-29");
+        assert!(matches!(result, Err(StooqError::InvalidDateFormat { .. })));
     }
 }

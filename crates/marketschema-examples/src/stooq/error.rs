@@ -51,4 +51,10 @@ pub enum StooqError {
         /// Error message.
         message: String,
     },
+
+    /// HTTP client not configured.
+    #[error(
+        "HTTP client not configured. Use StooqAdapter::with_http_client() or StooqAdapter::with_default_http_client()"
+    )]
+    HttpClientNotConfigured,
 }

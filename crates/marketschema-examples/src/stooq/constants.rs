@@ -32,15 +32,3 @@ pub const STOOQ_CSV_INDEX_VOLUME: usize = 5;
 
 /// Expected CSV header columns.
 pub const STOOQ_EXPECTED_HEADER: [&str; 6] = ["Date", "Open", "High", "Low", "Close", "Volume"];
-
-/// Number of date parts (YYYY-MM-DD split by '-').
-pub const STOOQ_DATE_PARTS_COUNT: usize = 3;
-
-/// Expected length for year part in date.
-pub const STOOQ_DATE_YEAR_LENGTH: usize = 4;
-
-/// Expected length for month part in date.
-pub const STOOQ_DATE_MONTH_LENGTH: usize = 2;
-
-/// Expected length for day part in date.
-pub const STOOQ_DATE_DAY_LENGTH: usize = 2;

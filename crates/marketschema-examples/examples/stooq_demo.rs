@@ -31,7 +31,9 @@ async fn main() -> ExitCode {
     println!("Stooq Adapter Demo");
     print_separator();
 
-    let symbol = env::args().nth(1).unwrap_or_else(|| DEFAULT_SYMBOL.to_string());
+    let symbol = env::args()
+        .nth(1)
+        .unwrap_or_else(|| DEFAULT_SYMBOL.to_string());
     println!("Symbol: {}", symbol);
 
     let adapter = match StooqAdapter::with_default_http_client() {

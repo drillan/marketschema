@@ -17,6 +17,7 @@ path = "examples/stooq_demo.rs"
 
 [dependencies]
 async-trait = "0.1"
+chrono = "0.4"
 csv = "1.3"
 marketschema-adapters = { path = "../marketschema-adapters" }
 marketschema-http = { path = "../marketschema-http" }
