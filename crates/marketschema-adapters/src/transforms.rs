@@ -142,7 +142,10 @@ impl Transforms {
             .map_err(|e| TransformError::new(format!("Invalid datetime '{}': {}", s, e)))?;
 
         let jst = chrono::FixedOffset::east_opt(JST_UTC_OFFSET_HOURS * 3600).ok_or_else(|| {
-            TransformError::new(format!("Invalid JST offset: {} hours", JST_UTC_OFFSET_HOURS))
+            TransformError::new(format!(
+                "Invalid JST offset: {} hours",
+                JST_UTC_OFFSET_HOURS
+            ))
         })?;
         let dt = naive
             .and_local_timezone(jst)

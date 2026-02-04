@@ -6,7 +6,7 @@ conditions:
   - field: file_path
     operator: regex_match
     pattern: \.rs$
-  - field: new_text
+  - field: content
     operator: regex_match
     pattern: \.ok\(\)\??|Err\(_\)|unwrap_or_default\(\)|unwrap_or\(|\.unwrap_or_else\(\|_\||let\s+_\s*=\s*\w+.*\.(set|send|await|try_|insert|push)
 ---
