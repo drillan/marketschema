@@ -26,7 +26,7 @@ git clone https://github.com/example/marketschema.git
 cd marketschema
 
 # Install Python dependencies
-uv sync --group dev
+cd python && uv sync --group dev && cd ..
 
 # Install JSON Schema validation tools
 npm install
@@ -128,19 +128,22 @@ make all
 
 ```
 marketschema/
-├── src/marketschema/
-│   ├── schemas/          # JSON Schema files
-│   ├── models/           # Generated pydantic models
-│   ├── adapters/         # Adapter framework
-│   └── exceptions.py     # Custom exceptions
+├── schemas/                  # JSON Schema files (Single Source of Truth)
+├── python/
+│   ├── src/marketschema/
+│   │   ├── schemas/          # Symlink to ../../../schemas
+│   │   ├── models/           # Generated pydantic models
+│   │   ├── adapters/         # Adapter framework
+│   │   └── http/             # HTTP client framework
+│   ├── tests/
+│   └── pyproject.toml
 ├── rust/
-│   ├── src/types/        # Generated Rust structs
-│   └── tests/            # Rust tests
-├── tests/
-│   ├── unit/             # Unit tests
-│   ├── integration/      # Integration tests
-│   └── contract/         # Schema compliance tests
-└── scripts/              # Code generation scripts
+│   ├── src/types/            # Generated Rust structs
+│   ├── bundled/              # Bundled schemas for typify
+│   └── tests/
+├── specs/                    # Feature specifications
+├── docs/                     # Documentation
+└── scripts/                  # Code generation scripts
 ```
 
 ## License
