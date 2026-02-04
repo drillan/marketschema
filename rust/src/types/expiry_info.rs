@@ -35,7 +35,6 @@ pub mod error {
 #[doc = r""]
 #[doc = r" ```json"]
 #[doc = "{"]
-#[doc = "  \"$id\": \"https://marketschema.example.com/schemas/expiry_info\","]
 #[doc = "  \"title\": \"ExpiryInfo\","]
 #[doc = "  \"description\": \"先物・オプションの満期関連情報を表現する\","]
 #[doc = "  \"type\": \"object\","]

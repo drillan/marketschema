@@ -143,7 +143,6 @@ impl ::std::convert::TryFrom<::std::string::String> for AssetClass {
 #[doc = r""]
 #[doc = r" ```json"]
 #[doc = "{"]
-#[doc = "  \"$id\": \"https://marketschema.example.com/schemas/definitions\","]
 #[doc = "  \"title\": \"Common Type Definitions\","]
 #[doc = "  \"description\": \"マーケットデータスキーマの共通型定義\""]
 #[doc = "}"]

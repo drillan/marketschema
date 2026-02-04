@@ -35,7 +35,6 @@ pub mod error {
 #[doc = r""]
 #[doc = r" ```json"]
 #[doc = "{"]
-#[doc = "  \"$id\": \"https://marketschema.example.com/schemas/instrument\","]
 #[doc = "  \"title\": \"Instrument\","]
 #[doc = "  \"description\": \"銘柄識別情報を表現する\","]
 #[doc = "  \"type\": \"object\","]
