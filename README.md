@@ -21,16 +21,22 @@ marketschema は金融マーケットデータを統一的に扱うための標�
 
 ## インストール
 
+### ライブラリとして使う
+
 ```bash
-# リポジトリをクローン
+# pip
+pip install "git+https://github.com/drillan/marketschema.git#subdirectory=python"
+
+# uv
+uv pip install "marketschema @ git+https://github.com/drillan/marketschema.git#subdirectory=python"
+```
+
+### 開発環境のセットアップ
+
+```bash
 git clone https://github.com/drillan/marketschema.git
-cd marketschema
-
-# Python 依存関係をインストール
-cd python && uv sync --group dev && cd ..
-
-# JSON Schema 検証ツールをインストール
-npm install
+cd marketschema/python
+uv sync --group dev
 ```
 
 ## クイックスタート
