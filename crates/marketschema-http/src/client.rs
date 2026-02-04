@@ -315,6 +315,14 @@ impl AsyncHttpClient {
 
         let status_code = status.as_u16();
 
+        // Parse Retry-After header before consuming response body
+        // FR-R014: HTTP 429 ステータス時は retry_after フィールドを持つ
+        let retry_after = if status_code == HTTP_STATUS_TOO_MANY_REQUESTS {
+            Self::parse_retry_after_header(&response)
+        } else {
+            None
+        };
+
         // Explicitly handle body read errors instead of using .ok()
         // (CLAUDE.md: 暗黙的フォールバック禁止)
         let response_body = match response.text().await {
@@ -339,7 +347,7 @@ impl AsyncHttpClient {
                 url: Some(url.to_string()),
                 status_code,
                 response_body,
-                retry_after: None, // TODO: Parse Retry-After header in US2
+                retry_after,
                 source: None,
             });
         }
@@ -351,6 +359,33 @@ impl AsyncHttpClient {
             response_body,
             source: None,
         })
+    }
+
+    /// Parse the Retry-After header from a response.
+    ///
+    /// The Retry-After header can be either:
+    /// - An integer representing delay in seconds (e.g., "60")
+    /// - An HTTP-date (e.g., "Wed, 21 Oct 2026 07:28:00 GMT")
+    ///
+    /// This implementation only parses the integer format.
+    /// HTTP-date format is complex and rarely used; we return None for it.
+    fn parse_retry_after_header(response: &Response) -> Option<Duration> {
+        let header_value = response.headers().get("retry-after")?;
+        let header_str = header_value.to_str().ok()?;
+
+        // Try to parse as seconds (integer format)
+        match header_str.trim().parse::<u64>() {
+            Ok(seconds) => Some(Duration::from_secs(seconds)),
+            Err(_) => {
+                // Could be HTTP-date format; log and return None
+                // HTTP-date parsing is complex and rarely needed
+                tracing::debug!(
+                    retry_after = %header_str,
+                    "Retry-After header is not in seconds format, ignoring"
+                );
+                None
+            }
+        }
     }
 }
 
