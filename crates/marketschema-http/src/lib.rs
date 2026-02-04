@@ -82,7 +82,7 @@ mod rate_limit;
 mod retry;
 
 // Phase 3 (US5)
-// mod cache;       // ResponseCache
+mod cache;
 
 // =============================================================================
 // Public Exports
@@ -94,4 +94,4 @@ pub use rate_limit::RateLimiter;
 pub use retry::RetryConfig;
 
 // Phase 3
-// pub use cache::ResponseCache;
+pub use cache::ResponseCache;
