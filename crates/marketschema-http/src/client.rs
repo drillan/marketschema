@@ -26,6 +26,7 @@ use reqwest::Response;
 use serde_json::Value;
 
 use crate::error::HttpError;
+use crate::retry::RetryConfig;
 use crate::{DEFAULT_MAX_CONNECTIONS, DEFAULT_TIMEOUT_SECS, HTTP_STATUS_TOO_MANY_REQUESTS};
 
 /// Async HTTP client for adapter implementations.
@@ -56,6 +57,7 @@ use crate::{DEFAULT_MAX_CONNECTIONS, DEFAULT_TIMEOUT_SECS, HTTP_STATUS_TOO_MANY_
 /// ```
 pub struct AsyncHttpClient {
     inner: reqwest::Client,
+    retry_config: Option<RetryConfig>,
 }
 
 impl AsyncHttpClient {
@@ -139,15 +141,69 @@ impl AsyncHttpClient {
         url: &str,
         params: &[(&str, &str)],
     ) -> Result<Response, HttpError> {
-        let response = self
-            .inner
-            .get(url)
-            .query(params)
-            .send()
-            .await
-            .map_err(|e| Self::convert_reqwest_error(e, url))?;
+        self.execute_with_retry(url, params).await
+    }
 
-        Self::check_status(response, url).await
+    /// Execute a GET request with automatic retry on transient errors.
+    ///
+    /// If `retry_config` is set, this method will retry failed requests
+    /// according to the configuration. Otherwise, it executes once.
+    async fn execute_with_retry(
+        &self,
+        url: &str,
+        params: &[(&str, &str)],
+    ) -> Result<Response, HttpError> {
+        let mut attempt = 0u32;
+
+        loop {
+            let response = self
+                .inner
+                .get(url)
+                .query(params)
+                .send()
+                .await
+                .map_err(|e| Self::convert_reqwest_error(e, url))?;
+
+            match Self::check_status(response, url).await {
+                Ok(resp) => return Ok(resp),
+                Err(err) => {
+                    // Check if we should retry
+                    if let Some(ref config) = self.retry_config {
+                        if let Some(status_code) = err.status_code() {
+                            if config.should_retry(status_code, attempt) {
+                                // Determine delay: use Retry-After header if present and longer
+                                let backoff_delay = config.get_delay(attempt);
+                                let delay = match &err {
+                                    HttpError::RateLimit {
+                                        retry_after: Some(ra),
+                                        ..
+                                    } => {
+                                        // Use the longer of backoff delay or Retry-After
+                                        backoff_delay.max(*ra)
+                                    }
+                                    _ => backoff_delay,
+                                };
+
+                                tracing::debug!(
+                                    url = %url,
+                                    status_code = %status_code,
+                                    attempt = %attempt,
+                                    delay_ms = %delay.as_millis(),
+                                    "Retrying request after transient error"
+                                );
+
+                                tokio::time::sleep(delay).await;
+                                attempt += 1;
+                                continue;
+                            }
+                        }
+                    }
+
+                    // Not retryable or retry config not set
+                    return Err(err);
+                }
+            }
+        }
     }
 
     /// Send a GET request and return the JSON response.
@@ -436,6 +492,7 @@ pub struct AsyncHttpClientBuilder {
     timeout: Duration,
     max_connections: usize,
     default_headers: HeaderMap,
+    retry_config: Option<RetryConfig>,
 }
 
 impl AsyncHttpClientBuilder {
@@ -451,6 +508,7 @@ impl AsyncHttpClientBuilder {
             timeout: Duration::from_secs(DEFAULT_TIMEOUT_SECS),
             max_connections: DEFAULT_MAX_CONNECTIONS,
             default_headers: HeaderMap::new(),
+            retry_config: None,
         }
     }
 
@@ -495,6 +553,32 @@ impl AsyncHttpClientBuilder {
         self
     }
 
+    /// Set retry configuration for automatic retries on transient errors.
+    ///
+    /// When set, the client will automatically retry failed requests according
+    /// to the provided configuration. Retries use exponential backoff with
+    /// optional jitter to prevent thundering herd issues.
+    ///
+    /// # Arguments
+    ///
+    /// * `config` - The retry configuration.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use marketschema_http::{AsyncHttpClientBuilder, RetryConfig};
+    ///
+    /// let client = AsyncHttpClientBuilder::new()
+    ///     .retry(RetryConfig::new().max_retries(5))
+    ///     .build()
+    ///     .unwrap();
+    /// ```
+    #[must_use]
+    pub fn retry(mut self, config: RetryConfig) -> Self {
+        self.retry_config = Some(config);
+        self
+    }
+
     /// Build the [`AsyncHttpClient`].
     ///
     /// # Errors
@@ -511,7 +595,10 @@ impl AsyncHttpClientBuilder {
                 source: Some(e),
             })?;
 
-        Ok(AsyncHttpClient { inner: client })
+        Ok(AsyncHttpClient {
+            inner: client,
+            retry_config: self.retry_config,
+        })
     }
 }
 

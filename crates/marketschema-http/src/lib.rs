@@ -76,9 +76,9 @@ pub const HTTP_STATUS_GATEWAY_TIMEOUT: u16 = 504;
 
 mod client;
 mod error;
+mod retry;
 
-// Phase 2 (US3, US4)
-// mod retry;       // RetryConfig
+// Phase 2 (US4)
 // mod rate_limit;  // RateLimiter
 
 // Phase 3 (US5)
@@ -90,9 +90,9 @@ mod error;
 
 pub use client::{AsyncHttpClient, AsyncHttpClientBuilder};
 pub use error::HttpError;
+pub use retry::RetryConfig;
 
-// Phase 2
-// pub use retry::RetryConfig;
+// Phase 2 (US4)
 // pub use rate_limit::RateLimiter;
 
 // Phase 3
