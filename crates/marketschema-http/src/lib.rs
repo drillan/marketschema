@@ -1,10 +1,10 @@
 //! Async HTTP client for marketschema adapters.
 //!
-//! This crate provides a robust HTTP client layer for building market data adapters.
-//! Features include connection pooling, configurable timeouts, automatic retries,
+//! This crate will provide a robust HTTP client layer for building market data adapters.
+//! Planned features include connection pooling, configurable timeouts, automatic retries,
 //! rate limiting, and response caching.
 //!
-//! # Example
+//! # Example (available after US1 implementation)
 //!
 //! ```ignore
 //! use marketschema_http::{AsyncHttpClient, AsyncHttpClientBuilder};
@@ -35,35 +35,30 @@ pub const DEFAULT_MAX_CONNECTIONS: usize = 100;
 pub const DEFAULT_MAX_RETRIES: u32 = 3;
 
 /// Default exponential backoff factor for retries.
+/// Used as: delay = backoff_factor * 2^attempt seconds
 pub const DEFAULT_BACKOFF_FACTOR: f64 = 0.5;
 
 /// Default random jitter factor for retries (0.0 to 1.0).
+/// Applied as: delay * (1.0 + random(-jitter, +jitter))
 pub const DEFAULT_JITTER: f64 = 0.1;
 
 /// Default cache TTL in seconds.
 pub const DEFAULT_CACHE_TTL_SECS: u64 = 300;
 
 /// Default maximum cache size (number of entries).
+/// Note: Uses `u64` for moka Cache API compatibility (max_capacity parameter).
 pub const DEFAULT_CACHE_SIZE: u64 = 1000;
 
 // =============================================================================
 // Modules (to be implemented in future user stories)
+// See: specs/003-http-client-rust/spec.md for details
 // =============================================================================
 
-// US1: Async HTTP Request Execution
-// mod client;
-
-// US2: Error Handling with Result Type
-// mod error;
-
-// US3: Automatic Retry with Exponential Backoff
-// mod retry;
-
-// US4: Rate Limiting with Token Bucket
-// mod rate_limit;
-
-// US5: Response Caching with LRU
-// mod cache;
+// mod client;      // AsyncHttpClient, AsyncHttpClientBuilder
+// mod error;       // HttpError enum
+// mod retry;       // RetryConfig
+// mod rate_limit;  // RateLimiter
+// mod cache;       // ResponseCache
 
 // =============================================================================
 // Public Exports (to be added as modules are implemented)

@@ -2,12 +2,12 @@
 name = "marketschema-http"
 version = "0.0.1"
 edition = "2021"
-rust-version = "1.70.0"
+rust-version = "1.71.1"
 authors = ["driller <eleshis@gmail.com>"]
 description = "Async HTTP client for marketschema adapters"
 license = "MIT"
 repository = "https://github.com/drillan/marketschema"
-readme = "README.md"
+# readme = "README.md"  # TODO: create README.md before publish
 
 [lib]
 path = "src/lib.rs"
@@ -22,4 +22,5 @@ moka = { version = "0.12", features = ["future"] }
 
 [dev-dependencies]
 wiremock = "0.6"
+# Additional features required for test execution (rt-multi-thread for #[tokio::test], macros for async test)
 tokio = { version = "1.0", features = ["rt-multi-thread", "macros"] }

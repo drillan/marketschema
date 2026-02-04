@@ -9,7 +9,7 @@ Rust 言語での marketschema HTTP クライアントレイヤーを実装す�
 
 ## Technical Context
 
-**Language/Version**: Rust 1.70.0+ (MSRV: 1.70.0 - `std::sync::OnceLock` 安定化)
+**Language/Version**: Rust 1.71.1+ (MSRV: 1.71.1 - moka 0.12 の要求による)
 **Primary Dependencies**: reqwest (HTTP), tokio (async runtime), thiserror (errors), serde/serde_json (serialization)
 **Storage**: N/A（インメモリキャッシュのみ）
 **Testing**: cargo test + wiremock (HTTP mocking)
