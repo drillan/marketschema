@@ -47,7 +47,7 @@ async fn test_new_with_defaults() {
 async fn test_set_and_get_basic() {
     let cache = ResponseCache::new(100, Duration::from_secs(300));
 
-    cache.set("key1", "value1".to_string(), None).await;
+    cache.set("key1", "value1".to_string()).await;
 
     let result = cache.get("key1").await;
     assert_eq!(result, Some("value1".to_string()));
@@ -69,8 +69,8 @@ async fn test_get_nonexistent_returns_none() {
 async fn test_set_overwrites_existing() {
     let cache = ResponseCache::new(100, Duration::from_secs(300));
 
-    cache.set("key1", "original".to_string(), None).await;
-    cache.set("key1", "updated".to_string(), None).await;
+    cache.set("key1", "original".to_string()).await;
+    cache.set("key1", "updated".to_string()).await;
 
     let result = cache.get("key1").await;
     assert_eq!(result, Some("updated".to_string()));
@@ -81,9 +81,9 @@ async fn test_set_overwrites_existing() {
 async fn test_multiple_entries() {
     let cache = ResponseCache::new(100, Duration::from_secs(300));
 
-    cache.set("key1", "value1".to_string(), None).await;
-    cache.set("key2", "value2".to_string(), None).await;
-    cache.set("key3", "value3".to_string(), None).await;
+    cache.set("key1", "value1".to_string()).await;
+    cache.set("key2", "value2".to_string()).await;
+    cache.set("key3", "value3".to_string()).await;
 
     assert_eq!(cache.get("key1").await, Some("value1".to_string()));
     assert_eq!(cache.get("key2").await, Some("value2".to_string()));
@@ -102,7 +102,7 @@ async fn test_ttl_expiration() {
     let ttl = Duration::from_millis(100);
     let cache = ResponseCache::new(100, ttl);
 
-    cache.set("key1", "value1".to_string(), None).await;
+    cache.set("key1", "value1".to_string()).await;
 
     // Value should be available immediately
     assert_eq!(cache.get("key1").await, Some("value1".to_string()));
@@ -120,7 +120,7 @@ async fn test_entry_available_before_ttl() {
     let ttl = Duration::from_secs(300); // 5 minutes
     let cache = ResponseCache::new(100, ttl);
 
-    cache.set("key1", "value1".to_string(), None).await;
+    cache.set("key1", "value1".to_string()).await;
 
     // Small delay
     tokio::time::sleep(Duration::from_millis(10)).await;
@@ -145,14 +145,14 @@ async fn test_lru_eviction_on_max_size() {
     let cache = ResponseCache::new(3, Duration::from_secs(300));
 
     // Fill the cache
-    cache.set("key1", "value1".to_string(), None).await;
-    cache.set("key2", "value2".to_string(), None).await;
-    cache.set("key3", "value3".to_string(), None).await;
+    cache.set("key1", "value1".to_string()).await;
+    cache.set("key2", "value2".to_string()).await;
+    cache.set("key3", "value3".to_string()).await;
 
     // Add more entries to trigger eviction
     for i in 4..=10 {
         cache
-            .set(&format!("key{}", i), format!("value{}", i), None)
+            .set(&format!("key{}", i), format!("value{}", i))
             .await;
     }
 
@@ -186,8 +186,8 @@ async fn test_lru_eviction_on_max_size() {
 async fn test_delete_removes_entry() {
     let cache = ResponseCache::new(100, Duration::from_secs(300));
 
-    cache.set("key1", "value1".to_string(), None).await;
-    cache.set("key2", "value2".to_string(), None).await;
+    cache.set("key1", "value1".to_string()).await;
+    cache.set("key2", "value2".to_string()).await;
 
     // Delete key1
     cache.delete("key1").await;
@@ -202,7 +202,7 @@ async fn test_delete_removes_entry() {
 async fn test_delete_nonexistent_is_noop() {
     let cache = ResponseCache::new(100, Duration::from_secs(300));
 
-    cache.set("key1", "value1".to_string(), None).await;
+    cache.set("key1", "value1".to_string()).await;
 
     // Delete nonexistent key should not affect existing entries
     cache.delete("nonexistent").await;
@@ -216,9 +216,9 @@ async fn test_delete_nonexistent_is_noop() {
 async fn test_clear_removes_all_entries() {
     let cache = ResponseCache::new(100, Duration::from_secs(300));
 
-    cache.set("key1", "value1".to_string(), None).await;
-    cache.set("key2", "value2".to_string(), None).await;
-    cache.set("key3", "value3".to_string(), None).await;
+    cache.set("key1", "value1".to_string()).await;
+    cache.set("key2", "value2".to_string()).await;
+    cache.set("key3", "value3".to_string()).await;
 
     // Clear all entries
     cache.clear();
@@ -256,7 +256,7 @@ async fn test_cache_shared_across_tasks() {
     let cache_clone = Arc::clone(&cache);
     let handle = tokio::spawn(async move {
         cache_clone
-            .set("from_task", "task_value".to_string(), None)
+            .set("from_task", "task_value".to_string())
             .await;
     });
 
@@ -279,7 +279,7 @@ async fn test_concurrent_access() {
         let handle = tokio::spawn(async move {
             let key = format!("key{}", i);
             let value = format!("value{}", i);
-            cache_clone.set(&key, value, None).await;
+            cache_clone.set(&key, value).await;
         });
         handles.push(handle);
     }
@@ -440,15 +440,16 @@ mod client_integration {
     }
 
     /// Test that error responses are NOT cached.
+    /// Both requests should hit the server since errors are not cached.
     #[tokio::test]
     async fn test_error_responses_not_cached() {
         let mock_server = MockServer::start().await;
 
-        // First return 500, then 200
+        // Expect server to be hit twice (error is not cached)
         Mock::given(method("GET"))
             .and(path("/flaky"))
             .respond_with(ResponseTemplate::new(500))
-            .expect(1)
+            .expect(2)
             .mount(&mock_server)
             .await;
 
@@ -461,10 +462,51 @@ mod client_integration {
         let url = format!("{}/flaky", mock_server.uri());
 
         // First request fails
-        let result = client.get_text(&url).await;
-        assert!(result.is_err());
+        let result1 = client.get_text(&url).await;
+        assert!(result1.is_err());
 
-        // Should NOT be cached, so next call should also hit the server
-        // (We can't verify this easily without checking mock expectations)
+        // Second request should also hit the server (not cached)
+        let result2 = client.get_text(&url).await;
+        assert!(result2.is_err());
+
+        // wiremock will verify that exactly 2 requests were made
+    }
+
+    /// Test cache key generation with query parameters containing special characters.
+    #[tokio::test]
+    async fn test_cache_key_with_special_characters() {
+        let mock_server = MockServer::start().await;
+
+        use wiremock::matchers::query_param;
+
+        Mock::given(method("GET"))
+            .and(path("/search"))
+            .and(query_param("q", "hello world"))
+            .respond_with(ResponseTemplate::new(200).set_body_string("result1"))
+            .expect(1)
+            .mount(&mock_server)
+            .await;
+
+        let cache = Arc::new(ResponseCache::new(100, Duration::from_secs(300)));
+        let client = AsyncHttpClientBuilder::new()
+            .cache(Arc::clone(&cache))
+            .build()
+            .unwrap();
+
+        let url = format!("{}/search", mock_server.uri());
+
+        // First request with space in query param
+        let response1 = client
+            .get_text_with_params(&url, &[("q", "hello world")])
+            .await
+            .unwrap();
+        assert_eq!(response1, "result1");
+
+        // Second request should use cache (same URL+params)
+        let response2 = client
+            .get_text_with_params(&url, &[("q", "hello world")])
+            .await
+            .unwrap();
+        assert_eq!(response2, "result1");
     }
 }

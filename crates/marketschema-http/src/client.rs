@@ -434,7 +434,7 @@ impl AsyncHttpClient {
 
         // Cache the successful response
         if let Some(ref cache) = self.cache {
-            cache.set(&cache_key, text.clone(), None).await;
+            cache.set(&cache_key, text.clone()).await;
         }
 
         Ok(text)
@@ -442,15 +442,24 @@ impl AsyncHttpClient {
 
     /// Build a cache key from URL and query parameters.
     ///
-    /// The cache key is the full URL with query parameters appended.
+    /// The cache key is the full URL with query parameters appended and URL-encoded.
+    /// This ensures that special characters in parameter values don't cause
+    /// cache key collisions.
     fn build_cache_key(url: &str, params: &[(&str, &str)]) -> String {
         if params.is_empty() {
             return url.to_string();
         }
 
+        // URL-encode each parameter to prevent collisions with special characters
         let query_string: String = params
             .iter()
-            .map(|(k, v)| format!("{}={}", k, v))
+            .map(|(k, v)| {
+                format!(
+                    "{}={}",
+                    urlencoding::encode(k),
+                    urlencoding::encode(v)
+                )
+            })
             .collect::<Vec<_>>()
             .join("&");
 

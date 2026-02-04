@@ -15,7 +15,7 @@
 //! let cache = Arc::new(ResponseCache::new(500, Duration::from_secs(60)));
 //!
 //! // Store a value
-//! cache.set("https://api.example.com/ticker", "{\"price\": 100}".to_string(), None).await;
+//! cache.set("https://api.example.com/ticker", "{\"price\": 100}".to_string()).await;
 //!
 //! // Retrieve it later
 //! if let Some(cached) = cache.get("https://api.example.com/ticker").await {
@@ -51,7 +51,7 @@ use moka::future::Cache;
 /// // Share across multiple tasks
 /// let cache_clone = Arc::clone(&cache);
 /// tokio::spawn(async move {
-///     cache_clone.set("key", "value".to_string(), None).await;
+///     cache_clone.set("key", "value".to_string()).await;
 /// });
 /// # }
 /// ```
@@ -123,18 +123,12 @@ impl ResponseCache {
 
     /// Set a value in the cache.
     ///
+    /// The entry will use the `default_ttl` configured during cache construction.
+    ///
     /// # Arguments
     ///
     /// * `key` - The cache key.
     /// * `value` - The value to cache.
-    /// * `_ttl` - Per-entry TTL (currently ignored, uses default_ttl from construction).
-    ///
-    /// # Note
-    ///
-    /// The `ttl` parameter is currently ignored because moka's `Cache::insert`
-    /// does not support per-entry TTL. All entries use the `default_ttl`
-    /// configured during cache construction. This parameter is kept for
-    /// API compatibility and potential future enhancement.
     ///
     /// # Example
     ///
@@ -145,10 +139,10 @@ impl ResponseCache {
     /// # async fn example() {
     /// let cache = ResponseCache::new(100, Duration::from_secs(60));
     ///
-    /// cache.set("https://api.example.com/data", "{\"result\": \"ok\"}".to_string(), None).await;
+    /// cache.set("https://api.example.com/data", "{\"result\": \"ok\"}".to_string()).await;
     /// # }
     /// ```
-    pub async fn set(&self, key: &str, value: String, _ttl: Option<Duration>) {
+    pub async fn set(&self, key: &str, value: String) {
         self.inner.insert(key.to_string(), value).await;
     }
 
@@ -167,7 +161,7 @@ impl ResponseCache {
     /// # async fn example() {
     /// let cache = ResponseCache::new(100, Duration::from_secs(60));
     ///
-    /// cache.set("key", "value".to_string(), None).await;
+    /// cache.set("key", "value".to_string()).await;
     /// cache.delete("key").await;
     /// assert!(cache.get("key").await.is_none());
     /// # }
@@ -187,8 +181,8 @@ impl ResponseCache {
     /// # async fn example() {
     /// let cache = ResponseCache::new(100, Duration::from_secs(60));
     ///
-    /// cache.set("key1", "value1".to_string(), None).await;
-    /// cache.set("key2", "value2".to_string(), None).await;
+    /// cache.set("key1", "value1".to_string()).await;
+    /// cache.set("key2", "value2".to_string()).await;
     /// cache.clear();
     /// # }
     /// ```
@@ -212,7 +206,7 @@ impl ResponseCache {
     ///
     /// // Add entries exceeding max_size
     /// for i in 0..10 {
-    ///     cache.set(&format!("key{}", i), format!("value{}", i), None).await;
+    ///     cache.set(&format!("key{}", i), format!("value{}", i)).await;
     /// }
     ///
     /// // Force eviction to run
