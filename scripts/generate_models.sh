@@ -6,8 +6,9 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-SCHEMAS_DIR="$PROJECT_ROOT/src/marketschema/schemas"
-MODELS_DIR="$PROJECT_ROOT/src/marketschema/models"
+SCHEMAS_DIR="$PROJECT_ROOT/schemas"
+MODELS_DIR="$PROJECT_ROOT/python/src/marketschema/models"
+PYTHON_DIR="$PROJECT_ROOT/python"
 
 echo "Generating pydantic models from JSON Schema..."
 echo "  Schemas: $SCHEMAS_DIR"
@@ -17,6 +18,7 @@ echo "  Output:  $MODELS_DIR"
 mkdir -p "$MODELS_DIR"
 
 # Run datamodel-codegen with options from pyproject.toml plus additional flags
+cd "$PYTHON_DIR"
 uv run datamodel-codegen \
   --input "$SCHEMAS_DIR" \
   --input-file-type jsonschema \
