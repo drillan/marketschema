@@ -1,14 +1,25 @@
 //! Tests for BaseAdapter trait.
 
-use marketschema_adapters::{AdapterRegistry, BaseAdapter, ModelMapping, Transforms};
+use marketschema_adapters::{AdapterError, AdapterRegistry, BaseAdapter, ModelMapping, Transforms};
 use serde_json::json;
 use std::sync::Arc;
+
+// ====================
+// Test Constants
+// ====================
+
+/// 2024-01-01 00:00:00 UTC in milliseconds
+const TEST_TIMESTAMP_MS: i64 = 1704067200000;
+
+/// Expected ISO 8601 formatted timestamp for TEST_TIMESTAMP_MS
+const TEST_TIMESTAMP_ISO: &str = "2024-01-01T00:00:00Z";
 
 // ====================
 // Test Adapters
 // ====================
 
-/// Minimal adapter that only implements required method.
+/// Minimal adapter that only overrides the required `source_name()` method,
+/// relying on default implementations for all mapping methods.
 struct MinimalAdapter;
 
 impl BaseAdapter for MinimalAdapter {
@@ -228,7 +239,7 @@ mod mapping_apply_integration {
             "quote": {
                 "bid_price": "123.45",
                 "ask_price": "123.50",
-                "time": 1704067200000_i64,
+                "time": TEST_TIMESTAMP_MS,
                 "symbol": "BTC/USDT"
             }
         });
@@ -249,7 +260,7 @@ mod mapping_apply_integration {
             .find(|m| m.target_field == "timestamp")
             .unwrap();
         let ts_value = ts_mapping.apply(&source).unwrap();
-        assert!(ts_value.as_str().unwrap().contains("2024-01-01"));
+        assert_eq!(ts_value.as_str().unwrap(), TEST_TIMESTAMP_ISO);
 
         // Apply symbol mapping (no transform)
         let symbol_mapping = mappings
@@ -270,7 +281,7 @@ mod mapping_apply_integration {
                 "price": "100.0",
                 "qty": "1.5",
                 "side": "BUY",
-                "time": 1704067200000_i64
+                "time": TEST_TIMESTAMP_MS
             }
         });
 
@@ -283,7 +294,7 @@ mod mapping_apply_integration {
                 "price": "100.0",
                 "qty": "1.5",
                 "side": "sell",
-                "time": 1704067200000_i64
+                "time": TEST_TIMESTAMP_MS
             }
         });
 
@@ -303,7 +314,7 @@ mod mapping_apply_integration {
                 "l": "99.00",
                 "c": "104.50",
                 "v": "1000.5",
-                "t": 1704067200000_i64
+                "t": TEST_TIMESTAMP_MS
             }
         });
 
@@ -348,7 +359,9 @@ mod registry_integration {
 
         AdapterRegistry::register("sample_exchange", || Box::new(SampleAdapter)).unwrap();
 
-        let adapter = AdapterRegistry::get("sample_exchange").unwrap().unwrap();
+        let adapter = AdapterRegistry::get("sample_exchange")
+            .expect("Registry lock should not be poisoned")
+            .expect("Adapter should be registered");
         assert_eq!(adapter.source_name(), "sample_exchange");
     }
 
@@ -367,7 +380,13 @@ mod registry_integration {
         AdapterRegistry::register("sample", || Box::new(MinimalAdapter)).unwrap();
         let result = AdapterRegistry::register("sample", || Box::new(MinimalAdapter));
 
-        assert!(result.is_err());
+        match result {
+            Err(AdapterError::DuplicateRegistration(name)) => {
+                assert_eq!(name, "sample");
+            }
+            Err(other) => panic!("Expected DuplicateRegistration, got {:?}", other),
+            Ok(_) => panic!("Expected error, got Ok"),
+        }
     }
 
     #[test]
@@ -398,7 +417,9 @@ mod registry_integration {
 
         AdapterRegistry::register("full_adapter", || Box::new(SampleAdapter)).unwrap();
 
-        let adapter = AdapterRegistry::get("full_adapter").unwrap().unwrap();
+        let adapter = AdapterRegistry::get("full_adapter")
+            .expect("Registry lock should not be poisoned")
+            .expect("Adapter should be registered");
 
         // Verify mappings work through the registry
         let quote_mappings = adapter.get_quote_mapping();
@@ -408,7 +429,7 @@ mod registry_integration {
             "quote": {
                 "bid_price": "50000.00",
                 "ask_price": "50001.00",
-                "time": 1704067200000_i64,
+                "time": TEST_TIMESTAMP_MS,
                 "symbol": "ETH/USDT"
             }
         });
@@ -461,7 +482,7 @@ mod thread_safety {
             "quote": {
                 "bid_price": "123.45",
                 "ask_price": "123.50",
-                "time": 1704067200000_i64,
+                "time": TEST_TIMESTAMP_MS,
                 "symbol": "TEST"
             }
         });
@@ -482,5 +503,101 @@ mod thread_safety {
         for handle in handles {
             handle.join().unwrap();
         }
+    }
+}
+
+// ====================
+// Error Path Tests
+// ====================
+
+mod mapping_error_paths {
+    use super::*;
+
+    #[test]
+    fn quote_mapping_returns_error_when_required_field_missing() {
+        let adapter = SampleAdapter;
+        let mappings = adapter.get_quote_mapping();
+
+        // Missing bid_price field
+        let source = json!({
+            "quote": {
+                "ask_price": "123.50",
+                "time": TEST_TIMESTAMP_MS,
+                "symbol": "BTC/USDT"
+            }
+        });
+
+        let bid_mapping = mappings
+            .iter()
+            .find(|m| m.target_field == "bid")
+            .expect("bid mapping should exist");
+        let result = bid_mapping.apply(&source);
+        assert!(result.is_err(), "Missing field should return error");
+    }
+
+    #[test]
+    fn trade_mapping_returns_error_for_invalid_side_value() {
+        let adapter = SampleAdapter;
+        let mappings = adapter.get_trade_mapping();
+
+        // "long" is not a valid side value (only "buy"/"sell" variants are supported)
+        let source = json!({
+            "trade": {
+                "price": "100.0",
+                "qty": "1.5",
+                "side": "long",
+                "time": TEST_TIMESTAMP_MS
+            }
+        });
+
+        let side_mapping = mappings
+            .iter()
+            .find(|m| m.target_field == "side")
+            .expect("side mapping should exist");
+        let result = side_mapping.apply(&source);
+        assert!(result.is_err(), "Invalid side value should return error");
+    }
+
+    #[test]
+    fn float_conversion_returns_error_for_invalid_string() {
+        let adapter = SampleAdapter;
+        let mappings = adapter.get_quote_mapping();
+
+        // "not_a_number" cannot be parsed as float
+        let source = json!({
+            "quote": {
+                "bid_price": "not_a_number",
+                "ask_price": "123.50",
+                "time": TEST_TIMESTAMP_MS,
+                "symbol": "BTC/USDT"
+            }
+        });
+
+        let bid_mapping = mappings
+            .iter()
+            .find(|m| m.target_field == "bid")
+            .expect("bid mapping should exist");
+        let result = bid_mapping.apply(&source);
+        assert!(result.is_err(), "Invalid float string should return error");
+    }
+
+    #[test]
+    fn nested_path_returns_error_when_parent_missing() {
+        let adapter = SampleAdapter;
+        let mappings = adapter.get_quote_mapping();
+
+        // "quote" parent object is entirely missing
+        let source = json!({
+            "other": {
+                "bid_price": "123.45"
+            }
+        });
+
+        let bid_mapping = mappings
+            .iter()
+            .find(|m| m.target_field == "bid")
+            .expect("bid mapping should exist");
+        let result = bid_mapping.apply(&source);
+        assert!(result.is_err(), "Missing parent object should return error");
     }
 }
