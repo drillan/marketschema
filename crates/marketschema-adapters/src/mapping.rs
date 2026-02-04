@@ -13,12 +13,20 @@ pub type TransformFn = Arc<dyn Fn(&Value) -> Result<Value, TransformError> + Sen
 /// Field mapping configuration that defines how to extract and transform
 /// a value from source data to a target field.
 #[derive(Clone)]
+#[non_exhaustive]
 pub struct ModelMapping {
-    target_field: String,
-    source_field: String,
-    transform: Option<TransformFn>,
-    default: Option<Value>,
-    required: bool,
+    /// Name of the field in the target model.
+    pub target_field: String,
+    /// Path to the field in the source data (supports dot notation).
+    pub source_field: String,
+    /// Optional transform function to apply to the extracted value.
+    pub transform: Option<TransformFn>,
+    /// Optional default value when source field is missing or null.
+    pub default: Option<Value>,
+    /// Whether the field is required. When true and value is missing/null,
+    /// returns error unless a default is set. When false, returns Value::Null
+    /// for missing values (unless default is set).
+    pub required: bool,
 }
 
 impl ModelMapping {
@@ -51,21 +59,6 @@ impl ModelMapping {
     pub fn optional(mut self) -> Self {
         self.required = false;
         self
-    }
-
-    /// Returns the target field name.
-    pub fn target_field(&self) -> &str {
-        &self.target_field
-    }
-
-    /// Returns the source field path.
-    pub fn source_field(&self) -> &str {
-        &self.source_field
-    }
-
-    /// Returns whether this mapping is required.
-    pub fn is_required(&self) -> bool {
-        self.required
     }
 
     /// Extracts a value from the source data using dot notation path.
