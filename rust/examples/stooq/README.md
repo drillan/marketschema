@@ -50,6 +50,8 @@ cargo run -p marketschema --example stooq_demo -- spy.us
 ### 使用例
 
 ```rust
+mod stooq;
+
 use stooq::{StooqAdapter, StooqError};
 
 #[tokio::main]
@@ -72,19 +74,14 @@ async fn main() -> Result<(), StooqError> {
 }
 ```
 
-## Data Structure
+## Output
 
-### Ohlcv
+`fetch_and_parse` メソッドは `Vec<Ohlcv>` を返す。各 `Ohlcv` レコードは以下のフィールドを持つ:
 
-| フィールド | 型 | 説明 |
-|------------|------|------|
-| `symbol` | `String` | 銘柄シンボル（例: "spy.us"） |
-| `timestamp` | `String` | ISO 8601 形式（例: "2024-01-15T00:00:00Z"） |
-| `open` | `f64` | 始値 |
-| `high` | `f64` | 高値 |
-| `low` | `f64` | 安値 |
-| `close` | `f64` | 終値 |
-| `volume` | `f64` | 出来高 |
+- `symbol`: 銘柄シンボル（例: "spy.us"）
+- `timestamp`: ISO 8601 形式（例: "2024-01-15T00:00:00Z"）
+- `open`, `high`, `low`, `close`: 価格（f64）
+- `volume`: 出来高（f64）
 
 ## Symbol Format
 
