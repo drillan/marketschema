@@ -152,9 +152,9 @@ marketschema/
 # 1. ルートに schemas/ を作成
 mkdir schemas
 
-# 2. schemas/ の内容を schemas/ に移動
+# 2. src/marketschema/schemas/ の内容を schemas/ に移動
 #    （相対$refを使用しているため、これをSSoTとする）
-mv schemas/*.json schemas/
+mv src/marketschema/schemas/*.json schemas/
 
 # 3. specs/002-data-model/contracts/ は schemas/ を参照するよう更新
 #    または、contracts/ の絶対URI版を schemas/ から自動生成
@@ -216,7 +216,7 @@ mv pyproject.toml python/
 
 ## Related
 
-- [pyproject.toml](../../../pyproject.toml) - Python プロジェクト設定
+- [pyproject.toml](../../../python/pyproject.toml) - Python プロジェクト設定
 - [rust/Cargo.toml](../../../rust/Cargo.toml) - Rust プロジェクト設定
 - [scripts/bundle_schemas.sh](../../../scripts/bundle_schemas.sh) - スキーマバンドルスクリプト
 - [ADR-001: typify の unevaluatedProperties 未対応への対応策](../codegen/001-unevaluated-properties-workaround.md)

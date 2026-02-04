@@ -40,6 +40,11 @@ echo "Done! Models generated in $MODELS_DIR"
 # Format generated code
 echo "Formatting generated code..."
 uv run ruff format "$MODELS_DIR" --quiet
-uv run ruff check "$MODELS_DIR" --fix --quiet || true
+
+echo "Running ruff check with auto-fix..."
+if ! uv run ruff check "$MODELS_DIR" --fix --quiet; then
+    echo "WARNING: ruff check found issues that could not be auto-fixed" >&2
+    echo "Please review the generated code in $MODELS_DIR" >&2
+fi
 
 echo "All done!"
