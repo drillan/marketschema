@@ -2,8 +2,8 @@
 
 **Feature**: 004-adapter-rust
 **Parent Spec**: [004-adapter-rust](../spec.md)
-**Date**: 2026-02-03
-**Status**: Planned
+**Date**: 2026-02-04
+**Status**: Approved
 
 ## Transforms Module
 
