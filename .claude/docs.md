@@ -237,6 +237,41 @@ docs/
 See the [features guide](features.md) for details.
 ```
 
+#### MyST ターゲット参照（別ファイルへのアンカーリンク）
+
+MyST で別ファイルの特定セクションにリンクする場合、明示的なターゲットを使用する:
+
+```markdown
+# ❌ file.md#anchor 形式は Sphinx で警告が出る
+[Rust Guide](http-client.md#rust-http-client-guide)
+
+# ✅ ターゲットを定義してターゲット名のみで参照
+# 参照先ファイル（http-client.md）でターゲットを定義:
+(rust-http-client-guide)=
+# Rust HTTP クライアント使用ガイド
+
+# 参照元ファイルでターゲット名のみで参照:
+[Rust Guide](rust-http-client-guide)
+```
+
+#### docs 外ファイルへのリンク
+
+Sphinx は `docs/` ディレクトリをルートとしてビルドするため、`docs/` 外のファイル（例: `specs/`）への相対パスは解決できない。
+
+```markdown
+# ❌ docs 外への相対パスは解決されない
+[spec](../specs/002-data-model-python/spec.md)
+
+# ✅ GitHub リポジトリへの絶対 URL を使用
+[spec](https://github.com/drillan/marketschema/tree/main/specs/002-data-model-python/spec.md)
+```
+
+**対象ディレクトリ**:
+- `specs/` - 仕様書
+- `python/` - Python 実装
+- `rust/` - Rust 実装
+- その他 `docs/` 外のファイル
+
 ## Version Documentation
 
 ### Feature Status Labels

@@ -1,4 +1,5 @@
-# HTTP クライアント使用ガイド
+(python-http-client-guide)=
+# Python HTTP クライアント使用ガイド
 
 marketschema の HTTP クライアント層を使用してデータソースからデータを取得する方法を解説する。
 
@@ -192,14 +193,14 @@ async with AsyncHttpClient(cache=cache) as client:
     data2 = await client.get_json("https://api.example.com/ticker")
 ```
 
-#### 初期化パラメータ
+### 初期化パラメータ
 
 | パラメータ | 型 | デフォルト | 説明 |
 |-----------|-----|---------|------|
 | `max_size` | int | 1000 | 最大キャッシュエントリ数 |
 | `default_ttl` | timedelta | 5分 | デフォルトの有効期限 |
 
-#### 注意事項
+### 注意事項
 
 - キャッシュキーは URL とクエリパラメータから自動生成される
 - ヘッダーの違いは区別されない
@@ -380,6 +381,7 @@ async with MyAdapter(http_client=http_client) as adapter:
 
 ---
 
+(rust-http-client-guide)=
 # Rust HTTP クライアント使用ガイド
 
 marketschema の Rust HTTP クライアント層を使用してデータソースからデータを取得する方法を解説する。
@@ -743,6 +745,6 @@ impl MyAdapter {
 
 ## 参照
 
-- [アダプター開発ガイド（Rust）](adapter-development.md#rust-アダプター開発ガイド) - Rust アダプター実装の詳細
-- [モデル実装ガイド（Rust）](models.md#rust-モデル実装ガイド) - Rust モデルの使い方
-- [003-http-client-rust spec](../specs/003-http-client-rust/spec.md) - 詳細仕様
+- [アダプター開発ガイド（Rust）](rust-adapter-development-guide) - Rust アダプター実装の詳細
+- [モデル実装ガイド（Rust）](rust-models-guide) - Rust モデルの使い方
+- [003-http-client-rust spec](https://github.com/drillan/marketschema/tree/main/specs/003-http-client-rust/spec.md) - 詳細仕様

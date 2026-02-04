@@ -1,4 +1,5 @@
-# モデル実装ガイド
+(python-models-guide)=
+# Python モデル実装ガイド
 
 marketschema の pydantic モデルを使用してマーケットデータを扱う方法を解説する。
 
@@ -538,6 +539,7 @@ Python モデルは datamodel-codegen を使用して自動生成される。詳
 
 ---
 
+(rust-models-guide)=
 # Rust モデル実装ガイド
 
 marketschema の Rust モデルを使用してマーケットデータを扱う方法を解説する。
