@@ -58,8 +58,9 @@
 //! assert!(adapters.contains(&"myapi".to_string()));
 //!
 //! // Retrieve and use an adapter
-//! if let Some(adapter) = AdapterRegistry::get("myapi")? {
-//!     println!("Source: {}", adapter.source_name());
+//! match AdapterRegistry::get("myapi")? {
+//!     Some(adapter) => println!("Source: {}", adapter.source_name()),
+//!     None => eprintln!("Warning: Adapter 'myapi' not found"),
 //! }
 //! # Ok(())
 //! # }
@@ -67,15 +68,17 @@
 //!
 //! ## Available Transform Functions
 //!
+//! All transform functions return results wrapped in `serde_json::Value`.
+//!
 //! | Function | Description |
 //! |----------|-------------|
 //! | [`Transforms::to_float_fn`] | Convert string/number to `f64` |
 //! | [`Transforms::to_int_fn`] | Convert string/number to `i64` |
-//! | [`Transforms::iso_timestamp_fn`] | Validate and normalize ISO 8601 timestamps |
-//! | [`Transforms::unix_timestamp_ms_fn`] | Convert Unix milliseconds to ISO 8601 |
+//! | [`Transforms::iso_timestamp_fn`] | Parse RFC 3339 timestamps and normalize to UTC with Z suffix |
+//! | [`Transforms::unix_timestamp_ms_fn`] | Convert Unix milliseconds to ISO 8601 (second precision) |
 //! | [`Transforms::unix_timestamp_sec_fn`] | Convert Unix seconds to ISO 8601 |
-//! | [`Transforms::jst_to_utc_fn`] | Convert JST timestamps to UTC |
-//! | [`Transforms::side_from_string_fn`] | Normalize "buy"/"sell" side values |
+//! | [`Transforms::jst_to_utc_fn`] | Convert JST timestamps to UTC (accepts RFC 3339 or naive datetime) |
+//! | [`Transforms::side_from_string_fn`] | Normalize side values: buy/bid/b → "buy", sell/ask/offer/s/a → "sell" |
 //! | [`Transforms::uppercase_fn`] | Convert to uppercase |
 //! | [`Transforms::lowercase_fn`] | Convert to lowercase |
 

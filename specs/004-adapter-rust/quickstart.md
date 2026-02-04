@@ -63,20 +63,28 @@ fn main() {
     println!("Registered adapters: {:?}", adapters);
 
     // アダプターを取得してデータを変換
-    if let Ok(Some(adapter)) = AdapterRegistry::get("myapi") {
-        let raw_data = json!({
-            "ticker": {
-                "bid": "100.50",
-                "ask": "100.75",
-                "time": 1704067200000_i64
-            }
-        });
+    match AdapterRegistry::get("myapi") {
+        Ok(Some(adapter)) => {
+            let raw_data = json!({
+                "ticker": {
+                    "bid": "100.50",
+                    "ask": "100.75",
+                    "time": 1704067200000_i64
+                }
+            });
 
-        for mapping in adapter.get_quote_mapping() {
-            match mapping.apply(&raw_data) {
-                Ok(value) => println!("{}: {}", mapping.target_field, value),
-                Err(e) => eprintln!("Error: {}", e),
+            for mapping in adapter.get_quote_mapping() {
+                match mapping.apply(&raw_data) {
+                    Ok(value) => println!("{}: {}", mapping.target_field, value),
+                    Err(e) => eprintln!("Error: {}", e),
+                }
             }
+        }
+        Ok(None) => {
+            eprintln!("Adapter 'myapi' is not registered");
+        }
+        Err(e) => {
+            eprintln!("Failed to get adapter: {}", e);
         }
     }
 }
@@ -131,15 +139,17 @@ assert_eq!(value, json!(42));
 
 ## Transform 関数一覧
 
+すべての Transform 関数は結果を `serde_json::Value` でラップして返します。
+
 | 関数 | 入力 | 出力 | 説明 |
 |-----|------|------|------|
 | `to_float_fn()` | String/Number | `f64` | 浮動小数点に変換 |
 | `to_int_fn()` | String/Number | `i64` | 整数に変換 |
-| `iso_timestamp_fn()` | ISO 8601 String | ISO 8601 UTC String | タイムスタンプを検証・正規化 |
-| `unix_timestamp_ms_fn()` | Integer (ms) | ISO 8601 UTC String | Unix ミリ秒から変換 |
+| `iso_timestamp_fn()` | RFC 3339 String | ISO 8601 UTC String | RFC 3339 を解析し UTC (Z サフィックス) に正規化 |
+| `unix_timestamp_ms_fn()` | Integer (ms) | ISO 8601 UTC String | Unix ミリ秒から変換（**秒精度**） |
 | `unix_timestamp_sec_fn()` | Integer (sec) | ISO 8601 UTC String | Unix 秒から変換 |
-| `jst_to_utc_fn()` | JST String | ISO 8601 UTC String | JST を UTC に変換 |
-| `side_from_string_fn()` | String | `"buy"` or `"sell"` | 売買方向を正規化 |
+| `jst_to_utc_fn()` | JST String | ISO 8601 UTC String | JST を UTC に変換（RFC 3339 または naive datetime を受け付け） |
+| `side_from_string_fn()` | String | `"buy"` or `"sell"` | 売買方向を正規化（buy/bid/b → "buy", sell/ask/offer/s/a → "sell"） |
 | `uppercase_fn()` | String | String | 大文字に変換 |
 | `lowercase_fn()` | String | String | 小文字に変換 |
 
