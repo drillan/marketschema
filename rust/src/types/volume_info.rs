@@ -44,6 +44,18 @@ pub mod error {
 #[doc = "    \"volume\""]
 #[doc = "  ],"]
 #[doc = "  \"properties\": {"]
+#[doc = "    \"open_interest\": {"]
+#[doc = "      \"description\": \"建玉残（未決済契約数）\","]
+#[doc = "      \"oneOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"number\","]
+#[doc = "          \"minimum\": 0.0"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ]"]
+#[doc = "    },"]
 #[doc = "    \"quote_volume\": {"]
 #[doc = "      \"description\": \"売買代金（決済通貨建て）\","]
 #[doc = "      \"oneOf\": ["]
@@ -78,6 +90,9 @@ pub mod error {
 #[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
 #[serde(deny_unknown_fields)]
 pub struct VolumeInfo {
+    #[doc = "建玉残（未決済契約数）"]
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub open_interest: ::std::option::Option<f64>,
     #[doc = "売買代金（決済通貨建て）"]
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub quote_volume: ::std::option::Option<f64>,
@@ -175,6 +190,7 @@ impl<'de> ::serde::Deserialize<'de> for VolumeInfoSymbol {
 pub mod builder {
     #[derive(Clone, Debug)]
     pub struct VolumeInfo {
+        open_interest: ::std::result::Result<::std::option::Option<f64>, ::std::string::String>,
         quote_volume: ::std::result::Result<::std::option::Option<f64>, ::std::string::String>,
         symbol: ::std::result::Result<super::VolumeInfoSymbol, ::std::string::String>,
         timestamp:
@@ -184,6 +200,7 @@ pub mod builder {
     impl ::std::default::Default for VolumeInfo {
         fn default() -> Self {
             Self {
+                open_interest: Ok(Default::default()),
                 quote_volume: Ok(Default::default()),
                 symbol: Err("no value supplied for symbol".to_string()),
                 timestamp: Err("no value supplied for timestamp".to_string()),
@@ -192,6 +209,16 @@ pub mod builder {
         }
     }
     impl VolumeInfo {
+        pub fn open_interest<T>(mut self, value: T) -> Self
+        where
+            T: ::std::convert::TryInto<::std::option::Option<f64>>,
+            T::Error: ::std::fmt::Display,
+        {
+            self.open_interest = value
+                .try_into()
+                .map_err(|e| format!("error converting supplied value for open_interest: {}", e));
+            self
+        }
         pub fn quote_volume<T>(mut self, value: T) -> Self
         where
             T: ::std::convert::TryInto<::std::option::Option<f64>>,
@@ -239,6 +266,7 @@ pub mod builder {
             value: VolumeInfo,
         ) -> ::std::result::Result<Self, super::error::ConversionError> {
             Ok(Self {
+                open_interest: value.open_interest?,
                 quote_volume: value.quote_volume?,
                 symbol: value.symbol?,
                 timestamp: value.timestamp?,
@@ -249,6 +277,7 @@ pub mod builder {
     impl ::std::convert::From<super::VolumeInfo> for VolumeInfo {
         fn from(value: super::VolumeInfo) -> Self {
             Self {
+                open_interest: Ok(value.open_interest),
                 quote_volume: Ok(value.quote_volume),
                 symbol: Ok(value.symbol),
                 timestamp: Ok(value.timestamp),

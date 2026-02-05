@@ -157,6 +157,18 @@ pub mod error {
 #[doc = "        }"]
 #[doc = "      ]"]
 #[doc = "    },"]
+#[doc = "    \"settlement_price\": {"]
+#[doc = "      \"description\": \"清算値段（証拠金計算・損益計算の基準）\","]
+#[doc = "      \"oneOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"type\": \"number\","]
+#[doc = "          \"minimum\": 0.0"]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ]"]
+#[doc = "    },"]
 #[doc = "    \"tick_size\": {"]
 #[doc = "      \"description\": \"呼値単位（最小価格変動）\","]
 #[doc = "      \"type\": \"number\""]
@@ -225,6 +237,9 @@ pub struct DerivativeInfo {
     #[doc = "決済方法"]
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub settlement_method: ::std::option::Option<DerivativeInfoSettlementMethod>,
+    #[doc = "清算値段（証拠金計算・損益計算の基準）"]
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub settlement_price: ::std::option::Option<f64>,
     pub tick_size: f64,
     #[doc = "ティック価値（1ティックあたりの金額変動）"]
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
@@ -671,6 +686,7 @@ pub mod builder {
             ::std::option::Option<super::DerivativeInfoSettlementMethod>,
             ::std::string::String,
         >,
+        settlement_price: ::std::result::Result<::std::option::Option<f64>, ::std::string::String>,
         tick_size: ::std::result::Result<f64, ::std::string::String>,
         tick_value: ::std::result::Result<::std::option::Option<f64>, ::std::string::String>,
         underlying_symbol:
@@ -691,6 +707,7 @@ pub mod builder {
                 multiplier: Err("no value supplied for multiplier".to_string()),
                 settlement_currency: Ok(Default::default()),
                 settlement_method: Ok(Default::default()),
+                settlement_price: Ok(Default::default()),
                 tick_size: Err("no value supplied for tick_size".to_string()),
                 tick_value: Ok(Default::default()),
                 underlying_symbol: Err("no value supplied for underlying_symbol".to_string()),
@@ -814,6 +831,19 @@ pub mod builder {
             });
             self
         }
+        pub fn settlement_price<T>(mut self, value: T) -> Self
+        where
+            T: ::std::convert::TryInto<::std::option::Option<f64>>,
+            T::Error: ::std::fmt::Display,
+        {
+            self.settlement_price = value.try_into().map_err(|e| {
+                format!(
+                    "error converting supplied value for settlement_price: {}",
+                    e
+                )
+            });
+            self
+        }
         pub fn tick_size<T>(mut self, value: T) -> Self
         where
             T: ::std::convert::TryInto<f64>,
@@ -874,6 +904,7 @@ pub mod builder {
                 multiplier: value.multiplier?,
                 settlement_currency: value.settlement_currency?,
                 settlement_method: value.settlement_method?,
+                settlement_price: value.settlement_price?,
                 tick_size: value.tick_size?,
                 tick_value: value.tick_value?,
                 underlying_symbol: value.underlying_symbol?,
@@ -894,6 +925,7 @@ pub mod builder {
                 multiplier: Ok(value.multiplier),
                 settlement_currency: Ok(value.settlement_currency),
                 settlement_method: Ok(value.settlement_method),
+                settlement_price: Ok(value.settlement_price),
                 tick_size: Ok(value.tick_size),
                 tick_value: Ok(value.tick_value),
                 underlying_symbol: Ok(value.underlying_symbol),

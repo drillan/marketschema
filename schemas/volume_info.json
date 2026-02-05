@@ -26,6 +26,18 @@
         }
       ],
       "description": "売買代金（決済通貨建て）"
+    },
+    "open_interest": {
+      "oneOf": [
+        {
+          "type": "number",
+          "minimum": 0
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "建玉残（未決済契約数）"
     }
   },
   "required": [

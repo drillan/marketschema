@@ -129,6 +129,18 @@
         }
       ],
       "description": "決済通貨"
+    },
+    "settlement_price": {
+      "oneOf": [
+        {
+          "type": "number",
+          "minimum": 0
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "清算値段（証拠金計算・損益計算の基準）"
     }
   },
   "required": [
