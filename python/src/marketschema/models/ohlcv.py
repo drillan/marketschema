@@ -24,23 +24,23 @@ class OHLCV(BaseModel):
     """
     足の開始時刻
     """
-    open: definitions.Price
+    open: definitions.Price | None = None
     """
     始値
     """
-    high: definitions.Price
+    high: definitions.Price | None = None
     """
     高値
     """
-    low: definitions.Price
+    low: definitions.Price | None = None
     """
     安値
     """
-    close: definitions.Price
+    close: definitions.Price | None = None
     """
     終値
     """
-    volume: definitions.Size
+    volume: definitions.Size | None = None
     """
     出来高
     """

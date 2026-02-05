@@ -45,7 +45,9 @@ async def demo_ticker(adapter: BitbankAdapter, pair: str) -> None:
 
     quote = await adapter.fetch_ticker(pair)
 
-    print(f"\nQuote: bid={quote.bid.root}, ask={quote.ask.root}")
+    bid_str = quote.bid.root if quote.bid is not None else "N/A"
+    ask_str = quote.ask.root if quote.ask is not None else "N/A"
+    print(f"\nQuote: bid={bid_str}, ask={ask_str}")
     print(f"Timestamp: {quote.timestamp.root}")
 
 
@@ -84,11 +86,11 @@ async def demo_candlestick(adapter: BitbankAdapter, pair: str) -> None:
 
     for i, ohlcv in enumerate(ohlcvs[:3], 1):
         print(f"\nOHLCV {i}:")
-        print(f"  Open: {ohlcv.open.root}")
-        print(f"  High: {ohlcv.high.root}")
-        print(f"  Low: {ohlcv.low.root}")
-        print(f"  Close: {ohlcv.close.root}")
-        print(f"  Volume: {ohlcv.volume.root}")
+        print(f"  Open: {ohlcv.open.root if ohlcv.open is not None else 'N/A'}")
+        print(f"  High: {ohlcv.high.root if ohlcv.high is not None else 'N/A'}")
+        print(f"  Low: {ohlcv.low.root if ohlcv.low is not None else 'N/A'}")
+        print(f"  Close: {ohlcv.close.root if ohlcv.close is not None else 'N/A'}")
+        print(f"  Volume: {ohlcv.volume.root if ohlcv.volume is not None else 'N/A'}")
         print(f"  Timestamp: {ohlcv.timestamp.root}")
 
 

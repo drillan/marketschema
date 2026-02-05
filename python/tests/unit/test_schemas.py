@@ -205,10 +205,68 @@ class TestInvalidData:
         )
         assert_invalid("instrument.json", data)
 
-    def test_ohlcv_missing_volume(self) -> None:
-        """OHLCV missing required volume field should fail validation."""
-        data = load_fixture(FIXTURES_DIR / "invalid" / "ohlcv_missing_volume.json")
-        assert_invalid("ohlcv.json", data)
+
+class TestNullableFields:
+    """Test nullable fields for Quote and OHLCV schemas."""
+
+    def test_quote_with_null_bid_is_valid(self) -> None:
+        """Quote with null bid should be valid."""
+        data = {
+            "symbol": "7203.T",
+            "timestamp": "2026-02-02T09:00:00.000Z",
+            "bid": None,
+            "ask": 2851.0,
+        }
+        assert_valid("quote.json", data)
+
+    def test_quote_with_null_ask_is_valid(self) -> None:
+        """Quote with null ask should be valid."""
+        data = {
+            "symbol": "7203.T",
+            "timestamp": "2026-02-02T09:00:00.000Z",
+            "bid": 2850.0,
+            "ask": None,
+        }
+        assert_valid("quote.json", data)
+
+    def test_quote_with_both_null_is_valid(self) -> None:
+        """Quote with both bid and ask null should be valid."""
+        data = {
+            "symbol": "7203.T",
+            "timestamp": "2026-02-02T09:00:00.000Z",
+        }
+        assert_valid("quote.json", data)
+
+    def test_ohlcv_with_null_prices_is_valid(self) -> None:
+        """OHLCV with null price fields should be valid."""
+        data = {
+            "symbol": "BTCUSDT",
+            "timestamp": "2026-02-02T00:00:00.000Z",
+            "open": None,
+            "high": None,
+            "low": None,
+            "close": None,
+            "volume": None,
+        }
+        assert_valid("ohlcv.json", data)
+
+    def test_ohlcv_with_all_fields_omitted_is_valid(self) -> None:
+        """OHLCV with all optional fields omitted should be valid."""
+        data = {
+            "symbol": "BTCUSDT",
+            "timestamp": "2026-02-02T00:00:00.000Z",
+        }
+        assert_valid("ohlcv.json", data)
+
+    def test_ohlcv_with_partial_data_is_valid(self) -> None:
+        """OHLCV with only some price fields should be valid."""
+        data = {
+            "symbol": "BTCUSDT",
+            "timestamp": "2026-02-02T00:00:00.000Z",
+            "close": 50000.0,
+            "volume": 100.0,
+        }
+        assert_valid("ohlcv.json", data)
 
 
 class TestSchemaFilesExist:

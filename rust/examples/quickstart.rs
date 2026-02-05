@@ -37,7 +37,7 @@ fn deserialize_examples() -> Result<(), Box<dyn std::error::Error>> {
     }"#;
     let quote: Quote = serde_json::from_str(quote_json)?;
     println!(
-        "Quote: {} bid={} ask={}",
+        "Quote: {} bid={:?} ask={:?}",
         *quote.symbol, quote.bid, quote.ask
     );
 
@@ -67,7 +67,7 @@ fn deserialize_examples() -> Result<(), Box<dyn std::error::Error>> {
     }"#;
     let ohlcv: Ohlcv = serde_json::from_str(ohlcv_json)?;
     println!(
-        "OHLCV: {} O={} H={} L={} C={} V={}",
+        "OHLCV: {} O={:?} H={:?} L={:?} C={:?} V={:?}",
         *ohlcv.symbol, ohlcv.open, ohlcv.high, ohlcv.low, ohlcv.close, ohlcv.volume
     );
 

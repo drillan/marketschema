@@ -15,8 +15,8 @@ fn test_quote_deserialization() {
 
     let quote: Quote = serde_json::from_str(json).expect("Failed to deserialize Quote");
     assert_eq!(*quote.symbol, "7203.T");
-    assert_eq!(quote.bid, 2850.0);
-    assert_eq!(quote.ask, 2851.0);
+    assert_eq!(quote.bid, Some(2850.0));
+    assert_eq!(quote.ask, Some(2851.0));
     assert_eq!(quote.bid_size, Some(1000.0));
     assert_eq!(quote.ask_size, Some(500.0));
 }
@@ -65,8 +65,8 @@ fn test_ohlcv_deserialization() {
 
     let ohlcv: Ohlcv = serde_json::from_str(json).expect("Failed to deserialize OHLCV");
     assert_eq!(*ohlcv.symbol, "BTCUSDT");
-    assert_eq!(ohlcv.open, 50000.0);
-    assert_eq!(ohlcv.volume, 12345.67);
+    assert_eq!(ohlcv.open, Some(50000.0));
+    assert_eq!(ohlcv.volume, Some(12345.67));
     assert_eq!(ohlcv.quote_volume, None);
 }
 
@@ -85,11 +85,11 @@ fn test_ohlcv_deserialization_with_quote_volume() {
 
     let ohlcv: Ohlcv = serde_json::from_str(json).expect("Failed to deserialize OHLCV");
     assert_eq!(*ohlcv.symbol, "ETHUSDT");
-    assert_eq!(ohlcv.open, 3200.0);
-    assert_eq!(ohlcv.high, 3350.0);
-    assert_eq!(ohlcv.low, 3150.0);
-    assert_eq!(ohlcv.close, 3280.0);
-    assert_eq!(ohlcv.volume, 50000.0);
+    assert_eq!(ohlcv.open, Some(3200.0));
+    assert_eq!(ohlcv.high, Some(3350.0));
+    assert_eq!(ohlcv.low, Some(3150.0));
+    assert_eq!(ohlcv.close, Some(3280.0));
+    assert_eq!(ohlcv.volume, Some(50000.0));
     assert_eq!(ohlcv.quote_volume, Some(162500000.0));
 }
 
@@ -108,8 +108,8 @@ fn test_ohlcv_deserialization_equity() {
 
     let ohlcv: Ohlcv = serde_json::from_str(json).expect("Failed to deserialize OHLCV");
     assert_eq!(*ohlcv.symbol, "7203.T");
-    assert_eq!(ohlcv.close, 2820.0);
-    assert_eq!(ohlcv.volume, 1500000.0);
+    assert_eq!(ohlcv.close, Some(2820.0));
+    assert_eq!(ohlcv.volume, Some(1500000.0));
 }
 
 #[test]
@@ -907,20 +907,24 @@ fn test_quote_rejects_missing_required_fields() {
     let result: Result<Quote, _> = serde_json::from_str(json);
     assert!(result.is_err());
 
-    // missing bid
+    // bid and ask are now optional (nullable), so missing is allowed
     let json = r#"{"symbol": "TEST", "timestamp": "2026-02-02T09:00:00Z", "ask": 101.0}"#;
     let result: Result<Quote, _> = serde_json::from_str(json);
-    assert!(result.is_err());
+    assert!(result.is_ok());
 
-    // missing ask
     let json = r#"{"symbol": "TEST", "timestamp": "2026-02-02T09:00:00Z", "bid": 100.0}"#;
     let result: Result<Quote, _> = serde_json::from_str(json);
-    assert!(result.is_err());
+    assert!(result.is_ok());
+
+    // Both bid and ask missing is also valid
+    let json = r#"{"symbol": "TEST", "timestamp": "2026-02-02T09:00:00Z"}"#;
+    let result: Result<Quote, _> = serde_json::from_str(json);
+    assert!(result.is_ok());
 }
 
 #[test]
 fn test_ohlcv_rejects_missing_required_fields() {
-    // T022: Ohlcv - missing symbol
+    // T022: Ohlcv - missing symbol (still required)
     let json = r#"{
         "timestamp": "2026-02-02T00:00:00Z",
         "open": 100.0, "high": 105.0, "low": 99.0, "close": 103.0, "volume": 1000.0
@@ -928,21 +932,20 @@ fn test_ohlcv_rejects_missing_required_fields() {
     let result: Result<Ohlcv, _> = serde_json::from_str(json);
     assert!(result.is_err());
 
-    // missing open
+    // missing timestamp (still required)
     let json = r#"{
-        "symbol": "TEST", "timestamp": "2026-02-02T00:00:00Z",
-        "high": 105.0, "low": 99.0, "close": 103.0, "volume": 1000.0
+        "symbol": "TEST",
+        "open": 100.0, "high": 105.0, "low": 99.0, "close": 103.0, "volume": 1000.0
     }"#;
     let result: Result<Ohlcv, _> = serde_json::from_str(json);
     assert!(result.is_err());
 
-    // missing volume
+    // open, high, low, close, volume are now optional (nullable), so missing is allowed
     let json = r#"{
-        "symbol": "TEST", "timestamp": "2026-02-02T00:00:00Z",
-        "open": 100.0, "high": 105.0, "low": 99.0, "close": 103.0
+        "symbol": "TEST", "timestamp": "2026-02-02T00:00:00Z"
     }"#;
     let result: Result<Ohlcv, _> = serde_json::from_str(json);
-    assert!(result.is_err());
+    assert!(result.is_ok());
 }
 
 #[test]

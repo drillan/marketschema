@@ -44,6 +44,7 @@ field-names/market-data
 
 types/enum-values
 types/format-conventions
+types/nullable-market-data-fields
 ```
 
 ## コード生成

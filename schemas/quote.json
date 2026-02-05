@@ -13,11 +13,25 @@
       "description": "気配値取得時刻"
     },
     "bid": {
-      "$ref": "definitions.json#/$defs/Price",
+      "oneOf": [
+        {
+          "$ref": "definitions.json#/$defs/Price"
+        },
+        {
+          "type": "null"
+        }
+      ],
       "description": "買い気配値"
     },
     "ask": {
-      "$ref": "definitions.json#/$defs/Price",
+      "oneOf": [
+        {
+          "$ref": "definitions.json#/$defs/Price"
+        },
+        {
+          "type": "null"
+        }
+      ],
       "description": "売り気配値"
     },
     "bid_size": {
@@ -45,9 +59,7 @@
   },
   "required": [
     "symbol",
-    "timestamp",
-    "bid",
-    "ask"
+    "timestamp"
   ],
   "unevaluatedProperties": false
 }

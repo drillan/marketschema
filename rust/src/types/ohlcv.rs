@@ -39,30 +39,57 @@ pub mod error {
 #[doc = "  \"description\": \"ローソク足データを表現する（始値、高値、安値、終値、出来高）\","]
 #[doc = "  \"type\": \"object\","]
 #[doc = "  \"required\": ["]
-#[doc = "    \"close\","]
-#[doc = "    \"high\","]
-#[doc = "    \"low\","]
-#[doc = "    \"open\","]
 #[doc = "    \"symbol\","]
-#[doc = "    \"timestamp\","]
-#[doc = "    \"volume\""]
+#[doc = "    \"timestamp\""]
 #[doc = "  ],"]
 #[doc = "  \"properties\": {"]
 #[doc = "    \"close\": {"]
-#[doc = "      \"description\": \"価格\","]
-#[doc = "      \"type\": \"number\""]
+#[doc = "      \"description\": \"終値\","]
+#[doc = "      \"oneOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"description\": \"価格\","]
+#[doc = "          \"type\": \"number\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ]"]
 #[doc = "    },"]
 #[doc = "    \"high\": {"]
-#[doc = "      \"description\": \"価格\","]
-#[doc = "      \"type\": \"number\""]
+#[doc = "      \"description\": \"高値\","]
+#[doc = "      \"oneOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"description\": \"価格\","]
+#[doc = "          \"type\": \"number\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ]"]
 #[doc = "    },"]
 #[doc = "    \"low\": {"]
-#[doc = "      \"description\": \"価格\","]
-#[doc = "      \"type\": \"number\""]
+#[doc = "      \"description\": \"安値\","]
+#[doc = "      \"oneOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"description\": \"価格\","]
+#[doc = "          \"type\": \"number\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ]"]
 #[doc = "    },"]
 #[doc = "    \"open\": {"]
-#[doc = "      \"description\": \"価格\","]
-#[doc = "      \"type\": \"number\""]
+#[doc = "      \"description\": \"始値\","]
+#[doc = "      \"oneOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"description\": \"価格\","]
+#[doc = "          \"type\": \"number\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ]"]
 #[doc = "    },"]
 #[doc = "    \"quote_volume\": {"]
 #[doc = "      \"description\": \"売買代金（決済通貨建ての出来高）\","]
@@ -87,8 +114,16 @@ pub mod error {
 #[doc = "      \"format\": \"date-time\""]
 #[doc = "    },"]
 #[doc = "    \"volume\": {"]
-#[doc = "      \"description\": \"数量\","]
-#[doc = "      \"type\": \"number\""]
+#[doc = "      \"description\": \"出来高\","]
+#[doc = "      \"oneOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"description\": \"数量\","]
+#[doc = "          \"type\": \"number\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ]"]
 #[doc = "    }"]
 #[doc = "  },"]
 #[doc = "  \"additionalProperties\": false"]
@@ -98,10 +133,18 @@ pub mod error {
 #[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
 #[serde(deny_unknown_fields)]
 pub struct Ohlcv {
-    pub close: f64,
-    pub high: f64,
-    pub low: f64,
-    pub open: f64,
+    #[doc = "終値"]
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub close: ::std::option::Option<f64>,
+    #[doc = "高値"]
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub high: ::std::option::Option<f64>,
+    #[doc = "安値"]
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub low: ::std::option::Option<f64>,
+    #[doc = "始値"]
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub open: ::std::option::Option<f64>,
     #[doc = "売買代金（決済通貨建ての出来高）"]
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub quote_volume: ::std::option::Option<f64>,
@@ -109,7 +152,9 @@ pub struct Ohlcv {
     pub symbol: OhlcvSymbol,
     #[doc = "ISO 8601形式のタイムスタンプ (UTC)"]
     pub timestamp: ::chrono::DateTime<::chrono::offset::Utc>,
-    pub volume: f64,
+    #[doc = "出来高"]
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub volume: ::std::option::Option<f64>,
 }
 impl ::std::convert::From<&Ohlcv> for Ohlcv {
     fn from(value: &Ohlcv) -> Self {
@@ -199,34 +244,34 @@ impl<'de> ::serde::Deserialize<'de> for OhlcvSymbol {
 pub mod builder {
     #[derive(Clone, Debug)]
     pub struct Ohlcv {
-        close: ::std::result::Result<f64, ::std::string::String>,
-        high: ::std::result::Result<f64, ::std::string::String>,
-        low: ::std::result::Result<f64, ::std::string::String>,
-        open: ::std::result::Result<f64, ::std::string::String>,
+        close: ::std::result::Result<::std::option::Option<f64>, ::std::string::String>,
+        high: ::std::result::Result<::std::option::Option<f64>, ::std::string::String>,
+        low: ::std::result::Result<::std::option::Option<f64>, ::std::string::String>,
+        open: ::std::result::Result<::std::option::Option<f64>, ::std::string::String>,
         quote_volume: ::std::result::Result<::std::option::Option<f64>, ::std::string::String>,
         symbol: ::std::result::Result<super::OhlcvSymbol, ::std::string::String>,
         timestamp:
             ::std::result::Result<::chrono::DateTime<::chrono::offset::Utc>, ::std::string::String>,
-        volume: ::std::result::Result<f64, ::std::string::String>,
+        volume: ::std::result::Result<::std::option::Option<f64>, ::std::string::String>,
     }
     impl ::std::default::Default for Ohlcv {
         fn default() -> Self {
             Self {
-                close: Err("no value supplied for close".to_string()),
-                high: Err("no value supplied for high".to_string()),
-                low: Err("no value supplied for low".to_string()),
-                open: Err("no value supplied for open".to_string()),
+                close: Ok(Default::default()),
+                high: Ok(Default::default()),
+                low: Ok(Default::default()),
+                open: Ok(Default::default()),
                 quote_volume: Ok(Default::default()),
                 symbol: Err("no value supplied for symbol".to_string()),
                 timestamp: Err("no value supplied for timestamp".to_string()),
-                volume: Err("no value supplied for volume".to_string()),
+                volume: Ok(Default::default()),
             }
         }
     }
     impl Ohlcv {
         pub fn close<T>(mut self, value: T) -> Self
         where
-            T: ::std::convert::TryInto<f64>,
+            T: ::std::convert::TryInto<::std::option::Option<f64>>,
             T::Error: ::std::fmt::Display,
         {
             self.close = value
@@ -236,7 +281,7 @@ pub mod builder {
         }
         pub fn high<T>(mut self, value: T) -> Self
         where
-            T: ::std::convert::TryInto<f64>,
+            T: ::std::convert::TryInto<::std::option::Option<f64>>,
             T::Error: ::std::fmt::Display,
         {
             self.high = value
@@ -246,7 +291,7 @@ pub mod builder {
         }
         pub fn low<T>(mut self, value: T) -> Self
         where
-            T: ::std::convert::TryInto<f64>,
+            T: ::std::convert::TryInto<::std::option::Option<f64>>,
             T::Error: ::std::fmt::Display,
         {
             self.low = value
@@ -256,7 +301,7 @@ pub mod builder {
         }
         pub fn open<T>(mut self, value: T) -> Self
         where
-            T: ::std::convert::TryInto<f64>,
+            T: ::std::convert::TryInto<::std::option::Option<f64>>,
             T::Error: ::std::fmt::Display,
         {
             self.open = value
@@ -296,7 +341,7 @@ pub mod builder {
         }
         pub fn volume<T>(mut self, value: T) -> Self
         where
-            T: ::std::convert::TryInto<f64>,
+            T: ::std::convert::TryInto<::std::option::Option<f64>>,
             T::Error: ::std::fmt::Display,
         {
             self.volume = value
