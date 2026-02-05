@@ -3,5 +3,6 @@
   "tick_size": 5.0,
   "underlying_symbol": "NK225",
   "underlying_type": "index",
-  "settlement_method": "cash"
+  "settlement_method": "cash",
+  "settlement_price": 39850.0
 }

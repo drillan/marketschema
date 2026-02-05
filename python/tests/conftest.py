@@ -109,6 +109,7 @@ def valid_derivative_info() -> dict[str, Any]:
         "underlying_symbol": "NK225",
         "underlying_type": "index",
         "settlement_method": "cash",
+        "settlement_price": 39850.0,
     }
 
 
@@ -140,4 +141,5 @@ def valid_volume_info() -> dict[str, Any]:
         "timestamp": "2026-02-02T00:00:00.000Z",
         "volume": 12345.67,
         "quote_volume": 628000000.0,
+        "open_interest": 125000.0,
     }

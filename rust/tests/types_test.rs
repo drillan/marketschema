@@ -323,6 +323,33 @@ fn test_volume_info_rejects_unknown_fields() {
     assert!(result.unwrap_err().to_string().contains("unknown field"));
 }
 
+#[test]
+fn test_volume_info_with_open_interest() {
+    let json = r#"{
+        "symbol": "BTCUSDT",
+        "timestamp": "2026-02-02T00:00:00Z",
+        "volume": 12345.67,
+        "open_interest": 125000.0
+    }"#;
+
+    let volume_info: VolumeInfo =
+        serde_json::from_str(json).expect("Failed to deserialize VolumeInfo");
+    assert_eq!(volume_info.open_interest, Some(125000.0));
+}
+
+#[test]
+fn test_volume_info_open_interest_optional() {
+    let json = r#"{
+        "symbol": "BTCUSDT",
+        "timestamp": "2026-02-02T00:00:00Z",
+        "volume": 12345.67
+    }"#;
+
+    let volume_info: VolumeInfo =
+        serde_json::from_str(json).expect("Failed to deserialize VolumeInfo");
+    assert!(volume_info.open_interest.is_none());
+}
+
 // =============================================================================
 // Tests for ExpiryInfo
 // =============================================================================
@@ -498,6 +525,36 @@ fn test_derivative_info_rejects_unknown_fields() {
     let result: Result<DerivativeInfo, _> = serde_json::from_str(json);
     assert!(result.is_err());
     assert!(result.unwrap_err().to_string().contains("unknown field"));
+}
+
+#[test]
+fn test_derivative_info_with_settlement_price() {
+    let json = r#"{
+        "underlying_symbol": "NK225",
+        "underlying_type": "index",
+        "multiplier": 1000.0,
+        "tick_size": 5.0,
+        "settlement_method": "cash",
+        "settlement_price": 39850.0
+    }"#;
+
+    let derivative_info: DerivativeInfo =
+        serde_json::from_str(json).expect("Failed to deserialize DerivativeInfo");
+    assert_eq!(derivative_info.settlement_price, Some(39850.0));
+}
+
+#[test]
+fn test_derivative_info_settlement_price_optional() {
+    let json = r#"{
+        "underlying_symbol": "NK225",
+        "underlying_type": "index",
+        "multiplier": 1000.0,
+        "tick_size": 5.0
+    }"#;
+
+    let derivative_info: DerivativeInfo =
+        serde_json::from_str(json).expect("Failed to deserialize DerivativeInfo");
+    assert!(derivative_info.settlement_price.is_none());
 }
 
 // =============================================================================
@@ -1110,4 +1167,31 @@ fn test_derivative_info_serialization_roundtrip() {
         *roundtrip.underlying_symbol
     );
     assert_eq!(derivative_info.multiplier, roundtrip.multiplier);
+}
+
+#[test]
+fn test_derivative_info_with_settlement_price_roundtrip() {
+    // T055: DerivativeInfo with settlement_price roundtrip
+    let json = r#"{"multiplier":1000.0,"settlement_price":39850.0,"tick_size":5.0,"underlying_symbol":"NK225","underlying_type":"index"}"#;
+
+    let derivative_info: DerivativeInfo =
+        serde_json::from_str(json).expect("Failed to deserialize");
+    let serialized = serde_json::to_string(&derivative_info).expect("Failed to serialize");
+    let roundtrip: DerivativeInfo =
+        serde_json::from_str(&serialized).expect("Failed to deserialize roundtrip");
+
+    assert_eq!(derivative_info.settlement_price, roundtrip.settlement_price);
+}
+
+#[test]
+fn test_volume_info_with_open_interest_roundtrip() {
+    // T056: VolumeInfo with open_interest roundtrip
+    let json = r#"{"open_interest":125000.0,"symbol":"BTCUSDT","timestamp":"2026-02-02T00:00:00Z","volume":12345.67}"#;
+
+    let volume_info: VolumeInfo = serde_json::from_str(json).expect("Failed to deserialize");
+    let serialized = serde_json::to_string(&volume_info).expect("Failed to serialize");
+    let roundtrip: VolumeInfo =
+        serde_json::from_str(&serialized).expect("Failed to deserialize roundtrip");
+
+    assert_eq!(volume_info.open_interest, roundtrip.open_interest);
 }

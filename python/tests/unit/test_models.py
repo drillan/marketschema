@@ -27,7 +27,10 @@ from marketschema.models import (
     Timestamp,
     Trade,
     UnderlyingType,
+    VolumeInfo,
 )
+from marketschema.models.derivative_info import SettlementPrice
+from marketschema.models.volume_info import OpenInterest
 
 
 class TestQuoteModel:
@@ -205,6 +208,39 @@ class TestDerivativeInfoModel:
         assert deriv.multiplier == 1000.0
         assert deriv.underlying_type == UnderlyingType.index_
 
+    def test_create_derivative_info_with_settlement_price(self) -> None:
+        """DerivativeInfo can include optional settlement_price."""
+        deriv = DerivativeInfo(
+            multiplier=1000.0,
+            tick_size=5.0,
+            underlying_symbol=Symbol("NK225"),
+            underlying_type=UnderlyingType.index_,
+            settlement_price=SettlementPrice(39850.0),
+        )
+        assert deriv.settlement_price is not None
+        assert deriv.settlement_price.root == 39850.0
+
+    def test_derivative_info_settlement_price_optional(self) -> None:
+        """DerivativeInfo settlement_price defaults to None."""
+        deriv = DerivativeInfo(
+            multiplier=1000.0,
+            tick_size=5.0,
+            underlying_symbol=Symbol("NK225"),
+            underlying_type=UnderlyingType.index_,
+        )
+        assert deriv.settlement_price is None
+
+    def test_settlement_price_accepts_zero(self) -> None:
+        """SettlementPrice accepts zero as valid value."""
+        sp = SettlementPrice(0.0)
+        assert sp.root == 0.0
+
+    def test_settlement_price_rejects_negative_value(self) -> None:
+        """SettlementPrice rejects negative values."""
+        with pytest.raises(ValidationError) as exc_info:
+            SettlementPrice(-1.0)
+        assert "greater_than_equal" in str(exc_info.value).lower()
+
 
 class TestExpiryInfoModel:
     """Test ExpiryInfo pydantic model."""
@@ -233,6 +269,51 @@ class TestOptionInfoModel:
         )
         assert option.option_type == OptionType.call
         assert option.exercise_style == ExerciseStyle.european
+
+
+class TestVolumeInfoModel:
+    """Test VolumeInfo pydantic model."""
+
+    def test_create_volume_info(self) -> None:
+        """VolumeInfo can be created with required fields."""
+        vol = VolumeInfo(
+            symbol=Symbol("BTCUSDT"),
+            timestamp=Timestamp(datetime(2026, 2, 2, 0, 0, 0, tzinfo=UTC)),
+            volume=Size(12345.67),
+        )
+        assert vol.symbol.root == "BTCUSDT"
+        assert vol.volume.root == 12345.67
+
+    def test_volume_info_with_open_interest(self) -> None:
+        """VolumeInfo can include optional open_interest."""
+        vol = VolumeInfo(
+            symbol=Symbol("BTCUSDT"),
+            timestamp=Timestamp(datetime(2026, 2, 2, 0, 0, 0, tzinfo=UTC)),
+            volume=Size(12345.67),
+            open_interest=OpenInterest(125000.0),
+        )
+        assert vol.open_interest is not None
+        assert vol.open_interest.root == 125000.0
+
+    def test_volume_info_open_interest_optional(self) -> None:
+        """VolumeInfo open_interest defaults to None."""
+        vol = VolumeInfo(
+            symbol=Symbol("BTCUSDT"),
+            timestamp=Timestamp(datetime(2026, 2, 2, 0, 0, 0, tzinfo=UTC)),
+            volume=Size(12345.67),
+        )
+        assert vol.open_interest is None
+
+    def test_open_interest_accepts_zero(self) -> None:
+        """OpenInterest accepts zero as valid value (market with no positions)."""
+        oi = OpenInterest(0.0)
+        assert oi.root == 0.0
+
+    def test_open_interest_rejects_negative_value(self) -> None:
+        """OpenInterest rejects negative values."""
+        with pytest.raises(ValidationError) as exc_info:
+            OpenInterest(-100.0)
+        assert "greater_than_equal" in str(exc_info.value).lower()
 
 
 class TestEnumValues:
