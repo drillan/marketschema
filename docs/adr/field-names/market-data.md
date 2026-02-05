@@ -79,13 +79,12 @@ Accepted
 | ソース | 名称 | 型/形式 | 参照 |
 |--------|------|---------|------|
 | FIX Protocol | `OpenInterest` (Tag 746) | Amt | [^STD-2] |
-| Interactive Brokers | `Open Interest` (Tick ID 22) | int | [^BRK-1] |
 | Interactive Brokers | `Futures Open Interest` (Tick ID 86) | int | [^BRK-1] |
 | Binance Futures | `openInterest` | String | [^CRYPTO-1] |
 | OKX | `oi` (WebSocket), `openInterest` (REST) | String | [^CRYPTO-4] |
 | Polygon.io | `open_interest` | number | [^DATA-1] |
 | CCXT | `openInterestAmount`, `openInterestValue` | number | [^CRYPTO-6] |
-| JPX | `DOI` (Day Open Interest) | カンマ区切り文字列 | [^JPX-FUTURES-API] |
+| JPX | `DOI` (建玉残) | カンマ区切り文字列 | [^JPX-FUTURES-API] |
 
 **集計:**
 
@@ -168,7 +167,7 @@ open_interest_value = open_interest × contract_value × price
 
 [^STD-2]: [FIX Protocol Field Tags](https://www.onixs.biz/fix-dictionary/4.4/fields_by_tag.html) - Tag 730 (SettlPrice), Tag 746 (OpenInterest)
 [^BRK-1]: [Interactive Brokers TWS API Tick Types](https://interactivebrokers.github.io/tws-api/tick_types.html)
-[^DATA-1]: [Polygon.io Options API](https://massive.com/docs/rest/options/snapshots/option-chain-snapshot)
+[^DATA-1]: [Massive Options API](https://massive.com/docs/rest/options/snapshots/option-chain-snapshot) (旧 Polygon.io)
 [^EX-4]: [CME Market Data](https://www.cmegroup.com/market-data.html)
 [^CRYPTO-1]: [Binance Futures API](https://developers.binance.com/docs/derivatives/usds-margined-futures/market-data/rest-api)
 [^CRYPTO-4]: [OKX API](https://www.okx.com/docs-v5/en/#public-data-rest-api-get-open-interest)

@@ -187,9 +187,6 @@ settlement_currency
 
 settlement_method
     決済方法。cash（現金決済）または physical（現物受渡）。
-
-settlement_price
-    清算値段。証拠金計算・日次損益計算の基準となる価格。FIX Protocol Tag 730。
 ```
 
 ## マーケットデータフィールド名
@@ -200,4 +197,7 @@ settlement_price
 ```{glossary}
 open_interest
     建玉残。未決済契約の総数。市場の流動性・関心度の指標。FIX Protocol Tag 746。
+
+settlement_price
+    清算値段。証拠金計算・日次損益計算の基準となる価格。FIX Protocol Tag 730。
 ```
