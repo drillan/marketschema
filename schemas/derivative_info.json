@@ -133,7 +133,8 @@
     "settlement_price": {
       "oneOf": [
         {
-          "type": "number"
+          "type": "number",
+          "minimum": 0
         },
         {
           "type": "null"
