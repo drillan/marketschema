@@ -1,6 +1,6 @@
 [project]
 name = "marketschema"
-version = "0.0.2"
+version = "0.0.3"
 description = "Unified market data schema for financial applications"
 readme = "../README.md"
 authors = [
