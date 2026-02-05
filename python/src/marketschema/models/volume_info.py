@@ -32,3 +32,7 @@ class VolumeInfo(BaseModel):
     """
     売買代金（決済通貨建て）
     """
+    open_interest: float | None = None
+    """
+    建玉残（未決済契約数）
+    """

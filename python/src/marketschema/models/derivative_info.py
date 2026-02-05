@@ -72,3 +72,7 @@ class DerivativeInfo(BaseModel):
     """
     決済通貨
     """
+    settlement_price: float | None = None
+    """
+    清算値段（証拠金計算・損益計算の基準）
+    """
