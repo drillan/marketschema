@@ -13,23 +13,58 @@
       "description": "足の開始時刻"
     },
     "open": {
-      "$ref": "definitions.json#/$defs/Price",
+      "oneOf": [
+        {
+          "$ref": "definitions.json#/$defs/Price"
+        },
+        {
+          "type": "null"
+        }
+      ],
       "description": "始値"
     },
     "high": {
-      "$ref": "definitions.json#/$defs/Price",
+      "oneOf": [
+        {
+          "$ref": "definitions.json#/$defs/Price"
+        },
+        {
+          "type": "null"
+        }
+      ],
       "description": "高値"
     },
     "low": {
-      "$ref": "definitions.json#/$defs/Price",
+      "oneOf": [
+        {
+          "$ref": "definitions.json#/$defs/Price"
+        },
+        {
+          "type": "null"
+        }
+      ],
       "description": "安値"
     },
     "close": {
-      "$ref": "definitions.json#/$defs/Price",
+      "oneOf": [
+        {
+          "$ref": "definitions.json#/$defs/Price"
+        },
+        {
+          "type": "null"
+        }
+      ],
       "description": "終値"
     },
     "volume": {
-      "$ref": "definitions.json#/$defs/Size",
+      "oneOf": [
+        {
+          "$ref": "definitions.json#/$defs/Size"
+        },
+        {
+          "type": "null"
+        }
+      ],
       "description": "出来高"
     },
     "quote_volume": {
@@ -46,12 +81,7 @@
   },
   "required": [
     "symbol",
-    "timestamp",
-    "open",
-    "high",
-    "low",
-    "close",
-    "volume"
+    "timestamp"
   ],
   "unevaluatedProperties": false
 }

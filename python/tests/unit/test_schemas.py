@@ -205,12 +205,6 @@ class TestInvalidData:
         )
         assert_invalid("instrument.json", data)
 
-    def test_ohlcv_missing_volume(self) -> None:
-        """OHLCV missing required volume field should fail validation."""
-        data = load_fixture(FIXTURES_DIR / "invalid" / "ohlcv_missing_volume.json")
-        assert_invalid("ohlcv.json", data)
-
-
 class TestSchemaFilesExist:
     """Test that all schema files exist and are loadable."""
 

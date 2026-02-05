@@ -24,11 +24,11 @@ class Quote(BaseModel):
     """
     気配値取得時刻
     """
-    bid: definitions.Price
+    bid: definitions.Price | None = None
     """
     買い気配値
     """
-    ask: definitions.Price
+    ask: definitions.Price | None = None
     """
     売り気配値
     """

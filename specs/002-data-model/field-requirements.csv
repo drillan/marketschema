@@ -1,17 +1,17 @@
 entity,field_name,data_type,required,nullable,enum_values,format,description,adr_reference
 Quote,symbol,string,true,false,,,銘柄識別子,field-names/instrument.md
 Quote,timestamp,string,true,false,,ISO 8601,タイムスタンプ,field-names/common.md
-Quote,bid,number,true,false,,,買い気配値,field-names/common.md
-Quote,ask,number,true,false,,,売り気配値,field-names/common.md
+Quote,bid,number,false,true,,,買い気配値,field-names/common.md
+Quote,ask,number,false,true,,,売り気配値,field-names/common.md
 Quote,bid_size,number,false,true,,,買い気配の数量,field-names/common.md
 Quote,ask_size,number,false,true,,,売り気配の数量,field-names/common.md
 OHLCV,symbol,string,true,false,,,銘柄識別子,field-names/instrument.md
 OHLCV,timestamp,string,true,false,,ISO 8601,タイムスタンプ,field-names/common.md
-OHLCV,open,number,true,false,,,始値,field-names/common.md
-OHLCV,high,number,true,false,,,高値,field-names/common.md
-OHLCV,low,number,true,false,,,安値,field-names/common.md
-OHLCV,close,number,true,false,,,終値,field-names/common.md
-OHLCV,volume,number,true,false,,,出来高,field-names/common.md
+OHLCV,open,number,false,true,,,始値,field-names/common.md
+OHLCV,high,number,false,true,,,高値,field-names/common.md
+OHLCV,low,number,false,true,,,安値,field-names/common.md
+OHLCV,close,number,false,true,,,終値,field-names/common.md
+OHLCV,volume,number,false,true,,,出来高,field-names/common.md
 OHLCV,quote_volume,number,false,true,,,決済通貨建ての出来高（売買代金）,field-names/pairs.md
 Trade,symbol,string,true,false,,,銘柄識別子,field-names/instrument.md
 Trade,timestamp,string,true,false,,ISO 8601,タイムスタンプ,field-names/common.md

@@ -39,15 +39,21 @@ pub mod error {
 #[doc = "  \"description\": \"最良気配値（BBO: Best Bid/Offer）を表現する\","]
 #[doc = "  \"type\": \"object\","]
 #[doc = "  \"required\": ["]
-#[doc = "    \"ask\","]
-#[doc = "    \"bid\","]
 #[doc = "    \"symbol\","]
 #[doc = "    \"timestamp\""]
 #[doc = "  ],"]
 #[doc = "  \"properties\": {"]
 #[doc = "    \"ask\": {"]
-#[doc = "      \"description\": \"価格\","]
-#[doc = "      \"type\": \"number\""]
+#[doc = "      \"description\": \"売り気配値\","]
+#[doc = "      \"oneOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"description\": \"価格\","]
+#[doc = "          \"type\": \"number\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ]"]
 #[doc = "    },"]
 #[doc = "    \"ask_size\": {"]
 #[doc = "      \"description\": \"売り気配の数量\","]
@@ -62,8 +68,16 @@ pub mod error {
 #[doc = "      ]"]
 #[doc = "    },"]
 #[doc = "    \"bid\": {"]
-#[doc = "      \"description\": \"価格\","]
-#[doc = "      \"type\": \"number\""]
+#[doc = "      \"description\": \"買い気配値\","]
+#[doc = "      \"oneOf\": ["]
+#[doc = "        {"]
+#[doc = "          \"description\": \"価格\","]
+#[doc = "          \"type\": \"number\""]
+#[doc = "        },"]
+#[doc = "        {"]
+#[doc = "          \"type\": \"null\""]
+#[doc = "        }"]
+#[doc = "      ]"]
 #[doc = "    },"]
 #[doc = "    \"bid_size\": {"]
 #[doc = "      \"description\": \"買い気配の数量\","]
@@ -95,11 +109,15 @@ pub mod error {
 #[derive(:: serde :: Deserialize, :: serde :: Serialize, Clone, Debug)]
 #[serde(deny_unknown_fields)]
 pub struct Quote {
-    pub ask: f64,
+    #[doc = "売り気配値"]
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub ask: ::std::option::Option<f64>,
     #[doc = "売り気配の数量"]
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub ask_size: ::std::option::Option<f64>,
-    pub bid: f64,
+    #[doc = "買い気配値"]
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub bid: ::std::option::Option<f64>,
     #[doc = "買い気配の数量"]
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub bid_size: ::std::option::Option<f64>,
@@ -196,9 +214,9 @@ impl<'de> ::serde::Deserialize<'de> for QuoteSymbol {
 pub mod builder {
     #[derive(Clone, Debug)]
     pub struct Quote {
-        ask: ::std::result::Result<f64, ::std::string::String>,
+        ask: ::std::result::Result<::std::option::Option<f64>, ::std::string::String>,
         ask_size: ::std::result::Result<::std::option::Option<f64>, ::std::string::String>,
-        bid: ::std::result::Result<f64, ::std::string::String>,
+        bid: ::std::result::Result<::std::option::Option<f64>, ::std::string::String>,
         bid_size: ::std::result::Result<::std::option::Option<f64>, ::std::string::String>,
         symbol: ::std::result::Result<super::QuoteSymbol, ::std::string::String>,
         timestamp:
@@ -207,9 +225,9 @@ pub mod builder {
     impl ::std::default::Default for Quote {
         fn default() -> Self {
             Self {
-                ask: Err("no value supplied for ask".to_string()),
+                ask: Ok(Default::default()),
                 ask_size: Ok(Default::default()),
-                bid: Err("no value supplied for bid".to_string()),
+                bid: Ok(Default::default()),
                 bid_size: Ok(Default::default()),
                 symbol: Err("no value supplied for symbol".to_string()),
                 timestamp: Err("no value supplied for timestamp".to_string()),
@@ -219,7 +237,7 @@ pub mod builder {
     impl Quote {
         pub fn ask<T>(mut self, value: T) -> Self
         where
-            T: ::std::convert::TryInto<f64>,
+            T: ::std::convert::TryInto<::std::option::Option<f64>>,
             T::Error: ::std::fmt::Display,
         {
             self.ask = value
@@ -239,7 +257,7 @@ pub mod builder {
         }
         pub fn bid<T>(mut self, value: T) -> Self
         where
-            T: ::std::convert::TryInto<f64>,
+            T: ::std::convert::TryInto<::std::option::Option<f64>>,
             T::Error: ::std::fmt::Display,
         {
             self.bid = value
