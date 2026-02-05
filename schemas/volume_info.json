@@ -30,7 +30,8 @@
     "open_interest": {
       "oneOf": [
         {
-          "type": "number"
+          "type": "number",
+          "minimum": 0
         },
         {
           "type": "null"

@@ -3,9 +3,18 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict
+from typing import Annotated
+
+from pydantic import BaseModel, ConfigDict, Field, RootModel
 
 from . import definitions
+
+
+class OpenInterest(RootModel[float]):
+    root: Annotated[float, Field(ge=0.0)]
+    """
+    建玉残（未決済契約数）
+    """
 
 
 class VolumeInfo(BaseModel):
@@ -32,7 +41,7 @@ class VolumeInfo(BaseModel):
     """
     売買代金（決済通貨建て）
     """
-    open_interest: float | None = None
+    open_interest: OpenInterest | None = None
     """
     建玉残（未決済契約数）
     """
