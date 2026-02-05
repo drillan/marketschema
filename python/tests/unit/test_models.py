@@ -230,6 +230,17 @@ class TestDerivativeInfoModel:
         )
         assert deriv.settlement_price is None
 
+    def test_settlement_price_accepts_zero(self) -> None:
+        """SettlementPrice accepts zero as valid value."""
+        sp = SettlementPrice(0.0)
+        assert sp.root == 0.0
+
+    def test_settlement_price_rejects_negative_value(self) -> None:
+        """SettlementPrice rejects negative values."""
+        with pytest.raises(ValidationError) as exc_info:
+            SettlementPrice(-1.0)
+        assert "greater_than_equal" in str(exc_info.value).lower()
+
 
 class TestExpiryInfoModel:
     """Test ExpiryInfo pydantic model."""
@@ -292,6 +303,17 @@ class TestVolumeInfoModel:
             volume=Size(12345.67),
         )
         assert vol.open_interest is None
+
+    def test_open_interest_accepts_zero(self) -> None:
+        """OpenInterest accepts zero as valid value (market with no positions)."""
+        oi = OpenInterest(0.0)
+        assert oi.root == 0.0
+
+    def test_open_interest_rejects_negative_value(self) -> None:
+        """OpenInterest rejects negative values."""
+        with pytest.raises(ValidationError) as exc_info:
+            OpenInterest(-100.0)
+        assert "greater_than_equal" in str(exc_info.value).lower()
 
 
 class TestEnumValues:
