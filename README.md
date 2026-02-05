@@ -107,6 +107,16 @@ let quote: Quote = serde_json::from_str(json)?;
 
 詳細なドキュメントは [docs/](docs/) を参照:
 
+### ドキュメントのビルド
+
+```bash
+make -C docs html
+```
+
+ビルド結果は `docs/_build/html/` に出力されます。
+
+### ドキュメント一覧
+
 - [アーキテクチャ](docs/architecture.md) - Schema First 設計と3層アーキテクチャ
 - [コード生成](docs/code-generation.md) - Python/Rust コードの生成方法
 - [Python モデル実装ガイド](docs/guides/models.md)

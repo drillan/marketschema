@@ -4,6 +4,14 @@
 
 ドキュメントのルールは `.claude/docs.md` に従ってください。
 
+### ドキュメントビルド
+
+```bash
+make -C docs html  # Sphinx HTML ドキュメント生成
+```
+
+出力先: `docs/_build/html/`
+
 ## Constitution
 
 プロジェクトの詳細な原則は `.specify/memory/constitution.md` を参照してください。
