@@ -3,9 +3,18 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict
+from typing import Annotated
+
+from pydantic import BaseModel, ConfigDict, Field, RootModel
 
 from . import definitions
+
+
+class SettlementPrice(RootModel[float]):
+    root: Annotated[float, Field(ge=0.0)]
+    """
+    清算値段（証拠金計算・損益計算の基準）
+    """
 
 
 class DerivativeInfo(BaseModel):
@@ -72,7 +81,7 @@ class DerivativeInfo(BaseModel):
     """
     決済通貨
     """
-    settlement_price: float | None = None
+    settlement_price: SettlementPrice | None = None
     """
     清算値段（証拠金計算・損益計算の基準）
     """

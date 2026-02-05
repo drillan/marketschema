@@ -198,12 +198,21 @@ best_ask = orderbook.asks[0]
 ```python
 from datetime import datetime, timezone
 from marketschema.models import VolumeInfo, Symbol, Timestamp, Size
+from marketschema.models.volume_info import OpenInterest
 
 volume_info = VolumeInfo(
     symbol=Symbol("AAPL"),
     timestamp=Timestamp(datetime.now(timezone.utc)),
     volume=Size(1000000.0),
     quote_volume=Size(150000000.0),
+)
+
+# 建玉残（デリバティブ向け）を含む例
+volume_info_with_oi = VolumeInfo(
+    symbol=Symbol("NK225M"),
+    timestamp=Timestamp(datetime.now(timezone.utc)),
+    volume=Size(50000.0),
+    open_interest=OpenInterest(125000.0),  # 建玉残
 )
 ```
 
@@ -215,6 +224,7 @@ volume_info = VolumeInfo(
 | `timestamp` | Timestamp | Yes | データ取得時刻 |
 | `volume` | Size | Yes | 出来高（数量ベース） |
 | `quote_volume` | Size | No | 売買代金（決済通貨建て） |
+| `open_interest` | OpenInterest | No | 建玉残（未決済契約数、デリバティブ向け） |
 
 ## 銘柄情報モデル
 
@@ -273,6 +283,7 @@ from marketschema.models import (
     UnderlyingType,
     SettlementMethod,
 )
+from marketschema.models.derivative_info import SettlementPrice
 
 # 必須フィールドのみ
 derivative = DerivativeInfo(
@@ -298,6 +309,7 @@ derivative_full = DerivativeInfo(
     is_inverse=False,  # オプション
     settlement_method=SettlementMethod.cash,  # オプション
     settlement_currency=Currency("USD"),  # オプション
+    settlement_price=SettlementPrice(5250.0),  # 清算値段（オプション）
 )
 ```
 
@@ -319,6 +331,7 @@ derivative_full = DerivativeInfo(
 | `is_inverse` | bool | No | インバース契約か否か（暗号資産デリバティブ向け） |
 | `settlement_method` | SettlementMethod | No | 決済方法 |
 | `settlement_currency` | Currency | No | 決済通貨 |
+| `settlement_price` | SettlementPrice | No | 清算値段（証拠金計算・損益計算の基準） |
 
 ### ExpiryInfo（満期情報）
 
@@ -767,6 +780,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "quote_volume": 150000000.0
     }"#)?;
 
+    // 建玉残（デリバティブ向け）を含む例
+    let volume_info_with_oi: VolumeInfo = serde_json::from_str(r#"{
+        "symbol": "NK225M",
+        "timestamp": "2025-01-15T00:00:00Z",
+        "volume": 50000.0,
+        "open_interest": 125000.0
+    }"#)?;
+
     Ok(())
 }
 ```
@@ -779,6 +800,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 | `timestamp` | DateTime<Utc> | Yes | データ取得時刻 |
 | `volume` | f64 | Yes | 出来高（数量ベース） |
 | `quote_volume` | Option<f64> | No | 売買代金（決済通貨建て） |
+| `open_interest` | Option<f64> | No | 建玉残（未決済契約数、デリバティブ向け） |
 
 ## 銘柄情報モデル
 
@@ -826,11 +848,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 use marketschema::DerivativeInfo;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // 必須フィールドのみ
     let derivative: DerivativeInfo = serde_json::from_str(r#"{
         "multiplier": 100.0,
         "tick_size": 0.01,
         "underlying_symbol": "SPX",
         "underlying_type": "index"
+    }"#)?;
+
+    // 清算値段を含む例
+    let derivative_with_settlement: DerivativeInfo = serde_json::from_str(r#"{
+        "multiplier": 1000.0,
+        "tick_size": 5.0,
+        "underlying_symbol": "NK225",
+        "underlying_type": "index",
+        "settlement_method": "cash",
+        "settlement_price": 39850.0
     }"#)?;
 
     Ok(())
