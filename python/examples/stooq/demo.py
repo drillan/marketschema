@@ -59,11 +59,15 @@ async def demo_ohlcv(adapter: StooqAdapter, symbol: str) -> None:
     print("\nMost recent 5 records:")
     for ohlcv in ohlcvs[-5:]:
         print(f"\n  Date: {ohlcv.timestamp.root.date()}")
-        print(f"  Open: {ohlcv.open.root}")
-        print(f"  High: {ohlcv.high.root}")
-        print(f"  Low: {ohlcv.low.root}")
-        print(f"  Close: {ohlcv.close.root}")
-        print(f"  Volume: {ohlcv.volume.root:,.0f}")
+        print(f"  Open: {ohlcv.open.root if ohlcv.open is not None else 'N/A'}")
+        print(f"  High: {ohlcv.high.root if ohlcv.high is not None else 'N/A'}")
+        print(f"  Low: {ohlcv.low.root if ohlcv.low is not None else 'N/A'}")
+        print(f"  Close: {ohlcv.close.root if ohlcv.close is not None else 'N/A'}")
+        print(
+            f"  Volume: {ohlcv.volume.root:,.0f}"
+            if ohlcv.volume is not None
+            else "  Volume: N/A"
+        )
 
 
 async def main() -> None:
